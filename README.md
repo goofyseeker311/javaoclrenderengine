@@ -1,2 +1,1 @@
-# javaoclrenderengine
-Java OpenCL Render Engine
+# Java OpenCL Render Engine
