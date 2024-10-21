@@ -23,10 +23,21 @@ public class JavaOCLRenderEngine extends JFrame {
 	private Timer ticktimer = new Timer();
 	private long tickrefreshrate = 240;
 	private long tickperiod = 1000/tickrefreshrate;
+	private ComputeLib computelib = new ComputeLib();
+	private final String programSource =
+			"kernel void range(global float *c) {"
+					+ "unsigned int xid = get_global_id(0);"
+					+ "c[xid] = (float)xid;"
+					+ "}";
+	private long device = computelib.devicelist[0];
+	private long queue = this.computelib.createQueue(device);
+	private long program = this.computelib.compileProgram(device, programSource);
+	private long buffer = this.computelib.createBuffer(device, queue, 100);
+	private float[] vbuffer = new float[100];
 
 	public JavaOCLRenderEngine() {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setSize(1024, 720);
+		this.setSize(1280, 720);
 		this.setVisible(true);
 		this.setContentPane(graphicspanel);
 		this.addKeyListener(graphicspanel);
@@ -35,13 +46,19 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseWheelListener(graphicspanel);
 		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
+		this.computelib.runProgram(this.device, this.queue, this.program,"range", buffer, buffer, buffer, 100);
+		this.computelib.readBuffer(this.device, this.queue, buffer, vbuffer);
+		System.out.print("vbuffer=");
+		for (int i=0;i<vbuffer.length;i++) {
+			System.out.print(" "+vbuffer[i]);
+		}
+		System.out.println();
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.1");
+		System.out.println("Java OpenCl Render Engine v0.2");
 		@SuppressWarnings("unused")
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine();
-		System.out.println("exit.");
 	}
 	
 	private class RedrawTimerTask extends TimerTask {
