@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -19,21 +18,21 @@ import org.lwjgl.system.MemoryUtil;
 
 public class ComputeLib {
 	private MemoryStack clStack = MemoryStack.stackPush();
-	private TreeMap<Long,Long> devicecontexts = initClDevices();
-	private Set<Long> devices = devicecontexts.keySet();
+	private TreeMap<Long,Device> devicemap = initClDevices();
+	private Set<Long> devices = devicemap.keySet();
 	public Long[] devicelist = devices.toArray(new Long[devices.size()]);
 	
 	public ComputeLib() {
-		int n = 0;
-		for (Iterator<Long> i=devices.iterator();i.hasNext();n++) {
-			Long device = i.next();
-			String devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME);
-			System.out.println("OpenCL device["+n+"]: "+devicename);
+		for (int i=0;i<devicelist.length;i++) {
+			long device = devicelist[i];
+			Device devicedata = devicemap.get(device);
+			System.out.println("OpenCL device["+i+"]: "+devicedata.devicename);
 		}
 	}
 
 	public long writeBuffer(long device, long queue, float[] v) {
-		long context = devicecontexts.get(device);
+		Device devicedata = devicemap.get(device);
+		long context = devicedata.context;
 		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
 		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, null);
 		CL12.clFinish(queue);
@@ -50,7 +49,8 @@ public class ComputeLib {
 	}
 	
 	public long createBuffer(long device, long queue, int size) {
-		long context = devicecontexts.get(device);
+		Device devicedata = devicemap.get(device);
+		long context = devicedata.context;
 		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, (IntBuffer)null);
 		ByteBuffer pattern = clStack.malloc(4);
 		pattern.putFloat(1.0f);
@@ -75,20 +75,29 @@ public class ComputeLib {
 	}
 	
 	public long compileProgram(long device, String source) {
-		long context = devicecontexts.get(device);
+		Device devicedata = devicemap.get(device);
+		long context = devicedata.context;
 		long program = CL12.clCreateProgramWithSource(context, source, (IntBuffer)null);
 		CL12.clBuildProgram(program, device, "", null, NULL);
 		return program;
 	}
 	
 	public long createQueue(long device) {
-		long context = devicecontexts.get(device);
+		Device devicedata = devicemap.get(device);
+		long context = devicedata.context;
 		long queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
 		return queue;
 	}
+	
+	public static class Device {
+		public long platform = NULL;
+		public long context = NULL;
+		public String devicename = null;
+		public String platformname = null;
+	}
 
-	private TreeMap<Long,Long> initClDevices() {
-		TreeMap<Long,Long> devices = new TreeMap<Long,Long>();
+	private TreeMap<Long,Device> initClDevices() {
+		TreeMap<Long,Device> devicesinit = new TreeMap<Long,Device>();
 		PointerBuffer clPlatforms = getClPlatforms();
 		if (clPlatforms!=null) {
 			PointerBuffer clCtxProps = clStack.mallocPointer(3);
@@ -102,12 +111,17 @@ public class ComputeLib {
 					IntBuffer errcode_ret = clStack.callocInt(1);
 					long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, NULL, errcode_ret);
 					if (errcode_ret.get(errcode_ret.position())==CL12.CL_SUCCESS) {
-						devices.put(device, context);
+						Device devicedesc = new Device();
+						devicedesc.platform = platform;
+						devicedesc.context = context;
+						devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME);
+						devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME);
+						devicesinit.put(device, devicedesc);
 					}
 				}
 			}
 		}
-		return devices;
+		return devicesinit;
 	}
 
 	private PointerBuffer getClPlatforms() {
@@ -134,13 +148,26 @@ public class ComputeLib {
 		return devices;
 	}
 
-	private String getClDeviceInfo(long cl_device_id, int param_name) {
-		String deviceinfo = null;
+	private String getClPlatformInfo(long platform, int param) {
+		String platforminfo = null;
 		PointerBuffer pp = clStack.mallocPointer(1);
-		if (CL12.clGetDeviceInfo(cl_device_id, param_name, (ByteBuffer)null, pp)==CL12.CL_SUCCESS) {
+		if (CL12.clGetPlatformInfo(platform, param, (ByteBuffer)null, pp)==CL12.CL_SUCCESS) {
 			int bytes = (int)pp.get(0);
 			ByteBuffer buffer = clStack.malloc(bytes);
-			if (CL12.clGetDeviceInfo(cl_device_id, param_name, buffer, null)==CL12.CL_SUCCESS) {
+			if (CL12.clGetPlatformInfo(platform, param, buffer, null)==CL12.CL_SUCCESS) {
+				platforminfo = MemoryUtil.memUTF8(buffer, bytes - 1);
+			}
+		}
+		return platforminfo;
+	}
+	
+	private String getClDeviceInfo(long device, int param) {
+		String deviceinfo = null;
+		PointerBuffer pp = clStack.mallocPointer(1);
+		if (CL12.clGetDeviceInfo(device, param, (ByteBuffer)null, pp)==CL12.CL_SUCCESS) {
+			int bytes = (int)pp.get(0);
+			ByteBuffer buffer = clStack.malloc(bytes);
+			if (CL12.clGetDeviceInfo(device, param, buffer, null)==CL12.CL_SUCCESS) {
 				deviceinfo = MemoryUtil.memUTF8(buffer, bytes - 1);
 			}
 		}

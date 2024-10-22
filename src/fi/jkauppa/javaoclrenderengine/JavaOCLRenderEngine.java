@@ -27,13 +27,14 @@ public class JavaOCLRenderEngine extends JFrame {
 	private final String programSource =
 			"kernel void range(global float *c) {"
 					+ "unsigned int xid = get_global_id(0);"
-					+ "c[xid] = (float)xid;"
+					+ "c[xid] = ((float)xid)+13.5f;"
 					+ "}";
 	private long device = computelib.devicelist[0];
 	private long queue = this.computelib.createQueue(device);
 	private long program = this.computelib.compileProgram(device, programSource);
-	private long buffer = this.computelib.createBuffer(device, queue, 100);
-	private float[] vbuffer = new float[100];
+	private int buffersize = 10;
+	private long buffer = this.computelib.createBuffer(device, queue, buffersize);
+	private float[] vbuffer = new float[buffersize];
 
 	public JavaOCLRenderEngine() {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -46,7 +47,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseWheelListener(graphicspanel);
 		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
-		this.computelib.runProgram(this.device, this.queue, this.program,"range", buffer, buffer, buffer, 100);
+		this.computelib.runProgram(this.device, this.queue, this.program,"range", buffer, buffer, buffer, buffersize);
 		this.computelib.readBuffer(this.device, this.queue, buffer, vbuffer);
 		System.out.print("vbuffer=");
 		for (int i=0;i<vbuffer.length;i++) {
@@ -56,7 +57,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.2");
+		System.out.println("Java OpenCl Render Engine v0.3");
 		@SuppressWarnings("unused")
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine();
 	}
