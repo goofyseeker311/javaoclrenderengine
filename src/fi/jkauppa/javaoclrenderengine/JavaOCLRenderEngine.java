@@ -1,5 +1,7 @@
 package fi.jkauppa.javaoclrenderengine;
 
+import static org.lwjgl.system.MemoryUtil.NULL;
+
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -14,17 +16,23 @@ import java.util.TimerTask;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
+import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
+
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private Timer redrawtimer = new Timer();
-	private long redrawrefreshrate = 60;
+	private long redrawrefreshrate = 1; //60
 	private long redrawperiod = 1000/redrawrefreshrate;
 	private DrawPanel graphicspanel = new DrawPanel();
 	private Timer ticktimer = new Timer();
-	private long tickrefreshrate = 240;
+	private long tickrefreshrate = 2; //240
 	private long tickperiod = 1000/tickrefreshrate;
-	@SuppressWarnings("unused")
-	private MathLib mathlib = new MathLib();
+	private ComputeLib computelib = new ComputeLib();
+	private int selecteddevice;
+	private long device, queue, program;
+	private Device devicedata;
+	private int buffersize = 10;
+	private long[] buffer = new long[1];
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -39,37 +47,40 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseWheelListener(graphicspanel);
 		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
+		this.selecteddevice = vselecteddevice;
+		this.device = this.computelib.devicelist[selecteddevice];
+		this.devicedata = this.computelib.devicemap.get(device);
+		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
+		this.queue = devicedata.queue;
+		this.buffer[0] = this.computelib.createBuffer(device, queue, buffersize);
+		this.program = this.computelib.compileProgram(device, ProgramLib.programSource);
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.6");
+		System.out.println("Java OpenCl Render Engine v0.7");
 		int argdevice = 0;
-		try {
-			argdevice = Integer.parseInt(args[0]);
-		} catch(Exception ex) {}
+		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
 		@SuppressWarnings("unused")
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
 	}
 	
-	private class RedrawTimerTask extends TimerTask {
-		@Override public void run() {
-			JavaOCLRenderEngine.this.graphicspanel.paintImmediately(JavaOCLRenderEngine.this.graphicspanel.getBounds());
-		}
-	}
-
-	private class TickTimerTask extends TimerTask {
-		@Override public void run() {
-			JavaOCLRenderEngine.this.tick();
-		}
-	}
+	private class RedrawTimerTask extends TimerTask {@Override public void run() {graphicspanel.paintImmediately(graphicspanel.getBounds());}}
+	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 	
-	private void tick() {
-	}
+	private void tick() {}
 	
 	private class DrawPanel extends JComponent implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener {
 		private static final long serialVersionUID = 1L;
 		
 		@Override public void paint(Graphics g) {
+			if (program!=NULL) {
+				computelib.runProgram(device, queue, program, "range", buffer, 0, buffersize);
+				float[] vbuffer = new float[buffersize];
+				computelib.readBuffer(device, queue, buffer[0], vbuffer);
+				System.out.print("vbuffer:");
+				for (int i=0;i<vbuffer.length;i++) {System.out.print(" "+vbuffer[i]);}
+				System.out.println();
+			}
 		}
 
 		@Override public void keyTyped(KeyEvent e) {}
