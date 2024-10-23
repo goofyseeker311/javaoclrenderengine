@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.lwjgl.BufferUtils;
@@ -19,8 +18,7 @@ import org.lwjgl.system.MemoryUtil;
 public class ComputeLib {
 	private MemoryStack clStack = MemoryStack.stackPush();
 	public TreeMap<Long,Device> devicemap = initClDevices();
-	public Set<Long> devices = devicemap.keySet();
-	public Long[] devicelist = devices.toArray(new Long[devices.size()]);
+	public Long[] devicelist = devicemap.keySet().toArray(new Long[devicemap.size()]);
 	
 	public ComputeLib() {
 		for (int i=0;i<devicelist.length;i++) {
@@ -63,15 +61,17 @@ public class ComputeLib {
 		CL12.clReleaseMemObject(vmem);
 	}
 	
-	public void runProgram(long device, long queue, long program, String entry, long amem, long bmem, long cmem, int size) {
+	public void runProgram(long device, long queue, long program, String entry, long[] vmem, int offset, int size) {
 		long kernel = CL12.clCreateKernel(program, entry, (IntBuffer)null);
-		CL12.clSetKernelArg1p(kernel, 0, amem);
-		CL12.clSetKernelArg1p(kernel, 1, bmem);
-		CL12.clSetKernelArg1p(kernel, 2, cmem);
+		for (int i=0;i<vmem.length;i++) {
+			CL12.clSetKernelArg1p(kernel, i, vmem[i]);
+		}
 		int dimensions = 1;
+		PointerBuffer globalWorkOffset = BufferUtils.createPointerBuffer(dimensions);
+		globalWorkOffset.put(0, offset);
 		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		globalWorkSize.put(0, size);
-		CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, null, globalWorkSize, null, null, null);
+		CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, null);
 	}
 	
 	public long compileProgram(long device, String source) {

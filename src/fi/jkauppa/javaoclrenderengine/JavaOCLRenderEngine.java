@@ -48,11 +48,11 @@ public class JavaOCLRenderEngine extends JFrame {
 		Device devicedata = this.computelib.devicemap.get(device);
 		System.out.println("Using device["+this.selecteddevice+"]: "+devicedata.devicename);
 		long queue = devicedata.queue;
-		long buffer = this.computelib.createBuffer(device, queue, buffersize);
+		long[] buffer = {this.computelib.createBuffer(device, queue, buffersize)};
 		String programSource = "kernel void range(global float *c) { unsigned int xid=get_global_id(0); c[xid]=((float)xid)+13.5f; }";
 		long program = this.computelib.compileProgram(device, programSource);
-		this.computelib.runProgram(device, queue, program,"range", buffer, buffer, buffer, buffersize);
-		this.computelib.readBuffer(device, queue, buffer, vbuffer);
+		this.computelib.runProgram(device, queue, program,"range", buffer, 0, buffersize);
+		this.computelib.readBuffer(device, queue, buffer[0], vbuffer);
 		System.out.print("vbuffer=");
 		for (int i=0;i<vbuffer.length;i++) {
 			System.out.print(" "+vbuffer[i]);
@@ -61,7 +61,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.4");
+		System.out.println("Java OpenCl Render Engine v0.5");
 		int argdevice = 0;
 		try {
 			argdevice = Integer.parseInt(args[0]);
