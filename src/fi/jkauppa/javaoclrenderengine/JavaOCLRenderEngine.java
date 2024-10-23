@@ -14,8 +14,6 @@ import java.util.TimerTask;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
-
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private Timer redrawtimer = new Timer();
@@ -25,11 +23,10 @@ public class JavaOCLRenderEngine extends JFrame {
 	private Timer ticktimer = new Timer();
 	private long tickrefreshrate = 240;
 	private long tickperiod = 1000/tickrefreshrate;
-	private ComputeLib computelib = new ComputeLib();
-	private int selecteddevice = 0;
+	@SuppressWarnings("unused")
+	private MathLib mathlib = new MathLib();
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
-		this.selecteddevice = vselecteddevice;
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setSize(1280, 720);
 		this.setVisible(true);
@@ -42,26 +39,10 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseWheelListener(graphicspanel);
 		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
-		int buffersize = 10;
-		float[] vbuffer = new float[buffersize];
-		long device = this.computelib.devicelist[this.selecteddevice];
-		Device devicedata = this.computelib.devicemap.get(device);
-		System.out.println("Using device["+this.selecteddevice+"]: "+devicedata.devicename);
-		long queue = devicedata.queue;
-		long[] buffer = {this.computelib.createBuffer(device, queue, buffersize)};
-		String programSource = "kernel void range(global float *c) { unsigned int xid=get_global_id(0); c[xid]=((float)xid)+13.5f; }";
-		long program = this.computelib.compileProgram(device, programSource);
-		this.computelib.runProgram(device, queue, program,"range", buffer, 0, buffersize);
-		this.computelib.readBuffer(device, queue, buffer[0], vbuffer);
-		System.out.print("vbuffer=");
-		for (int i=0;i<vbuffer.length;i++) {
-			System.out.print(" "+vbuffer[i]);
-		}
-		System.out.println();
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.5");
+		System.out.println("Java OpenCl Render Engine v0.6");
 		int argdevice = 0;
 		try {
 			argdevice = Integer.parseInt(args[0]);
