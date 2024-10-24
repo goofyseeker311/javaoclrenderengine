@@ -9,6 +9,8 @@ import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -37,14 +39,16 @@ public class JavaOCLRenderEngine extends JFrame {
 	private Timer redrawtimer = new Timer();
 	private long redrawrefreshrate = 60;
 	private long redrawperiod = 1000/redrawrefreshrate;
-	private DrawPanel graphicspanel = new DrawPanel();
-	private int graphicswidth = 1280, graphicsheight = 720;
-	private int graphicpixels = graphicswidth*graphicsheight;
-	private float[] graphicsbuffer = new float[4*graphicpixels];
-	private ComponentSampleModel readsamplemodel = new ComponentSampleModel(DataBuffer.TYPE_FLOAT,graphicswidth,graphicsheight,4,4*graphicswidth,new int[]{1,2,3,0});
-	private ColorModel readcolormodel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{32,32,32,32}, true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_FLOAT);
-	private BufferedImage graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
-	private Graphics2D graphicsimage2d = graphicsimage.createGraphics();
+	private DrawPanel graphicspanel = null;
+	private int graphicswidth = 0, graphicsheight = 0;
+	private int graphicpixels = 0;
+	private float[] graphicsbuffer = null;
+	private ComponentSampleModel readsamplemodel = null;
+	private ColorModel readcolormodel = null;
+	private BufferedImage graphicsimage = null;
+	private Graphics2D graphicsimage2d = null;
+	@SuppressWarnings("unused")
+	private float frametime = 0.0f;
 	private Timer ticktimer = new Timer();
 	private long tickrefreshrate = 240;
 	private long tickperiod = 1000/tickrefreshrate;
@@ -57,12 +61,26 @@ public class JavaOCLRenderEngine extends JFrame {
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		JFrame.setDefaultLookAndFeelDecorated(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setSize(graphicswidth, graphicsheight);
 		this.setLocationRelativeTo(null);
-		this.setVisible(true);
+		this.setUndecorated(true);
+		this.setResizable(false);
+		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		this.setFocusTraversalKeysEnabled(false);
+		this.setBackground(Color.WHITE);
+		this.setVisible(true);
+		this.graphicspanel = new DrawPanel();
+		this.graphicswidth = this.getWidth();
+		this.graphicsheight = this.getHeight();
+		this.graphicspanel.setSize(graphicswidth, graphicsheight);
+		this.graphicpixels = graphicswidth*graphicsheight;
+		this.graphicsbuffer = new float[4*graphicpixels];
+		this.readsamplemodel = new ComponentSampleModel(DataBuffer.TYPE_FLOAT,graphicswidth,graphicsheight,4,4*graphicswidth,new int[]{1,2,3,0});
+		this.readcolormodel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{32,32,32,32}, true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_FLOAT);
+		this.graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+		this.graphicsimage2d = graphicsimage.createGraphics();
 		this.setContentPane(graphicspanel);
 		this.requestFocus();
+		this.addComponentListener(graphicspanel);
 		this.addKeyListener(graphicspanel);
 		this.addMouseListener(graphicspanel);
 		this.addMouseMotionListener(graphicspanel);
@@ -77,14 +95,14 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.buffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
 		this.program = this.computelib.compileProgram(device, ProgramLib.programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
-		g2.setColor(new Color(0.0f,0.0f,1.0f,1.0f));
+		g2.setColor(Color.BLUE);
 		g2.fillRect(0, 0, this.graphicsimage.getWidth(), this.graphicsimage.getHeight());
 		g2.dispose();
 		this.repaint();
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.8");
+		System.out.println("Java OpenCl Render Engine v0.8.1");
 		int argdevice = 0;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
 		@SuppressWarnings("unused")
@@ -96,18 +114,21 @@ public class JavaOCLRenderEngine extends JFrame {
 	
 	private void tick() {}
 	
-	private class DrawPanel extends JComponent implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener {
+	private class DrawPanel extends JComponent implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener,ComponentListener {
 		private static final long serialVersionUID = 1L;
 		
-		@Override public void paint(Graphics g) {
+		@Override public void paintComponent(Graphics g) {
 			Graphics2D g2 = (Graphics2D)g;
 			if (program!=NULL) {
-				computelib.runProgram(device, queue, program, "renderrgbapixels", buffer, 0, graphicpixels);
+				long frametimestart = System.nanoTime();
+				computelib.runProgram(device, queue, program, "renderview", buffer, 0, graphicpixels);
 				computelib.readBuffer(device, queue, buffer[0], graphicsbuffer);
 				DataBufferFloat readdatabuffer = new DataBufferFloat(graphicsbuffer, graphicsbuffer.length);
 				WritableRaster readraster = WritableRaster.createWritableRaster(readsamplemodel, readdatabuffer, null);
 				BufferedImage readimage = new BufferedImage(readcolormodel, readraster, false, null);
 				graphicsimage2d.drawImage(readimage, 0, 0, null);
+				long frametimeend = System.nanoTime();
+				frametime = (frametimeend-frametimestart)/1000000.0f;
 			}
 			g2.drawImage(graphicsimage, 0, 0, null);
 		}
@@ -123,5 +144,9 @@ public class JavaOCLRenderEngine extends JFrame {
 		@Override public void mouseReleased(MouseEvent e) {}
 		@Override public void mouseEntered(MouseEvent e) {}
 		@Override public void mouseExited(MouseEvent e) {}
+		@Override public void componentMoved(ComponentEvent e) {}
+		@Override public void componentShown(ComponentEvent e) {}
+		@Override public void componentHidden(ComponentEvent e) {}
+		@Override public void componentResized(ComponentEvent e) {}
 	}
 }
