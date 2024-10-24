@@ -51,7 +51,7 @@ public class ComputeLib {
 		long context = devicedata.context;
 		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, (IntBuffer)null);
 		ByteBuffer pattern = clStack.malloc(4);
-		pattern.putFloat(1.0f);
+		pattern.putFloat(0.0f);
 		CL12.clEnqueueFillBuffer(queue, vmem, pattern, 0, size, null, null);
 		CL12.clFinish(queue);
 		return vmem;

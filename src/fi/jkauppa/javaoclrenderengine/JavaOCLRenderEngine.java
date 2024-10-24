@@ -2,6 +2,7 @@ package fi.jkauppa.javaoclrenderengine;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -36,6 +37,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+	private static Color transparent = new Color(0.0f,0.0f,0.0f,0.0f);
 	private Timer redrawtimer = new Timer();
 	private long redrawrefreshrate = 60;
 	private long redrawperiod = 1000/redrawrefreshrate;
@@ -66,7 +68,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.setResizable(false);
 		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		this.setFocusTraversalKeysEnabled(false);
-		this.setBackground(Color.WHITE);
+		this.setBackground(transparent);
 		this.setVisible(true);
 		this.graphicspanel = new DrawPanel();
 		this.graphicswidth = this.getWidth();
@@ -95,14 +97,14 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.buffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
 		this.program = this.computelib.compileProgram(device, ProgramLib.programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
-		g2.setColor(Color.BLUE);
+		g2.setColor(transparent);
 		g2.fillRect(0, 0, this.graphicsimage.getWidth(), this.graphicsimage.getHeight());
 		g2.dispose();
 		this.repaint();
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.8.1");
+		System.out.println("Java OpenCl Render Engine v0.8.2");
 		int argdevice = 0;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
 		@SuppressWarnings("unused")
@@ -126,10 +128,12 @@ public class JavaOCLRenderEngine extends JFrame {
 				DataBufferFloat readdatabuffer = new DataBufferFloat(graphicsbuffer, graphicsbuffer.length);
 				WritableRaster readraster = WritableRaster.createWritableRaster(readsamplemodel, readdatabuffer, null);
 				BufferedImage readimage = new BufferedImage(readcolormodel, readraster, false, null);
+				graphicsimage2d.setComposite(AlphaComposite.Src);
 				graphicsimage2d.drawImage(readimage, 0, 0, null);
 				long frametimeend = System.nanoTime();
 				frametime = (frametimeend-frametimestart)/1000000.0f;
 			}
+			g2.setComposite(AlphaComposite.Src);
 			g2.drawImage(graphicsimage, 0, 0, null);
 		}
 
