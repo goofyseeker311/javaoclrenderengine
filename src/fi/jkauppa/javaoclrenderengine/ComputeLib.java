@@ -2,6 +2,9 @@ package fi.jkauppa.javaoclrenderengine;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -75,6 +78,24 @@ public class ComputeLib {
 
 	public void removeBuffer(long vmem) {
 		CL12.clReleaseMemObject(vmem);
+	}
+	
+	public String loadProgram(String filename, boolean loadresourcefromjar) {
+		String k = null;
+		if (filename!=null) {
+			try {
+				File textfile = new File(filename);
+				BufferedInputStream textfilestream = null;
+				if (loadresourcefromjar) {
+					textfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(textfile.getPath().replace(File.separatorChar, '/')));
+				}else {
+					textfilestream = new BufferedInputStream(new FileInputStream(textfile));
+				}
+				k = new String(textfilestream.readAllBytes());
+				textfilestream.close();
+			} catch (Exception ex) {ex.printStackTrace();}
+		}
+		return k;
 	}
 	
 	public void runProgram(long device, long queue, long program, String entry, long[] fmem, int offset, int size) {

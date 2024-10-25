@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCl Render Engine v0.8.4";
+	private static String programtitle = "Java OpenCl Render Engine v0.8.5";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -46,7 +46,6 @@ public class JavaOCLRenderEngine extends JFrame {
 	private DirectColorModel readcolormodel = null;
 	private BufferedImage graphicsimage = null;
 	private Graphics2D graphicsimage2d = null;
-	@SuppressWarnings("unused")
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
 	private Timer ticktimer = new Timer();
@@ -89,7 +88,8 @@ public class JavaOCLRenderEngine extends JFrame {
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
 		this.gfxbuffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
-		this.program = this.computelib.compileProgram(device, ProgramLib.programSource);
+		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
+		this.program = this.computelib.compileProgram(device, programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
 		g2.setColor(Color.WHITE);
 		g2.fillRect(0, 0, this.graphicsimage.getWidth(), this.graphicsimage.getHeight());
