@@ -28,7 +28,7 @@ public class ComputeLib {
 		}
 	}
 
-	public long writeBuffer(long device, long queue, float[] v) {
+	public long writeBufferf(long device, long queue, float[] v) {
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
 		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
@@ -36,11 +36,27 @@ public class ComputeLib {
 		CL12.clFinish(queue);
 		return vmem;
 	}
-	
-	public void readBuffer(long device, long queue, long vmem, float[] v) {
+	public long writeBufferi(long device, long queue, int[] v) {
+		Device devicedata = devicemap.get(device);
+		long context = devicedata.context;
+		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
+		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, null);
+		CL12.clFinish(queue);
+		return vmem;
+	}
+
+	public void readBufferf(long device, long queue, long vmem, float[] v) {
 		FloatBuffer resultBuff = BufferUtils.createFloatBuffer(v.length);
 		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, null);
 		Arrays.fill(v, 0.0f);
+		CL12.clFinish(queue);
+		resultBuff.rewind();
+		resultBuff.get(0, v);
+	}
+	public void readBufferi(long device, long queue, long vmem, int[] v) {
+		IntBuffer resultBuff = BufferUtils.createIntBuffer(v.length);
+		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, null);
+		Arrays.fill(v, 0);
 		CL12.clFinish(queue);
 		resultBuff.rewind();
 		resultBuff.get(0, v);
@@ -61,10 +77,10 @@ public class ComputeLib {
 		CL12.clReleaseMemObject(vmem);
 	}
 	
-	public void runProgram(long device, long queue, long program, String entry, long[] vmem, int offset, int size) {
+	public void runProgram(long device, long queue, long program, String entry, long[] fmem, int offset, int size) {
 		long kernel = CL12.clCreateKernel(program, entry, (IntBuffer)null);
-		for (int i=0;i<vmem.length;i++) {
-			CL12.clSetKernelArg1p(kernel, i, vmem[i]);
+		for (int i=0;i<fmem.length;i++) {
+			CL12.clSetKernelArg1p(kernel, i, fmem[i]);
 		}
 		int dimensions = 1;
 		PointerBuffer globalWorkOffset = BufferUtils.createPointerBuffer(dimensions);

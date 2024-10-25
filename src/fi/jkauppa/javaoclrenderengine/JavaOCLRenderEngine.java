@@ -4,12 +4,12 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.Transparency;
-import java.awt.color.ColorSpace;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
@@ -20,11 +20,10 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.ComponentSampleModel;
 import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferFloat;
+import java.awt.image.DataBufferInt;
+import java.awt.image.DirectColorModel;
+import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,16 +36,16 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
-	private static Color transparent = new Color(0.0f,0.0f,0.0f,0.0f);
+	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private Timer redrawtimer = new Timer();
 	private long redrawrefreshrate = 60;
 	private long redrawperiod = 1000/redrawrefreshrate;
 	private DrawPanel graphicspanel = null;
-	private int graphicswidth = 0, graphicsheight = 0;
-	private int graphicpixels = 0;
-	private float[] graphicsbuffer = null;
-	private ComponentSampleModel readsamplemodel = null;
-	private ColorModel readcolormodel = null;
+	private int graphicswidth = 1280, graphicsheight = 720;
+	private Dimension graphicdimensions = new Dimension(graphicswidth, graphicsheight);
+	private int[] graphicsbuffer = null;
+	private SinglePixelPackedSampleModel readsamplemodel = null;
+	private DirectColorModel readcolormodel = null;
 	private BufferedImage graphicsimage = null;
 	private Graphics2D graphicsimage2d = null;
 	@SuppressWarnings("unused")
@@ -58,26 +57,21 @@ public class JavaOCLRenderEngine extends JFrame {
 	private int selecteddevice;
 	private long device, queue, program;
 	private Device devicedata;
-	private long[] buffer = new long[1];
+	private long[] gfxbuffer = new long[1];
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		JFrame.setDefaultLookAndFeelDecorated(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setLocationRelativeTo(null);
-		this.setUndecorated(true);
-		this.setResizable(false);
-		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		this.setFocusTraversalKeysEnabled(false);
-		this.setBackground(transparent);
+		this.setResizable(false);
 		this.setVisible(true);
 		this.graphicspanel = new DrawPanel();
-		this.graphicswidth = this.getWidth();
-		this.graphicsheight = this.getHeight();
-		this.graphicspanel.setSize(graphicswidth, graphicsheight);
-		this.graphicpixels = graphicswidth*graphicsheight;
-		this.graphicsbuffer = new float[4*graphicpixels];
-		this.readsamplemodel = new ComponentSampleModel(DataBuffer.TYPE_FLOAT,graphicswidth,graphicsheight,4,4*graphicswidth,new int[]{1,2,3,0});
-		this.readcolormodel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{32,32,32,32}, true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_FLOAT);
+		this.graphicspanel.setSize(graphicdimensions);
+		this.graphicspanel.setPreferredSize(graphicdimensions);
+		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
+		this.readsamplemodel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, graphicswidth, graphicsheight, pixelabgrbitmask);
+		this.readcolormodel = new DirectColorModel(32, pixelabgrbitmask[0], pixelabgrbitmask[1], pixelabgrbitmask[2], pixelabgrbitmask[3]);
 		this.graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
 		this.graphicsimage2d = graphicsimage.createGraphics();
 		this.setContentPane(graphicspanel);
@@ -87,6 +81,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseListener(graphicspanel);
 		this.addMouseMotionListener(graphicspanel);
 		this.addMouseWheelListener(graphicspanel);
+		this.pack();
 		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
 		this.selecteddevice = vselecteddevice;
@@ -94,17 +89,17 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.devicedata = this.computelib.devicemap.get(device);
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
-		this.buffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
+		this.gfxbuffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
 		this.program = this.computelib.compileProgram(device, ProgramLib.programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
-		g2.setColor(transparent);
+		g2.setColor(Color.WHITE);
 		g2.fillRect(0, 0, this.graphicsimage.getWidth(), this.graphicsimage.getHeight());
 		g2.dispose();
 		this.repaint();
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.8.2");
+		System.out.println("Java OpenCl Render Engine v0.8.3");
 		int argdevice = 0;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
 		@SuppressWarnings("unused")
@@ -123,9 +118,9 @@ public class JavaOCLRenderEngine extends JFrame {
 			Graphics2D g2 = (Graphics2D)g;
 			if (program!=NULL) {
 				long frametimestart = System.nanoTime();
-				computelib.runProgram(device, queue, program, "renderview", buffer, 0, graphicpixels);
-				computelib.readBuffer(device, queue, buffer[0], graphicsbuffer);
-				DataBufferFloat readdatabuffer = new DataBufferFloat(graphicsbuffer, graphicsbuffer.length);
+				computelib.runProgram(device, queue, program, "renderview", gfxbuffer, 0, graphicsbuffer.length);
+				computelib.readBufferi(device, queue, gfxbuffer[0], graphicsbuffer);
+				DataBufferInt readdatabuffer = new DataBufferInt(graphicsbuffer, graphicsbuffer.length);
 				WritableRaster readraster = WritableRaster.createWritableRaster(readsamplemodel, readdatabuffer, null);
 				BufferedImage readimage = new BufferedImage(readcolormodel, readraster, false, null);
 				graphicsimage2d.setComposite(AlphaComposite.Src);
