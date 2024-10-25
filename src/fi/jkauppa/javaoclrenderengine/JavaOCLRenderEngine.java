@@ -35,11 +35,9 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
+	private static String programtitle = "Java OpenCl Render Engine v0.8.4";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
-	private Timer redrawtimer = new Timer();
-	private long redrawrefreshrate = 60;
-	private long redrawperiod = 1000/redrawrefreshrate;
 	private DrawPanel graphicspanel = null;
 	private int graphicswidth = 1280, graphicsheight = 720;
 	private Dimension graphicdimensions = new Dimension(graphicswidth, graphicsheight);
@@ -50,6 +48,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private Graphics2D graphicsimage2d = null;
 	@SuppressWarnings("unused")
 	private float frametime = 0.0f;
+	private float frametimeavg = 0.0f;
 	private Timer ticktimer = new Timer();
 	private long tickrefreshrate = 240;
 	private long tickperiod = 1000/tickrefreshrate;
@@ -65,6 +64,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.setLocationRelativeTo(null);
 		this.setFocusTraversalKeysEnabled(false);
 		this.setResizable(false);
+		this.setTitle(programtitle);
 		this.setVisible(true);
 		this.graphicspanel = new DrawPanel();
 		this.graphicspanel.setSize(graphicdimensions);
@@ -82,7 +82,6 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.addMouseMotionListener(graphicspanel);
 		this.addMouseWheelListener(graphicspanel);
 		this.pack();
-		this.redrawtimer.scheduleAtFixedRate(new RedrawTimerTask(), 0, redrawperiod);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
 		this.selecteddevice = vselecteddevice;
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -99,24 +98,53 @@ public class JavaOCLRenderEngine extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("Java OpenCl Render Engine v0.8.3");
+		System.out.println(programtitle);
 		int argdevice = 0;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
 		@SuppressWarnings("unused")
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
 	}
 	
-	private class RedrawTimerTask extends TimerTask {@Override public void run() {graphicspanel.paintImmediately(graphicspanel.getBounds());}}
 	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 	
-	private void tick() {}
+	private void tick() {
+		this.setTitle(programtitle+": "+(1000.0f/frametimeavg)+"fps");
+		graphicspanel.paintImmediately(graphicspanel.getBounds());
+		RenderThread renderthread = new RenderThread();
+		renderthread.start();
+	}
 	
 	private class DrawPanel extends JComponent implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener,ComponentListener {
 		private static final long serialVersionUID = 1L;
 		
 		@Override public void paintComponent(Graphics g) {
 			Graphics2D g2 = (Graphics2D)g;
-			if (program!=NULL) {
+			g2.setComposite(AlphaComposite.Src);
+			g2.drawImage(graphicsimage, 0, 0, null);
+		}
+
+		@Override public void keyTyped(KeyEvent e) {}
+		@Override public void keyPressed(KeyEvent e) {System.out.println("KeyPressed: '"+e.getKeyChar()+"'");}
+		@Override public void keyReleased(KeyEvent e) {}
+		@Override public void mouseWheelMoved(MouseWheelEvent e) {System.out.println("MouseWheelMoved: "+e.getWheelRotation());}
+		@Override public void mouseDragged(MouseEvent e) {System.out.println("MouseDragged: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseMoved(MouseEvent e) {System.out.println("MouseMoved: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseClicked(MouseEvent e) {}
+		@Override public void mousePressed(MouseEvent e) {System.out.println("MousePressed: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseReleased(MouseEvent e) {}
+		@Override public void mouseEntered(MouseEvent e) {}
+		@Override public void mouseExited(MouseEvent e) {}
+		@Override public void componentMoved(ComponentEvent e) {}
+		@Override public void componentShown(ComponentEvent e) {}
+		@Override public void componentHidden(ComponentEvent e) {}
+		@Override public void componentResized(ComponentEvent e) {}
+	}
+	
+	private class RenderThread extends Thread {
+		private static boolean running = false;
+		public void run() {
+			if ((!running)&&(program!=NULL)) {
+				running = true;
 				long frametimestart = System.nanoTime();
 				computelib.runProgram(device, queue, program, "renderview", gfxbuffer, 0, graphicsbuffer.length);
 				computelib.readBufferi(device, queue, gfxbuffer[0], graphicsbuffer);
@@ -127,25 +155,9 @@ public class JavaOCLRenderEngine extends JFrame {
 				graphicsimage2d.drawImage(readimage, 0, 0, null);
 				long frametimeend = System.nanoTime();
 				frametime = (frametimeend-frametimestart)/1000000.0f;
+				frametimeavg = frametimeavg*0.9f+frametime*0.1f;
+				running = false;
 			}
-			g2.setComposite(AlphaComposite.Src);
-			g2.drawImage(graphicsimage, 0, 0, null);
 		}
-
-		@Override public void keyTyped(KeyEvent e) {}
-		@Override public void keyPressed(KeyEvent e) {System.out.println("KeyEvent: '"+e.getKeyChar()+"'");}
-		@Override public void keyReleased(KeyEvent e) {}
-		@Override public void mouseWheelMoved(MouseWheelEvent e) {System.out.println("MouseWheelEvent: "+e.getWheelRotation());}
-		@Override public void mouseDragged(MouseEvent e) {}
-		@Override public void mouseMoved(MouseEvent e) {}
-		@Override public void mouseClicked(MouseEvent e) {}
-		@Override public void mousePressed(MouseEvent e) {System.out.println("MouseEvent: "+e.getX()+","+e.getY()+":"+e.getButton());}
-		@Override public void mouseReleased(MouseEvent e) {}
-		@Override public void mouseEntered(MouseEvent e) {}
-		@Override public void mouseExited(MouseEvent e) {}
-		@Override public void componentMoved(ComponentEvent e) {}
-		@Override public void componentShown(ComponentEvent e) {}
-		@Override public void componentHidden(ComponentEvent e) {}
-		@Override public void componentResized(ComponentEvent e) {}
 	}
 }
