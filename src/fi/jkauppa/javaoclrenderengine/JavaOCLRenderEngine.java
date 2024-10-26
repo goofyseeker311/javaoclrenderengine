@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCl Render Engine v0.8.6";
+	private static String programtitle = "Java OpenCL Render Engine v0.8.7";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -56,6 +56,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private int selecteddevice;
 	private long device, queue, program;
 	private Device devicedata;
+	private String usingdevice;
 	private long[] gfxbuffer = new long[1];
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
@@ -85,6 +86,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.selecteddevice = vselecteddevice;
 		this.device = this.computelib.devicelist[selecteddevice];
 		this.devicedata = this.computelib.devicemap.get(device);
+		this.usingdevice = devicedata.devicename;
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
 		this.gfxbuffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
@@ -108,7 +110,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 	
 	private void tick() {
-		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms");
+		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"]");
 		graphicspanel.paintImmediately(graphicspanel.getBounds());
 		RenderThread renderthread = new RenderThread();
 		renderthread.start();

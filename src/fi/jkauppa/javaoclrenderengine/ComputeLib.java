@@ -19,7 +19,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 public class ComputeLib {
-	//private MemoryStack clStack = MemoryStack.stackPush();
 	public TreeMap<Long,Device> devicemap = initClDevices();
 	public Long[] devicelist = devicemap.keySet().toArray(new Long[devicemap.size()]);
 	
@@ -168,8 +167,8 @@ public class ComputeLib {
 						devicedesc.platform = platform;
 						devicedesc.context = context;
 						devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);;
-						devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME);
-						devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME);
+						devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME).trim();
+						devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME).trim();
 						devicesinit.put(device, devicedesc);
 					}
 				}
