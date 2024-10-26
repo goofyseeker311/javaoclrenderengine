@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCl Render Engine v0.8.5";
+	private static String programtitle = "Java OpenCl Render Engine v0.8.6";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -45,7 +45,8 @@ public class JavaOCLRenderEngine extends JFrame {
 	private SinglePixelPackedSampleModel readsamplemodel = null;
 	private DirectColorModel readcolormodel = null;
 	private BufferedImage graphicsimage = null;
-	private Graphics2D graphicsimage2d = null;
+	private float computetime = 0.0f;
+	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
 	private Timer ticktimer = new Timer();
@@ -72,7 +73,6 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.readsamplemodel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, graphicswidth, graphicsheight, pixelabgrbitmask);
 		this.readcolormodel = new DirectColorModel(32, pixelabgrbitmask[0], pixelabgrbitmask[1], pixelabgrbitmask[2], pixelabgrbitmask[3]);
 		this.graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
-		this.graphicsimage2d = graphicsimage.createGraphics();
 		this.setContentPane(graphicspanel);
 		this.requestFocus();
 		this.addComponentListener(graphicspanel);
@@ -108,7 +108,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 	
 	private void tick() {
-		this.setTitle(programtitle+": "+(1000.0f/frametimeavg)+"fps");
+		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms");
 		graphicspanel.paintImmediately(graphicspanel.getBounds());
 		RenderThread renderthread = new RenderThread();
 		renderthread.start();
@@ -146,13 +146,17 @@ public class JavaOCLRenderEngine extends JFrame {
 			if ((!running)&&(program!=NULL)) {
 				running = true;
 				long frametimestart = System.nanoTime();
-				computelib.runProgram(device, queue, program, "renderview", gfxbuffer, 0, graphicsbuffer.length);
+				computetime = computelib.runProgram(device, queue, program, "renderview", gfxbuffer, 0, graphicsbuffer.length, true);
+				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 				computelib.readBufferi(device, queue, gfxbuffer[0], graphicsbuffer);
 				DataBufferInt readdatabuffer = new DataBufferInt(graphicsbuffer, graphicsbuffer.length);
 				WritableRaster readraster = WritableRaster.createWritableRaster(readsamplemodel, readdatabuffer, null);
 				BufferedImage readimage = new BufferedImage(readcolormodel, readraster, false, null);
-				graphicsimage2d.setComposite(AlphaComposite.Src);
-				graphicsimage2d.drawImage(readimage, 0, 0, null);
+				BufferedImage newimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+				Graphics2D newimage2d = newimage.createGraphics();
+				newimage2d.setComposite(AlphaComposite.Src);
+				newimage2d.drawImage(readimage, 0, 0, null);
+				graphicsimage = newimage;
 				long frametimeend = System.nanoTime();
 				frametime = (frametimeend-frametimestart)/1000000.0f;
 				frametimeavg = frametimeavg*0.9f+frametime*0.1f;
