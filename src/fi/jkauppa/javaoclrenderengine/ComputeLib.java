@@ -31,48 +31,60 @@ public class ComputeLib {
 	}
 
 	public long writeBufferf(long device, long queue, float[] v) {
+		long vmem = NULL;
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
-		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, null);
-		CL12.clFinish(queue);
+		vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
+		CL12.clWaitForEvents(event);
 		return vmem;
 	}
 	public long writeBufferi(long device, long queue, int[] v) {
+		long vmem = NULL;
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
-		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, null);
-		CL12.clFinish(queue);
+		vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
+		CL12.clWaitForEvents(event);
 		return vmem;
 	}
 
 	public void readBufferf(long device, long queue, long vmem, float[] v) {
+		MemoryStack clStack = MemoryStack.stackPush();
 		FloatBuffer resultBuff = BufferUtils.createFloatBuffer(v.length);
-		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, null);
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, event);
 		Arrays.fill(v, 0.0f);
-		CL12.clFinish(queue);
+		CL12.clWaitForEvents(event);
 		resultBuff.rewind();
 		resultBuff.get(0, v);
 	}
 	public void readBufferi(long device, long queue, long vmem, int[] v) {
+		MemoryStack clStack = MemoryStack.stackPush();
 		IntBuffer resultBuff = BufferUtils.createIntBuffer(v.length);
-		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, null);
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, event);
 		Arrays.fill(v, 0);
-		CL12.clFinish(queue);
+		CL12.clWaitForEvents(event);
 		resultBuff.rewind();
 		resultBuff.get(0, v);
 	}
 	
 	public long createBuffer(long device, long queue, int size) {
+		long vmem = NULL;
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, (IntBuffer)null);
-		MemoryStack clStack = MemoryStack.stackPush();
+		vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, (IntBuffer)null);
 		ByteBuffer pattern = clStack.malloc(4);
 		pattern.putFloat(0.0f);
-		CL12.clEnqueueFillBuffer(queue, vmem, pattern, 0, size, null, null);
-		CL12.clFinish(queue);
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL12.clEnqueueFillBuffer(queue, vmem, pattern, 0, size, null, event);
+		CL12.clWaitForEvents(event);
 		return vmem;
 	}
 
@@ -99,15 +111,17 @@ public class ComputeLib {
 	}
 	
 	public long compileProgram(long device, String source) {
+		long program = NULL;
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long program = CL12.clCreateProgramWithSource(context, source, (IntBuffer)null);
+		program = CL12.clCreateProgramWithSource(context, source, (IntBuffer)null);
 		CL12.clBuildProgram(program, device, "", null, NULL);
 		return program;
 	}
 	
 	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int offset, int size, boolean waitgetruntime) {
 		float runtime = 0.0f;
+		MemoryStack clStack = MemoryStack.stackPush();
 		long kernel = CL12.clCreateKernel(program, entry, (IntBuffer)null);
 		for (int i=0;i<fmem.length;i++) {
 			CL12.clSetKernelArg1p(kernel, i, fmem[i]);
@@ -117,7 +131,6 @@ public class ComputeLib {
 		globalWorkOffset.put(0, offset);
 		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		globalWorkSize.put(0, size);
-		MemoryStack clStack = MemoryStack.stackPush();
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
 		if (waitgetruntime) {
@@ -133,9 +146,10 @@ public class ComputeLib {
 	}
 	
 	public long createQueue(long device) {
+		long queue = NULL;
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
+		queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
 		return queue;
 	}
 	
@@ -149,9 +163,9 @@ public class ComputeLib {
 
 	private TreeMap<Long,Device> initClDevices() {
 		TreeMap<Long,Device> devicesinit = new TreeMap<Long,Device>();
+		MemoryStack clStack = MemoryStack.stackPush();
 		PointerBuffer clPlatforms = getClPlatforms();
 		if (clPlatforms!=null) {
-			MemoryStack clStack = MemoryStack.stackPush();
 			PointerBuffer clCtxProps = clStack.mallocPointer(3);
 			clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(2, 0);
 			for (int p = 0; p < clPlatforms.capacity(); p++) {

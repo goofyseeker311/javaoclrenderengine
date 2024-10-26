@@ -28,36 +28,37 @@ import java.awt.image.WritableRaster;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCL Render Engine v0.8.7";
+	private static String programtitle = "Java OpenCL Render Engine v0.8.8";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
 	private int graphicswidth = 1280, graphicsheight = 720;
 	private Dimension graphicdimensions = new Dimension(graphicswidth, graphicsheight);
+	private SinglePixelPackedSampleModel newgraphicssamplemodel = null;
+	private DirectColorModel newgraphicscolormodel = null;
 	private int[] graphicsbuffer = null;
-	private SinglePixelPackedSampleModel readsamplemodel = null;
-	private DirectColorModel readcolormodel = null;
+	private long[] gfxbuffer = new long[1];
 	private BufferedImage graphicsimage = null;
+	private BufferedImage newgraphicsimage = null;
 	private float computetime = 0.0f;
 	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
 	private Timer ticktimer = new Timer();
-	private long tickrefreshrate = 240;
+	private long tickrefreshrate = 60;
 	private long tickperiod = 1000/tickrefreshrate;
 	private ComputeLib computelib = new ComputeLib();
 	private int selecteddevice;
 	private long device, queue, program;
 	private Device devicedata;
 	private String usingdevice;
-	private long[] gfxbuffer = new long[1];
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		JFrame.setDefaultLookAndFeelDecorated(true);
@@ -70,10 +71,10 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.graphicspanel = new DrawPanel();
 		this.graphicspanel.setSize(graphicdimensions);
 		this.graphicspanel.setPreferredSize(graphicdimensions);
-		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
-		this.readsamplemodel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, graphicswidth, graphicsheight, pixelabgrbitmask);
-		this.readcolormodel = new DirectColorModel(32, pixelabgrbitmask[0], pixelabgrbitmask[1], pixelabgrbitmask[2], pixelabgrbitmask[3]);
+		this.newgraphicssamplemodel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, graphicswidth, graphicsheight, pixelabgrbitmask);
+		this.newgraphicscolormodel = new DirectColorModel(32, pixelabgrbitmask[0], pixelabgrbitmask[1], pixelabgrbitmask[2], pixelabgrbitmask[3]);
 		this.graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+		this.newgraphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
 		this.setContentPane(graphicspanel);
 		this.requestFocus();
 		this.addComponentListener(graphicspanel);
@@ -89,7 +90,8 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.usingdevice = devicedata.devicename;
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
-		this.gfxbuffer[0] = this.computelib.createBuffer(device, queue, graphicsbuffer.length);
+		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
+		this.gfxbuffer[0] = computelib.createBuffer(device, queue, graphicsbuffer.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
@@ -112,14 +114,14 @@ public class JavaOCLRenderEngine extends JFrame {
 	private void tick() {
 		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"]");
 		graphicspanel.paintImmediately(graphicspanel.getBounds());
-		RenderThread renderthread = new RenderThread();
-		renderthread.start();
+		(new RenderThread()).start();
 	}
 	
-	private class DrawPanel extends JComponent implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener,ComponentListener {
+	private class DrawPanel extends JPanel implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener,ComponentListener {
 		private static final long serialVersionUID = 1L;
 		
 		@Override public void paintComponent(Graphics g) {
+			super.paintComponent(g);
 			Graphics2D g2 = (Graphics2D)g;
 			g2.setComposite(AlphaComposite.Src);
 			g2.drawImage(graphicsimage, 0, 0, null);
@@ -143,27 +145,29 @@ public class JavaOCLRenderEngine extends JFrame {
 	}
 	
 	private class RenderThread extends Thread {
-		private static boolean running = false;
+		private static boolean threadrunning = false;
 		public void run() {
-			if ((!running)&&(program!=NULL)) {
-				running = true;
-				long frametimestart = System.nanoTime();
+			if ((!threadrunning)&&(program!=NULL)) {
+				threadrunning = true;
+				long framestarttime = System.nanoTime();
 				computetime = computelib.runProgram(device, queue, program, "renderview", gfxbuffer, 0, graphicsbuffer.length, true);
 				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 				computelib.readBufferi(device, queue, gfxbuffer[0], graphicsbuffer);
-				DataBufferInt readdatabuffer = new DataBufferInt(graphicsbuffer, graphicsbuffer.length);
-				WritableRaster readraster = WritableRaster.createWritableRaster(readsamplemodel, readdatabuffer, null);
-				BufferedImage readimage = new BufferedImage(readcolormodel, readraster, false, null);
-				BufferedImage newimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
-				Graphics2D newimage2d = newimage.createGraphics();
-				newimage2d.setComposite(AlphaComposite.Src);
-				newimage2d.drawImage(readimage, 0, 0, null);
-				graphicsimage = newimage;
-				long frametimeend = System.nanoTime();
-				frametime = (frametimeend-frametimestart)/1000000.0f;
+				DataBufferInt newgraphicsbuffer = new DataBufferInt(graphicsbuffer, graphicsbuffer.length);
+				WritableRaster newgraphicsraster = WritableRaster.createWritableRaster(newgraphicssamplemodel, newgraphicsbuffer, null);
+				newgraphicsimage = new BufferedImage(newgraphicscolormodel, newgraphicsraster, false, null);
+				BufferedImage convertimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+				Graphics2D convertgfx = convertimage.createGraphics();
+				convertgfx.setComposite(AlphaComposite.Src);
+				convertgfx.drawImage(newgraphicsimage, 0, 0, null);
+				convertgfx.dispose();
+				graphicsimage = convertimage;
+				long frameendtime = System.nanoTime();
+				frametime = (frameendtime-framestarttime)/1000000.0f;
 				frametimeavg = frametimeavg*0.9f+frametime*0.1f;
-				running = false;
+				threadrunning = false;
 			}
 		}
 	}
+	
 }
