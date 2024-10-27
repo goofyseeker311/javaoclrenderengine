@@ -28,27 +28,17 @@ public class ComputeLib {
 		}
 	}
 
-	public long writeBufferf(long device, long queue, float[] v) {
-		long vmem = NULL;
+	public void writeBufferf(long device, long queue, long vmem, float[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
-		Device devicedata = devicemap.get(device);
-		long context = devicedata.context;
-		vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
-		return vmem;
 	}
-	public long writeBufferi(long device, long queue, int[] v) {
-		long vmem = NULL;
+	public void writeBufferi(long device, long queue, long vmem, int[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
-		Device devicedata = devicemap.get(device);
-		long context = devicedata.context;
-		vmem = CL12.clCreateBuffer(context, CL12.CL_MEM_COPY_HOST_PTR | CL12.CL_MEM_READ_WRITE, v, null);
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
-		return vmem;
 	}
 
 	public void readBufferf(long device, long queue, long vmem, float[] v) {

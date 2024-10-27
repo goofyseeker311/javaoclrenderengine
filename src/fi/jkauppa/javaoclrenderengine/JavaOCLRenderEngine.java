@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCL Render Engine v0.8.9";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.0";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -44,7 +44,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private SinglePixelPackedSampleModel newgraphicssamplemodel = null;
 	private DirectColorModel newgraphicscolormodel = null;
 	private int[] graphicsbuffer = null;
-	private long[] graphicspointerbuffer = new long[1];
+	private long[] graphicspointerbuffer = new long[2];
 	private BufferedImage graphicsimage = null;
 	private float computetime = 0.0f;
 	private float computetimeavg = 0.0f;
@@ -58,6 +58,7 @@ public class JavaOCLRenderEngine extends JFrame {
 	private long device, queue, program;
 	private Device devicedata;
 	private String usingdevice;
+	private float[] cameraposdirfov = {0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,70.0f,39.375f};
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		JFrame.setDefaultLookAndFeelDecorated(true);
@@ -90,6 +91,7 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.queue = devicedata.queue;
 		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
 		this.graphicspointerbuffer[0] = computelib.createBuffer(device, queue, graphicsbuffer.length);
+		this.graphicspointerbuffer[1] = computelib.createBuffer(device, queue, cameraposdirfov.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 		Graphics2D g2 = this.graphicsimage.createGraphics();
@@ -111,6 +113,9 @@ public class JavaOCLRenderEngine extends JFrame {
 	
 	private void tick() {
 		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"]");
+		cameraposdirfov[0] += 0.001f; if (cameraposdirfov[0]>1.0f) {cameraposdirfov[0]=0.0f;}
+		cameraposdirfov[1] += 0.0015f; if (cameraposdirfov[1]>1.0f) {cameraposdirfov[1]=0.0f;}
+		cameraposdirfov[2] += 0.00175f; if (cameraposdirfov[2]>1.0f) {cameraposdirfov[2]=0.0f;}
 		graphicspanel.paintImmediately(graphicspanel.getBounds());
 		(new RenderThread()).start();
 	}
@@ -148,6 +153,7 @@ public class JavaOCLRenderEngine extends JFrame {
 			if ((!threadrunning)&&(program!=NULL)) {
 				threadrunning = true;
 				long framestarttime = System.nanoTime();
+				computelib.writeBufferf(device, queue, graphicspointerbuffer[1], cameraposdirfov);
 				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, 0, graphicsbuffer.length, true);
 				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 				computelib.readBufferi(device, queue, graphicspointerbuffer[0], graphicsbuffer);
