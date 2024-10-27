@@ -6,9 +6,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.Arrays;
 import java.util.TreeMap;
 
 import org.lwjgl.BufferUtils;
@@ -55,23 +53,15 @@ public class ComputeLib {
 
 	public void readBufferf(long device, long queue, long vmem, float[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
-		FloatBuffer resultBuff = BufferUtils.createFloatBuffer(v.length);
 		PointerBuffer event = clStack.mallocPointer(1);
-		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, event);
-		Arrays.fill(v, 0.0f);
+		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
-		resultBuff.rewind();
-		resultBuff.get(0, v);
 	}
 	public void readBufferi(long device, long queue, long vmem, int[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
-		IntBuffer resultBuff = BufferUtils.createIntBuffer(v.length);
 		PointerBuffer event = clStack.mallocPointer(1);
-		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, resultBuff, null, event);
-		Arrays.fill(v, 0);
+		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
-		resultBuff.rewind();
-		resultBuff.get(0, v);
 	}
 	
 	public long createBuffer(long device, long queue, int size) {
