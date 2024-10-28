@@ -55,15 +55,19 @@ public class ComputeLib {
 	}
 	
 	public long createQueue(long device) {
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		return CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
+		IntBuffer errcode_ret = clStack.callocInt(1);
+		return CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, errcode_ret);
 	}
 	
 	public long createBuffer(long device, int size) {
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		return CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, (IntBuffer)null);
+		IntBuffer errcode_ret = clStack.callocInt(1);
+		return CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, errcode_ret);
 	}
 	public void removeBuffer(long vmem) {
 		CL12.clReleaseMemObject(vmem);
@@ -106,16 +110,23 @@ public class ComputeLib {
 	}
 	public long compileProgram(long device, String source) {
 		long program = NULL;
+		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		program = CL12.clCreateProgramWithSource(context, source, (IntBuffer)null);
-		CL12.clBuildProgram(program, device, "", null, NULL);
+		IntBuffer errcode_ret = clStack.callocInt(1);
+		program = CL12.clCreateProgramWithSource(context, source, errcode_ret);
+		if (CL12.clBuildProgram(program, device, "", null, NULL)!=CL12.CL_SUCCESS) {
+			String buildinfo = getClProgramBuildInfo(program, device, CL12.CL_PROGRAM_BUILD_LOG);
+			System.out.println("compileProgram build failed:");
+			System.out.println(buildinfo);
+		}
 		return program;
 	}
 	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int offset, int size, boolean waitgetruntime) {
 		float runtime = 0.0f;
 		MemoryStack clStack = MemoryStack.stackPush();
-		long kernel = CL12.clCreateKernel(program, entry, (IntBuffer)null);
+		IntBuffer errcode_ret = clStack.callocInt(1);
+		long kernel = CL12.clCreateKernel(program, entry, errcode_ret);
 		for (int i=0;i<fmem.length;i++) {
 			CL12.clSetKernelArg1p(kernel, i, fmem[i]);
 		}
@@ -165,7 +176,7 @@ public class ComputeLib {
 						Device devicedesc = new Device();
 						devicedesc.platform = platform;
 						devicedesc.context = context;
-						devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);;
+						devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
 						devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME).trim();
 						devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME).trim();
 						devicesinit.put(device, devicedesc);
@@ -228,5 +239,19 @@ public class ComputeLib {
 			}
 		}
 		return deviceinfo;
+	}
+	
+	private String getClProgramBuildInfo(long program, long device, int param) {
+		String buildinfo = null;
+		MemoryStack clStack = MemoryStack.stackPush();
+		PointerBuffer pp = clStack.mallocPointer(1);
+		if (CL12.clGetProgramBuildInfo(program, device, param, (ByteBuffer)null, pp)==CL12.CL_SUCCESS) {
+			int bytes = (int)pp.get(0);
+			ByteBuffer buffer = clStack.malloc(bytes);
+			if (CL12.clGetProgramBuildInfo(program, device, param, buffer, pp)==CL12.CL_SUCCESS) {
+				buildinfo = MemoryUtil.memUTF8(buffer, bytes - 1);
+			}
+		}
+		return buildinfo;
 	}
 }
