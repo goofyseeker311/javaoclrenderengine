@@ -12,8 +12,8 @@ import org.lwjgl.opengl.GL46;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.6";
-	private int graphicswidth = 1280, graphicsheight = 720;
+	private static String programtitle = "Java OpenCL Render Engine v0.9.7";
+	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private int[] graphicsbuffer = null;
 	private long[] graphicspointerbuffer = new long[4];
@@ -29,16 +29,23 @@ public class JavaOCLRenderEngine {
 	private long device, queue, program;
 	private Device devicedata;
 	private String usingdevice;
-	private float[] cameraposrot3fovres = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
-	private float[] trianglelistpos3rgba = {
-			1.0f,-1.0f,0.0f,  1.0f, 1.0f,0.0f,  1.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
-			1.0f,-3.0f,0.0f,  1.0f,-1.0f,0.0f,  1.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
-			1.0f, 1.0f,0.0f,  1.0f, 3.0f,0.0f,  1.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
-			1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
-	};
-	private int[] trianglelistlength = {trianglelistpos3rgba.length/13};
+	private float[] cameraposrot3fovres = null;
+	private float[] trianglelistpos3rgba = null;
+	private int[] trianglelistlength = {0};
 
-	public JavaOCLRenderEngine(int vselecteddevice) {
+	public JavaOCLRenderEngine(int vselecteddevice, int vgraphicswidth, int vgraphicsheight) {
+		this.graphicswidth = vgraphicswidth;
+		this.graphicsheight = vgraphicsheight;
+		float[] initcameraposrot3fovres = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		float[] inittrianglelistpos3rgba = {
+				1.0f,-1.0f,0.0f,  1.0f, 1.0f,0.0f,  1.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
+				1.0f,-3.0f,0.0f,  1.0f,-1.0f,0.0f,  1.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
+				1.0f, 1.0f,0.0f,  1.0f, 3.0f,0.0f,  1.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
+				1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
+		};
+		this.cameraposrot3fovres = initcameraposrot3fovres;
+		this.trianglelistpos3rgba = inittrianglelistpos3rgba;
+		this.trianglelistlength[0] = trianglelistpos3rgba.length/13;
 		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
@@ -92,15 +99,22 @@ public class JavaOCLRenderEngine {
 	public static void main(String[] args) {
 		System.out.println(programtitle);
 		int argdevice = 0;
+		int argwidth = 1280;
+		int argheight = 720;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
-		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
+		try {argwidth = Integer.parseInt(args[1]);} catch(Exception ex) {}
+		try {argheight = Integer.parseInt(args[2]);} catch(Exception ex) {}
+		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice,argwidth,argheight);
 		app.run();
 	}
 
 	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 
 	private void tick() {
-		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"]");
+		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
+				"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"] ("
+				+graphicswidth+"x"+graphicsheight+")"
+				);
 		int len = trianglelistlength[0]-1;
 		trianglelistpos3rgba[13*len+9] += 0.001f; if (trianglelistpos3rgba[13*len+9]>1.0f) {trianglelistpos3rgba[13*len+9]=0.0f;}
 		trianglelistpos3rgba[13*len+10] += 0.0015f; if (trianglelistpos3rgba[13*len+10]>1.0f) {trianglelistpos3rgba[13*len+10]=0.0f;}

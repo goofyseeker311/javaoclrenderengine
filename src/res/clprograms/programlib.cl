@@ -26,7 +26,7 @@ kernel void renderview(global int *img, global const float *cam, global const fl
 
 	for (int y=0;y<camres.y;y++) {
 		float4 rgbapixel = camcol[y];
-		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.r), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.a));
+		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
 		int rgbacolorint = as_int(rgbacolor);
 		img[y*camres.x+xid] = rgbacolorint;
 	}
