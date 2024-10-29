@@ -6,13 +6,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL46;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.7";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.8";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private int[] graphicsbuffer = null;
@@ -32,10 +33,25 @@ public class JavaOCLRenderEngine {
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3rgba = null;
 	private int[] trianglelistlength = {0};
+	private long monitor = NULL;
+	private GLFWVidMode videomode = null;
 
-	public JavaOCLRenderEngine(int vselecteddevice, int vgraphicswidth, int vgraphicsheight) {
-		this.graphicswidth = vgraphicswidth;
-		this.graphicsheight = vgraphicsheight;
+	public JavaOCLRenderEngine(int vselecteddevice) {
+		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
+		this.monitor = GLFW.glfwGetPrimaryMonitor();
+		this.videomode = GLFW.glfwGetVideoMode(this.monitor);
+		this.graphicswidth = this.videomode.width();
+		this.graphicsheight = this.videomode.height();
+		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, monitor, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
+		GLFW.glfwMakeContextCurrent(window);
+		GLFW.glfwSwapInterval(1);
+		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
+		GLFW.glfwShowWindow(window);
+		GL.createCapabilities();
+		GL46.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		GL46.glClear(GL46.GL_COLOR_BUFFER_BIT);
+		GLFW.glfwSwapBuffers(window);
 		float[] initcameraposrot3fovres = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		float[] inittrianglelistpos3rgba = {
 				1.0f,-1.0f,0.0f,  1.0f, 1.0f,0.0f,  1.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
@@ -46,17 +62,6 @@ public class JavaOCLRenderEngine {
 		this.cameraposrot3fovres = initcameraposrot3fovres;
 		this.trianglelistpos3rgba = inittrianglelistpos3rgba;
 		this.trianglelistlength[0] = trianglelistpos3rgba.length/13;
-		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
-		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
-		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, NULL, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
-		GLFW.glfwMakeContextCurrent(window);
-		GLFW.glfwSwapInterval(1);
-		GLFW.glfwShowWindow(window);
-		GL.createCapabilities();
-		GL46.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		GL46.glClear(GL46.GL_COLOR_BUFFER_BIT);
-		GLFW.glfwSwapBuffers(window);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
 		this.selecteddevice = vselecteddevice;
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -99,12 +104,8 @@ public class JavaOCLRenderEngine {
 	public static void main(String[] args) {
 		System.out.println(programtitle);
 		int argdevice = 0;
-		int argwidth = 1280;
-		int argheight = 720;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
-		try {argwidth = Integer.parseInt(args[1]);} catch(Exception ex) {}
-		try {argheight = Integer.parseInt(args[2]);} catch(Exception ex) {}
-		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice,argwidth,argheight);
+		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
 		app.run();
 	}
 
