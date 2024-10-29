@@ -136,15 +136,16 @@ public class ComputeLib {
 		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		globalWorkSize.put(0, size);
 		PointerBuffer event = clStack.mallocPointer(1);
-		CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
-		if (waitgetruntime) {
-			CL12.clWaitForEvents(event);
-			long eventLong = event.get(0);
-			long[] ctimestart = {0};
-			long[] ctimeend = {0};
-			CL12.clGetEventProfilingInfo(eventLong, CL12.CL_PROFILING_COMMAND_START, ctimestart, (PointerBuffer)null);
-			CL12.clGetEventProfilingInfo(eventLong, CL12.CL_PROFILING_COMMAND_END, ctimeend, (PointerBuffer)null);
-			runtime = (ctimeend[0]-ctimestart[0])/1000000.0f;
+		if (CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event)==CL12.CL_SUCCESS) {
+			if (waitgetruntime) {
+				CL12.clWaitForEvents(event);
+				long eventLong = event.get(0);
+				long[] ctimestart = {0};
+				long[] ctimeend = {0};
+				CL12.clGetEventProfilingInfo(eventLong, CL12.CL_PROFILING_COMMAND_START, ctimestart, (PointerBuffer)null);
+				CL12.clGetEventProfilingInfo(eventLong, CL12.CL_PROFILING_COMMAND_END, ctimeend, (PointerBuffer)null);
+				runtime = (ctimeend[0]-ctimestart[0])/1000000.0f;
+			}
 		}
 		return runtime;
 	}
