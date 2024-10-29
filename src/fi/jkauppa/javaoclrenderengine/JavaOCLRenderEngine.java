@@ -6,6 +6,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWCursorPosCallbackI;
+import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWKeyCallbackI;
+import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
+import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL46;
@@ -13,7 +18,7 @@ import org.lwjgl.opengl.GL46;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.8";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private int[] graphicsbuffer = null;
@@ -35,8 +40,13 @@ public class JavaOCLRenderEngine {
 	private int[] trianglelistlength = {0};
 	private long monitor = NULL;
 	private GLFWVidMode videomode = null;
+	private KeyProcessor keyprocessor = new KeyProcessor();
+	private MousePositionProcessor mouseposprocessor = new MousePositionProcessor();
+	private MouseButtonProcessor mousebuttonprocessor = new MouseButtonProcessor();
+	private MouseWheelProcessor mousewheelprocessor = new MouseWheelProcessor();
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
+		GLFWErrorCallback.createPrint(System.err).set();
 		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
 		this.monitor = GLFW.glfwGetPrimaryMonitor();
 		this.videomode = GLFW.glfwGetVideoMode(this.monitor);
@@ -44,6 +54,11 @@ public class JavaOCLRenderEngine {
 		this.graphicsheight = this.videomode.height();
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, monitor, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
+		GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+		GLFW.glfwSetKeyCallback(window, keyprocessor);
+		GLFW.glfwSetCursorPosCallback(window, mouseposprocessor);
+		GLFW.glfwSetMouseButtonCallback(window, mousebuttonprocessor);
+		GLFW.glfwSetScrollCallback(window, mousewheelprocessor);
 		GLFW.glfwMakeContextCurrent(window);
 		GLFW.glfwSwapInterval(1);
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
@@ -146,4 +161,25 @@ public class JavaOCLRenderEngine {
 		}
 	}
 
+	private class KeyProcessor implements GLFWKeyCallbackI {
+		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
+			System.out.println("key: "+key+" scancode: "+scancode+" action: "+action+" mods: "+mods);
+		}
+	}
+	private class MousePositionProcessor implements GLFWCursorPosCallbackI {
+		@Override public void invoke(long window, double xpos, double ypos) {
+			System.out.println("xpos: "+xpos+" ypos: "+ypos);
+		}
+	}
+	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
+		@Override public void invoke(long window, int button, int action, int mods) {
+			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
+		}
+	}
+	private class MouseWheelProcessor implements GLFWScrollCallbackI {
+		@Override public void invoke(long window, double xoffset, double yoffset) {
+			System.out.println("xoffset: "+xoffset+" yoffset: "+yoffset);
+		}
+	}
+	
 }
