@@ -20,7 +20,7 @@ Double click the javaoclrendergine.jar file to run the application directly.
 
 Console run command to have extra debug output information:
 ```
-java -jar javaoclrendergine.jar <device-index=0> <screen-width=1280> <screen-height=720>
+java -jar javaoclrendergine.jar <device-index=0>
 ```
 
 CPU OpenCL:
