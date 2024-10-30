@@ -13,16 +13,14 @@ import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL46;
+import org.lwjgl.opengl.GL31;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.1";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
-	private int[] graphicsbuffer = null;
-	private long[] graphicspointerbuffer = new long[4];
 	private float computetime = 0.0f;
 	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
@@ -35,9 +33,16 @@ public class JavaOCLRenderEngine {
 	private long device, queue, program;
 	private Device devicedata;
 	private String usingdevice;
+	private long[] graphicspointerbuffer = new long[9];
+	private int[] graphicsbuffer = null;
+	private float[] graphicszbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3rgba = null;
-	private int[] trianglelistlength = {0};
+	private int[] trianglelistlength = null;
+	private float[] triangletexturelist = null;
+	private int[] triangletexturelength = null;
+	private float[] trianglesphbvhlist = null;
+	private int[] trianglesphbvhlength = null;
 	private long monitor = NULL;
 	private GLFWVidMode videomode = null;
 	private KeyProcessor keyprocessor = new KeyProcessor();
@@ -64,49 +69,57 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 		GLFW.glfwShowWindow(window);
 		GL.createCapabilities();
-		GL46.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		GL46.glClear(GL46.GL_COLOR_BUFFER_BIT);
+		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
-		float[] initcameraposrot3fovres = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
-		float[] inittrianglelistpos3rgba = {
-				1.0f,-1.0f,0.0f,  1.0f, 1.0f,0.0f,  1.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
-				1.0f,-3.0f,0.0f,  1.0f,-1.0f,0.0f,  1.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
-				1.0f, 1.0f,0.0f,  1.0f, 3.0f,0.0f,  1.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
+		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
+		this.graphicszbuffer = new float[graphicswidth*graphicsheight];
+		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		this.trianglelistpos3rgba = new float[]{
+				4.0f,-1.0f,0.0f,  4.0f, 1.0f,0.0f,  4.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
+				3.0f,-3.0f,0.0f,  3.0f,-1.0f,0.0f,  3.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
+				2.0f, 1.0f,0.0f,  2.0f, 3.0f,0.0f,  2.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
 				1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
 		};
-		this.cameraposrot3fovres = initcameraposrot3fovres;
-		this.trianglelistpos3rgba = inittrianglelistpos3rgba;
-		this.trianglelistlength[0] = trianglelistpos3rgba.length/13;
-		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
+		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
+		this.triangletexturelist = new float[]{1.0f}; 
+		this.triangletexturelength = new int[]{1};
+		this.trianglesphbvhlist = new float[]{2.0f,3.0f}; 
+		this.trianglesphbvhlength = new int[]{2};
 		this.selecteddevice = vselecteddevice;
 		this.device = this.computelib.devicelist[selecteddevice];
 		this.devicedata = this.computelib.devicemap.get(device);
 		this.usingdevice = devicedata.devicename;
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
-		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
 		this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicsbuffer.length);
-		this.graphicspointerbuffer[1] = computelib.createBuffer(device, cameraposrot3fovres.length);
-		this.graphicspointerbuffer[2] = computelib.createBuffer(device, trianglelistpos3rgba.length);
-		this.graphicspointerbuffer[3] = computelib.createBuffer(device, trianglelistlength.length);
+		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicszbuffer.length);
+		this.graphicspointerbuffer[2] = computelib.createBuffer(device, cameraposrot3fovres.length);
+		this.graphicspointerbuffer[3] = computelib.createBuffer(device, trianglelistpos3rgba.length);
+		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistlength.length);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
+		this.graphicspointerbuffer[6] = computelib.createBuffer(device, triangletexturelength.length);
+		this.graphicspointerbuffer[7] = computelib.createBuffer(device, trianglesphbvhlist.length);
+		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
+		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
 	}
 
 	public void run() {
 		while(!GLFW.glfwWindowShouldClose(window)) {
-			GL46.glClear(GL46.GL_COLOR_BUFFER_BIT | GL46.GL_DEPTH_BUFFER_BIT);
-			GL46.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-			GL46.glEnable(GL46.GL_TEXTURE_RECTANGLE);
-			GL46.glTexImage2D(GL46.GL_TEXTURE_RECTANGLE, 0, GL46.GL_RGBA8, graphicswidth, graphicsheight, 0, GL46.GL_RGBA, GL46.GL_UNSIGNED_INT_8_8_8_8, graphicsbuffer);
-			GL46.glBindTexture(GL46.GL_TEXTURE_2D, 0);
-			GL46.glBegin(GL46.GL_TRIANGLE_STRIP);
-			GL46.glTexCoord2f(1.0f, 0.0f); GL46.glVertex2f(1.0f, -1.0f);
-			GL46.glTexCoord2f(1.0f, 1.0f); GL46.glVertex2f(1.0f, 1.0f);
-			GL46.glTexCoord2f(0.0f, 0.0f); GL46.glVertex2f(-1.0f, -1.0f);
-			GL46.glTexCoord2f(0.0f, 1.0f); GL46.glVertex2f(-1.0f, 1.0f);
-			GL46.glEnd();
-			GL46.glFlush();
+			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
+			GL31.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			GL31.glEnable(GL31.GL_TEXTURE_RECTANGLE);
+			GL31.glTexImage2D(GL31.GL_TEXTURE_RECTANGLE, 0, GL31.GL_RGBA8, graphicswidth, graphicsheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, graphicsbuffer);
+			GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
+			GL31.glBegin(GL31.GL_TRIANGLE_STRIP);
+			GL31.glTexCoord2f(1.0f, 0.0f); GL31.glVertex2f(1.0f, -1.0f);
+			GL31.glTexCoord2f(1.0f, 1.0f); GL31.glVertex2f(1.0f, 1.0f);
+			GL31.glTexCoord2f(0.0f, 0.0f); GL31.glVertex2f(-1.0f, -1.0f);
+			GL31.glTexCoord2f(0.0f, 1.0f); GL31.glVertex2f(-1.0f, 1.0f);
+			GL31.glEnd();
+			GL31.glFlush();
 			GLFW.glfwSwapBuffers(window);
 			GLFW.glfwPollEvents();
 		}
@@ -145,10 +158,15 @@ public class JavaOCLRenderEngine {
 				threadrunning = true;
 				long framestarttime = System.nanoTime();
 				computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicsbuffer.length);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[1], cameraposrot3fovres);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[2], trianglelistpos3rgba);
-				computelib.writeBufferi(device, queue, graphicspointerbuffer[3], trianglelistlength);
-				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, 0, graphicswidth, true);
+				computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicszbuffer.length);
+				computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
+				computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
+				computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
+				computelib.writeBufferf(device, queue, graphicspointerbuffer[5], triangletexturelist);
+				computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
+				computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
+				computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
+				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,trianglelistlength[0]}, true);
 				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 				int[] newgraphicsbuffer = new int[graphicswidth*graphicsheight];
 				computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);

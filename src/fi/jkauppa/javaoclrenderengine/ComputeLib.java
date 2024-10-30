@@ -122,7 +122,7 @@ public class ComputeLib {
 		}
 		return program;
 	}
-	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int offset, int size, boolean waitgetruntime) {
+	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int[] offset, int[] size, boolean waitgetruntime) {
 		float runtime = 0.0f;
 		MemoryStack clStack = MemoryStack.stackPush();
 		IntBuffer errcode_ret = clStack.callocInt(1);
@@ -130,11 +130,13 @@ public class ComputeLib {
 		for (int i=0;i<fmem.length;i++) {
 			CL12.clSetKernelArg1p(kernel, i, fmem[i]);
 		}
-		int dimensions = 1;
+		int dimensions = offset.length; if (size.length<dimensions) {dimensions = size.length;}
 		PointerBuffer globalWorkOffset = BufferUtils.createPointerBuffer(dimensions);
-		globalWorkOffset.put(0, offset);
 		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
-		globalWorkSize.put(0, size);
+		for (int i=0;i<dimensions;i++) {
+			globalWorkOffset.put(i, offset[i]);
+			globalWorkSize.put(i, size[i]);
+		}
 		PointerBuffer event = clStack.mallocPointer(1);
 		if (CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event)==CL12.CL_SUCCESS) {
 			if (waitgetruntime) {

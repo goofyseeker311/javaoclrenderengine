@@ -1,35 +1,47 @@
 float4 matrixmult(const float4 pos, const float16 mat);
 
-kernel void renderview(global int *img, global const float *cam, global const float *tri, global const int *trc) {
+kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec, global const float *bvh, global const int *bvc) {
 	unsigned int xid=get_global_id(0);
+	unsigned int tid=get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
 	float2 camfov = (float2)(cam[6],cam[7]);
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 	
 	float4 camcol[2160] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
+	float camcolz[2160] = {(float)(INFINITY)};
+
+	int tricount = trc[0];
+	int texcount = tec[0];
+	int bvhcount = bvc[0];
 
 	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float16 cammat = (float16)(1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f);
-	float4 camposnew = matrixmult(campos, cammat);
+	float4 camposrot = matrixmult(campos, cammat);
 	
-	for (int tid=0;tid<trc[0];tid++) {
-		float4 tripoint1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);
-		float4 tripoint2 = (float4)(tri[tid*13+3],tri[tid*13+4],tri[tid*13+5],0.0f);
-		float4 tripoint3 = (float4)(tri[tid*13+6],tri[tid*13+7],tri[tid*13+8],0.0f);
-		float4 tricolor = (float4)(tri[tid*13+9],tri[tid*13+10],tri[tid*13+11],tri[tid*13+12]);
-		
-		for (int y=0;y<camres.y;y++) {
+	float4 tripoint1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);
+	float4 tripoint2 = (float4)(tri[tid*13+3],tri[tid*13+4],tri[tid*13+5],0.0f);
+	float4 tripoint3 = (float4)(tri[tid*13+6],tri[tid*13+7],tri[tid*13+8],0.0f);
+	float4 tricolor = (float4)(tri[tid*13+9],tri[tid*13+10],tri[tid*13+11],tri[tid*13+12]);
+
+	for (int y=0;y<camres.y;y++) {
+		float trizdist = tripoint1.x;
+		if (trizdist<camcolz[y]) {
+			camcolz[y] = trizdist;
 			camcol[y] = tricolor;
 		}
 	}
 
 	for (int y=0;y<camres.y;y++) {
-		float4 rgbapixel = camcol[y];
-		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
-		int rgbacolorint = as_int(rgbacolor);
-		img[y*camres.x+xid] = rgbacolorint;
+		if (camcolz[y]<imz[y]) {
+			imz[y*camres.x+xid] = camcolz[y];
+			float4 rgbapixel = camcol[y];
+			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
+			int rgbacolorint = as_int(rgbacolor);
+			img[y*camres.x+xid] = rgbacolorint;
+		}
 	}
+
 }
 
 float4 matrixmult(const float4 pos, const float16 mat) {
