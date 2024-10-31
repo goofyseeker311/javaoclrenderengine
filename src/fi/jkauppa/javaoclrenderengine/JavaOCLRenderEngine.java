@@ -18,7 +18,7 @@ import org.lwjgl.opengl.GL31;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.1";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.2";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private float computetime = 0.0f;
@@ -44,6 +44,7 @@ public class JavaOCLRenderEngine {
 	private float[] trianglesphbvhlist = null;
 	private int[] trianglesphbvhlength = null;
 	private long monitor = NULL;
+	@SuppressWarnings("unused")
 	private GLFWVidMode videomode = null;
 	private KeyProcessor keyprocessor = new KeyProcessor();
 	private MousePositionProcessor mouseposprocessor = new MousePositionProcessor();
@@ -55,10 +56,11 @@ public class JavaOCLRenderEngine {
 		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
 		this.monitor = GLFW.glfwGetPrimaryMonitor();
 		this.videomode = GLFW.glfwGetVideoMode(this.monitor);
-		this.graphicswidth = this.videomode.width();
-		this.graphicsheight = this.videomode.height();
+		this.graphicswidth = 1280;
+		this.graphicsheight = 720;
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, monitor, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
+		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
+		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, NULL, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
 		GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
 		GLFW.glfwSetKeyCallback(window, keyprocessor);
 		GLFW.glfwSetCursorPosCallback(window, mouseposprocessor);
@@ -166,7 +168,7 @@ public class JavaOCLRenderEngine {
 				computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
 				computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
 				computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
-				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,trianglelistlength[0]}, true);
+				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, true);
 				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 				int[] newgraphicsbuffer = new int[graphicswidth*graphicsheight];
 				computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
@@ -178,7 +180,7 @@ public class JavaOCLRenderEngine {
 			}
 		}
 	}
-
+	
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
 			System.out.println("key: "+key+" scancode: "+scancode+" action: "+action+" mods: "+mods);
