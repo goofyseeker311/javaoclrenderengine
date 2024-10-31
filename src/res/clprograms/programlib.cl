@@ -3,6 +3,10 @@ float16 matrixmatmult(const float16 vmat1, const float16 vmat2);
 float16 rotationmatrix(float3 rot);
 float16 scalingmatrix(float3 sca);
 float16 rotationmatrixaroundaxis(float4 axis, float rot);
+float vectorangle(float4 dir1, float4 dir2);
+float4 planefromnormalatpos(float4 pos, float4 dir);
+float rayplaneintersection(float4 pos, float4 dir, float4 plane);
+float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3);
 
 kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec, global const float *bvh, global const int *bvc) {
 	unsigned int xid=get_global_id(0);
@@ -36,16 +40,21 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float4 coldirrot = matrixposmult(coldir, cammat);
 	float4 colupdirrot = matrixposmult(colupdir, cammat);
 	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
-	float colplanerayangle = acos(dot(colupdirrot,coldowndirrot)/(length(colupdirrot)*length(coldowndirrot)));
+	float colplanerayfov = vectorangle(colupdirrot, coldowndirrot);
 	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
+	float4 colplane = planefromnormalatpos(campos, colplanenorm);
 
 	for (int tid=0;tid<tricount;tid++) {
-		float4 tripoint1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);
-		float4 tripoint2 = (float4)(tri[tid*13+3],tri[tid*13+4],tri[tid*13+5],0.0f);
-		float4 tripoint3 = (float4)(tri[tid*13+6],tri[tid*13+7],tri[tid*13+8],0.0f);
+		float4 tripos1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);
+		float4 tripos2 = (float4)(tri[tid*13+3],tri[tid*13+4],tri[tid*13+5],0.0f);
+		float4 tripos3 = (float4)(tri[tid*13+6],tri[tid*13+7],tri[tid*13+8],0.0f);
 		float4 tricolor = (float4)(tri[tid*13+9],tri[tid*13+10],tri[tid*13+11],tri[tid*13+12]);
 
-		float trixdist = tripoint1.x;
+		float8 intlines = planetriangleintersection(colplane, tripos1, tripos2, tripos3);
+		float4 linepos1 = intlines.s0123;
+		float4 linepos2 = intlines.s4567;
+
+		float trixdist = tripos1.x;
 		for (int y=0;y<camres.y;y++) {
 			if (trixdist<camcolz[y]) {
 				camcolz[y] = trixdist;
@@ -115,4 +124,47 @@ float16 rotationmatrixaroundaxis(float4 axis, float rot) {
 			axisn.z*axisn.x*(1-cosval)-axisn.y*sinval,axisn.z*axisn.y*(1-cosval)+axisn.x*sinval,cosval+axisn.z*axisn.z*(1-cosval),0,
 			0,0,0,1);
 	return retmat;
+}
+
+float vectorangle(float4 dir1, float4 dir2) {
+	float retang = acos(dot(dir1,dir2))/(length(dir1)*length(dir2));
+	return retang;
+}
+
+float4 planefromnormalatpos(float4 pos, float4 dir) {
+	float4 retpla = normalize(dir);
+	retpla.w = -dot(pos,retpla);
+	return retpla;
+}
+float rayplaneintersection(float4 pos, float4 dir, float4 plane) {
+	float retdist = -(plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w)/(plane.x*dir.x+plane.y*dir.y+plane.z*dir.z+plane.w);
+	return retdist;
+}
+float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3) {
+	float8 retlines = (float8)(0.0f);
+	float4 vtri12 = pos2-pos1;
+	float4 vtri13 = pos3-pos1;
+	float4 vtri23 = pos3-pos2;
+	float ptd12 = rayplaneintersection(pos1, vtri12,  plane);
+	float ptd13 = rayplaneintersection(pos1, vtri13,  plane);
+	float ptd23 = rayplaneintersection(pos2, vtri23,  plane);
+	bool ptlhit12 = (ptd12>=0)&&(ptd12<=1);
+	bool ptlhit13 = (ptd13>=0)&&(ptd13<=1);
+	bool ptlhit23 = (ptd23>=0)&&(ptd23<=1);
+	if (ptlhit12|ptlhit13|ptlhit23) {
+		float4 ptlint12 = (float4)(pos1.x+ptd12*vtri12.x,pos1.y+ptd12*vtri12.y,pos1.z+ptd12*vtri12.z,0.0f);
+		float4 ptlint13 = (float4)(pos1.x+ptd13*vtri13.x,pos1.y+ptd13*vtri13.y,pos1.z+ptd13*vtri13.z,0.0f);
+		float4 ptlint23 = (float4)(pos2.x+ptd23*vtri23.x,pos2.y+ptd23*vtri23.y,pos2.z+ptd23*vtri23.z,0.0f);
+		if (ptlhit12&&ptlhit13) {
+			retlines.s0123 = ptlint12;
+			retlines.s4567 = ptlint13;
+		} else if (ptlhit12&&ptlhit23) {
+			retlines.s0123 = ptlint12;
+			retlines.s4567 = ptlint23;
+		} else if (ptlhit13&&ptlhit23) {
+			retlines.s0123 = ptlint13;
+			retlines.s4567 = ptlint23;
+		}
+	}
+	return retlines;
 }
