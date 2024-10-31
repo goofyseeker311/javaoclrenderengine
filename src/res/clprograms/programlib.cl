@@ -22,16 +22,22 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float3 camrotrad = radians(camrot);
 	float2 camhalffovrad = radians(camfov/2.0f);
 	float2 camhalffovlen = (float2)(tan(camhalffovrad.x), tan(camhalffovrad.y));
+	int2 camhalfres = camres/2;
+	float camcollen = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 
 	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
 	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
-	float4 colleftdir = (float4)(1.0f,-camhalffovlen.x,0.0f,0.0f);
-	float4 colleftupdir = (float4)(1.0f,-camhalffovlen.x,camhalffovlen.y,0.0f);
+	float4 coldir = normalize((float4)(1.0f,camcollen,0.0f,0.0f));
+	float4 colupdir = normalize((float4)(1.0f,camcollen,camhalffovlen.y,0.0f));
+	float4 coldowndir = normalize((float4)(1.0f,camcollen,-camhalffovlen.y,0.0f));
 	float16 cammat = rotationmatrix(camrotrad);
 	float4 camdirrot = matrixposmult(camdir, cammat);
-	float4 colleftdirrot = matrixposmult(colleftdir, cammat);
-	float4 colleftupdirrot = matrixposmult(colleftupdir, cammat);
+	float4 coldirrot = matrixposmult(coldir, cammat);
+	float4 colupdirrot = matrixposmult(colupdir, cammat);
+	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
+	float colplanerayangle = acos(dot(colupdirrot,coldowndirrot)/(length(colupdirrot)*length(coldowndirrot)));
+	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
 
 	for (int tid=0;tid<tricount;tid++) {
 		float4 tripoint1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);

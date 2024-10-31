@@ -18,7 +18,7 @@ import org.lwjgl.opengl.GL31;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.3";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.4";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private float computetime = 0.0f;
