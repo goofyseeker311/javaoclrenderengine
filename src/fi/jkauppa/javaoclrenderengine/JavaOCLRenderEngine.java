@@ -34,7 +34,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.7";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.8";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -173,6 +173,8 @@ public class JavaOCLRenderEngine extends JFrame {
 				BufferedImage convertimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
 				Graphics2D convertgfx = convertimage.createGraphics();
 				convertgfx.setComposite(AlphaComposite.Src);
+				convertgfx.scale(1, -1);
+				convertgfx.translate(0, -newgraphicsimage.getHeight());
 				convertgfx.drawImage(newgraphicsimage, 0, 0, null);
 				convertgfx.dispose();
 				graphicsimage = convertimage;

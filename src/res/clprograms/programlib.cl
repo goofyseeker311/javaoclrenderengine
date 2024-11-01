@@ -48,6 +48,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float4 colupdirrot = matrixposmult(colupdir, cammat);
 	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
 	float colplanerayfov = vectorangle(colupdirrot, coldowndirrot);
+	float colhalffovlen = tan(colplanerayfov/2.0f);
 	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
 	float4 colplane = planefromnormalatpos(campos, colplanenorm);
 	float4 camdirplane = planefromnormalatpos(campos, camdirrot);
@@ -64,15 +65,15 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		float4 colpos1 = intlines.s0123;
 		float4 colpos2 = intlines.s4567;
 
-		if ((colpos1.x!=NAN)&&(colpos2.x!=NAN)) {
+		if (colpos1.x!=NAN) {
 			float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
 			float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
 			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
 			if ((fwdintpointsdist1>=0.1f)&&(fwdintpointsdist2>=0.1f)) {
-				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
-				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
+				int py1 = (camhalfres.y/colhalffovlen)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
+				int py2 = (camhalfres.y/colhalffovlen)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
 				if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
 					if (py1<0) {py1=0;}
 					if (py1>=camres.y) {py1=camres.y-1;}
@@ -96,10 +97,14 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	}
 	
 	for (int y=0;y<camres.y;y++) {
-		float4 rgbapixel = camcol[y];
-		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
-		int rgbacolorint = as_int(rgbacolor);
-		img[(camres.y-y-1)*camres.x+xid] = rgbacolorint;
+		int pixelind = y*camres.x+xid;
+		if (camcolz[y]<imz[pixelind]) {
+			imz[pixelind] = camcolz[y];
+			float4 rgbapixel = camcol[y];
+			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
+			int rgbacolorint = as_int(rgbacolor);
+			img[pixelind] = rgbacolorint;
+		}
 	}
 }
 
