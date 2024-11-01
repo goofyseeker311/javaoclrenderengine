@@ -7,6 +7,7 @@ float vectorangle(float4 dir1, float4 dir2);
 float4 planefromnormalatpos(float4 pos, float4 dir);
 float rayplaneintersection(float4 pos, float4 dir, float4 plane);
 float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3);
+float planepointdistance(float4 pos, float4 plane);
 
 kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec, global const float *bvh, global const int *bvc) {
 	unsigned int xid=get_global_id(0);
@@ -16,7 +17,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
 	const int collen = 2160;
-	float4 camcol[collen] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
+	float4 camcol[collen] = {(float4)(0.0f,1.0f,1.0f,1.0f)};
 	float camcolz[collen] = {INFINITY};
 
 	int tricount = trc[0];
@@ -37,12 +38,17 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float4 coldowndir = normalize((float4)(1.0f,camcollen,-camhalffovlen.y,0.0f));
 	float16 cammat = rotationmatrix(camrotrad);
 	float4 camdirrot = matrixposmult(camdir, cammat);
+	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
+	float4 camupdirrot = matrixposmult(camupdir, cammat);
 	float4 coldirrot = matrixposmult(coldir, cammat);
 	float4 colupdirrot = matrixposmult(colupdir, cammat);
 	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
 	float colplanerayfov = vectorangle(colupdirrot, coldowndirrot);
 	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
 	float4 colplane = planefromnormalatpos(campos, colplanenorm);
+	float4 camdirplane = planefromnormalatpos(campos, camdirrot);
+	float4 camrightdirplane = planefromnormalatpos(campos, camrightdirrot);
+	float4 camupdirplane = planefromnormalatpos(campos, camupdirrot);
 
 	for (int tid=0;tid<tricount;tid++) {
 		float4 tripos1 = (float4)(tri[tid*13+0],tri[tid*13+1],tri[tid*13+2],0.0f);
@@ -51,27 +57,41 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		float4 tricolor = (float4)(tri[tid*13+9],tri[tid*13+10],tri[tid*13+11],tri[tid*13+12]);
 
 		float8 intlines = planetriangleintersection(colplane, tripos1, tripos2, tripos3);
-		float4 linepos1 = intlines.s0123;
-		float4 linepos2 = intlines.s4567;
+		float4 colpos1 = intlines.s0123;
+		float4 colpos2 = intlines.s4567;
 
-		float trixdist = tripos1.x;
-		for (int y=0;y<camres.y;y++) {
-			if (trixdist<camcolz[y]) {
-				camcolz[y] = trixdist;
-				camcol[y] = tricolor;
+		if ((colpos1.x!=NAN)&&(colpos2.x!=NAN)) {
+			float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
+			float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
+			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
+			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
+
+			if (fwdintpointsdist1>=0.1f) {
+				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalffovlen.y;
+				if (py1<0) {py1=0;}
+				if (py1>=camres.y) {py1=camres.y-1;}
+				if (fwdintpointsdist1<camcolz[py1]) {
+					camcolz[py1] = fwdintpointsdist1;
+					//camcol[py1] = tricolor;
+				}
+			}
+			if (fwdintpointsdist2>=0.1f) {
+				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalffovlen.y;
+				if (py2<0) {py2=0;}
+				if (py2>=camres.y) {py2=camres.y-1;}
+				if (fwdintpointsdist2<camcolz[py2]) {
+					camcolz[py2] = fwdintpointsdist2;
+					//camcol[py2] = tricolor;
+				}
 			}
 		}
 	}
 	
 	for (int y=0;y<camres.y;y++) {
-		int pixelind = y*camres.x+xid;
-		if (camcolz[y]<imz[pixelind]) {
-			imz[pixelind] = camcolz[y];
-			float4 rgbapixel = camcol[y];
-			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
-			int rgbacolorint = as_int(rgbacolor);
-			img[pixelind] = rgbacolorint;
-		}
+		float4 rgbapixel = camcol[y];
+		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
+		int rgbacolorint = as_int(rgbacolor);
+		img[y*camres.x+xid] = rgbacolorint;
 	}
 }
 
@@ -141,7 +161,7 @@ float rayplaneintersection(float4 pos, float4 dir, float4 plane) {
 	return retdist;
 }
 float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3) {
-	float8 retlines = (float8)(0.0f);
+	float8 retline = (float8)(NAN);
 	float4 vtri12 = pos2-pos1;
 	float4 vtri13 = pos3-pos1;
 	float4 vtri23 = pos3-pos2;
@@ -156,15 +176,22 @@ float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 
 		float4 ptlint13 = (float4)(pos1.x+ptd13*vtri13.x,pos1.y+ptd13*vtri13.y,pos1.z+ptd13*vtri13.z,0.0f);
 		float4 ptlint23 = (float4)(pos2.x+ptd23*vtri23.x,pos2.y+ptd23*vtri23.y,pos2.z+ptd23*vtri23.z,0.0f);
 		if (ptlhit12&&ptlhit13) {
-			retlines.s0123 = ptlint12;
-			retlines.s4567 = ptlint13;
+			retline.s0123 = ptlint12;
+			retline.s4567 = ptlint13;
 		} else if (ptlhit12&&ptlhit23) {
-			retlines.s0123 = ptlint12;
-			retlines.s4567 = ptlint23;
+			retline.s0123 = ptlint12;
+			retline.s4567 = ptlint23;
 		} else if (ptlhit13&&ptlhit23) {
-			retlines.s0123 = ptlint13;
-			retlines.s4567 = ptlint23;
+			retline.s0123 = ptlint13;
+			retline.s4567 = ptlint23;
 		}
 	}
-	return retlines;
+	return retline;
+}
+float planepointdistance(float4 pos, float4 plane) {
+	float4 planedir = plane;
+	planedir.w = 0.0f;
+	float planedirlen = length(planedir);
+	float retdist = (plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w)/planedirlen;
+	return retdist;
 }

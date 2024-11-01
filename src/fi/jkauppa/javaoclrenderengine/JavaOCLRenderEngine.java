@@ -18,7 +18,7 @@ import org.lwjgl.opengl.GL31;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.5";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.6";
 	private int graphicswidth = 0, graphicsheight = 0;
 	private long window = NULL;
 	private float computetime = 0.0f;
@@ -78,10 +78,10 @@ public class JavaOCLRenderEngine {
 		this.graphicszbuffer = new float[graphicswidth*graphicsheight];
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
-				4.0f,-1.0f,0.0f,  4.0f, 1.0f,0.0f,  4.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f
-				//3.0f,-3.0f,0.0f,  3.0f,-1.0f,0.0f,  3.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
-				//2.0f, 1.0f,0.0f,  2.0f, 3.0f,0.0f,  2.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
-				//1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
+				4.0f,-1.0f,0.0f,  4.0f, 1.0f,0.0f,  4.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
+				3.0f,-3.0f,0.0f,  3.0f,-1.0f,0.0f,  3.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
+				2.0f, 1.0f,0.0f,  2.0f, 3.0f,0.0f,  2.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
+				1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
 		this.triangletexturelist = new float[]{1.0f};
