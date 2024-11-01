@@ -2,25 +2,46 @@ package fi.jkauppa.javaoclrenderengine;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+import java.awt.AlphaComposite;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsEnvironment;
+import java.awt.Transparency;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
+import java.awt.image.DirectColorModel;
+import java.awt.image.SinglePixelPackedSampleModel;
+import java.awt.image.WritableRaster;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWCursorPosCallbackI;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWKeyCallbackI;
-import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
-import org.lwjgl.glfw.GLFWScrollCallbackI;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL31;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
-public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.6";
+public class JavaOCLRenderEngine extends JFrame {
+	private static final long serialVersionUID = 1L;
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.7";
+	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
+	private DrawPanel graphicspanel = null;
 	private int graphicswidth = 0, graphicsheight = 0;
-	private long window = NULL;
+	private Dimension graphicdimensions = new Dimension(graphicswidth, graphicsheight);
+	private SinglePixelPackedSampleModel newgraphicssamplemodel = null;
+	private DirectColorModel newgraphicscolormodel = null;
 	private float computetime = 0.0f;
 	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
@@ -29,10 +50,11 @@ public class JavaOCLRenderEngine {
 	private long tickrefreshrate = 60;
 	private long tickperiod = 1000/tickrefreshrate;
 	private ComputeLib computelib = new ComputeLib();
-	private int selecteddevice;
-	private long device, queue, program;
-	private Device devicedata;
-	private String usingdevice;
+	private int selecteddevice = 0;
+	private long device = NULL, queue = NULL, program = NULL;
+	private Device devicedata = null;
+	private String usingdevice = null;
+	private BufferedImage graphicsimage = null;
 	private long[] graphicspointerbuffer = new long[9];
 	private int[] graphicsbuffer = null;
 	private float[] graphicszbuffer = null;
@@ -43,45 +65,40 @@ public class JavaOCLRenderEngine {
 	private int[] triangletexturelength = null;
 	private float[] trianglesphbvhlist = null;
 	private int[] trianglesphbvhlength = null;
-	private long monitor = NULL;
-	@SuppressWarnings("unused")
-	private GLFWVidMode videomode = null;
-	private KeyProcessor keyprocessor = new KeyProcessor();
-	private MousePositionProcessor mouseposprocessor = new MousePositionProcessor();
-	private MouseButtonProcessor mousebuttonprocessor = new MouseButtonProcessor();
-	private MouseWheelProcessor mousewheelprocessor = new MouseWheelProcessor();
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
-		GLFWErrorCallback.createPrint(System.err).set();
-		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
-		this.monitor = GLFW.glfwGetPrimaryMonitor();
-		this.videomode = GLFW.glfwGetVideoMode(this.monitor);
+		JFrame.setDefaultLookAndFeelDecorated(true);
 		this.graphicswidth = 1280;
 		this.graphicsheight = 720;
-		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
-		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, NULL, NULL))==NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
-		GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-		GLFW.glfwSetKeyCallback(window, keyprocessor);
-		GLFW.glfwSetCursorPosCallback(window, mouseposprocessor);
-		GLFW.glfwSetMouseButtonCallback(window, mousebuttonprocessor);
-		GLFW.glfwSetScrollCallback(window, mousewheelprocessor);
-		GLFW.glfwMakeContextCurrent(window);
-		GLFW.glfwSwapInterval(1);
-		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
-		GLFW.glfwShowWindow(window);
-		GL.createCapabilities();
-		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
-		GLFW.glfwSwapBuffers(window);
+		graphicdimensions = new Dimension(graphicswidth, graphicsheight);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setLocationRelativeTo(null);
+		this.setFocusTraversalKeysEnabled(false);
+		this.setResizable(false);
+		this.setTitle(programtitle);
+		this.setVisible(true);
+		this.graphicspanel = new DrawPanel();
+		this.graphicspanel.setSize(graphicdimensions);
+		this.graphicspanel.setPreferredSize(graphicdimensions);
+		this.newgraphicssamplemodel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, graphicswidth, graphicsheight, pixelabgrbitmask);
+		this.newgraphicscolormodel = new DirectColorModel(32, pixelabgrbitmask[0], pixelabgrbitmask[1], pixelabgrbitmask[2], pixelabgrbitmask[3]);
+		this.graphicsimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+		this.setContentPane(graphicspanel);
+		this.requestFocus();
+		this.addComponentListener(graphicspanel);
+		this.addKeyListener(graphicspanel);
+		this.addMouseListener(graphicspanel);
+		this.addMouseMotionListener(graphicspanel);
+		this.addMouseWheelListener(graphicspanel);
+		this.pack();
 		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
 		this.graphicszbuffer = new float[graphicswidth*graphicsheight];
-		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		this.cameraposrot3fovres = new float[]{-5.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
 				4.0f,-1.0f,0.0f,  4.0f, 1.0f,0.0f,  4.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
-				3.0f,-3.0f,0.0f,  3.0f,-1.0f,0.0f,  3.0f,-2.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
-				2.0f, 1.0f,0.0f,  2.0f, 3.0f,0.0f,  2.0f, 2.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
-				1.0f,-1.0f,2.0f,  1.0f, 1.0f,2.0f,  1.0f, 0.0f,3.0f,  1.0f,0.0f,1.0f,1.0f
+				3.0f,-2.0f,0.0f,  3.0f, 0.0f,0.0f,  3.0f,-1.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
+				2.0f, 0.0f,0.0f,  2.0f, 2.0f,0.0f,  2.0f, 1.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
+				1.0f,-1.0f,1.0f,  1.0f, 1.0f,1.0f,  1.0f, 0.0f,2.0f,  1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
 		this.triangletexturelist = new float[]{1.0f};
@@ -103,49 +120,28 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, triangletexturelength.length);
 		this.graphicspointerbuffer[7] = computelib.createBuffer(device, trianglesphbvhlist.length);
 		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
+		computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicsbuffer.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
-	}
-
-	public void run() {
-		while(!GLFW.glfwWindowShouldClose(window)) {
-			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
-			GL31.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-			GL31.glEnable(GL31.GL_TEXTURE_RECTANGLE);
-			GL31.glTexImage2D(GL31.GL_TEXTURE_RECTANGLE, 0, GL31.GL_RGBA8, graphicswidth, graphicsheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, graphicsbuffer);
-			GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
-			GL31.glBegin(GL31.GL_TRIANGLE_STRIP);
-			GL31.glTexCoord2f(1.0f, 0.0f); GL31.glVertex2f(1.0f, -1.0f);
-			GL31.glTexCoord2f(1.0f, 1.0f); GL31.glVertex2f(1.0f, 1.0f);
-			GL31.glTexCoord2f(0.0f, 0.0f); GL31.glVertex2f(-1.0f, -1.0f);
-			GL31.glTexCoord2f(0.0f, 1.0f); GL31.glVertex2f(-1.0f, 1.0f);
-			GL31.glEnd();
-			GL31.glFlush();
-			GLFW.glfwSwapBuffers(window);
-			GLFW.glfwPollEvents();
-		}
-
-		GLFW.glfwDestroyWindow(window);
-		GLFW.glfwTerminate();
-		System.exit(0);
 	}
 
 	public static void main(String[] args) {
 		System.out.println(programtitle);
 		int argdevice = 0;
 		try {argdevice = Integer.parseInt(args[0]);} catch(Exception ex) {}
+		@SuppressWarnings("unused")
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
-		app.run();
 	}
 
 	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
 
 	private void tick() {
-		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
+		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
 				"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"] ("
 				+graphicswidth+"x"+graphicsheight+")"
 				);
+		graphicspanel.paintImmediately(graphicspanel.getBounds());
 		int len = trianglelistlength[0]-1;
 		trianglelistpos3rgba[13*len+9] += 0.001f; if (trianglelistpos3rgba[13*len+9]>1.0f) {trianglelistpos3rgba[13*len+9]=0.0f;}
 		trianglelistpos3rgba[13*len+10] += 0.0015f; if (trianglelistpos3rgba[13*len+10]>1.0f) {trianglelistpos3rgba[13*len+10]=0.0f;}
@@ -170,9 +166,16 @@ public class JavaOCLRenderEngine {
 				computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
 				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, true);
 				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
-				int[] newgraphicsbuffer = new int[graphicswidth*graphicsheight];
-				computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
-				graphicsbuffer = newgraphicsbuffer;
+				computelib.readBufferi(device, queue, graphicspointerbuffer[0], graphicsbuffer);
+				DataBufferInt newgraphicsbuffer = new DataBufferInt(graphicsbuffer, graphicsbuffer.length);
+				WritableRaster newgraphicsraster = WritableRaster.createWritableRaster(newgraphicssamplemodel, newgraphicsbuffer, null);
+				BufferedImage newgraphicsimage = new BufferedImage(newgraphicscolormodel, newgraphicsraster, false, null);
+				BufferedImage convertimage = gc.createCompatibleImage(graphicswidth, graphicsheight, Transparency.TRANSLUCENT);
+				Graphics2D convertgfx = convertimage.createGraphics();
+				convertgfx.setComposite(AlphaComposite.Src);
+				convertgfx.drawImage(newgraphicsimage, 0, 0, null);
+				convertgfx.dispose();
+				graphicsimage = convertimage;
 				long frameendtime = System.nanoTime();
 				frametime = (frameendtime-framestarttime)/1000000.0f;
 				frametimeavg = frametimeavg*0.9f+frametime*0.1f;
@@ -181,25 +184,31 @@ public class JavaOCLRenderEngine {
 		}
 	}
 	
-	private class KeyProcessor implements GLFWKeyCallbackI {
-		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
-			System.out.println("key: "+key+" scancode: "+scancode+" action: "+action+" mods: "+mods);
+	private class DrawPanel extends JPanel implements KeyListener,MouseListener,MouseMotionListener,MouseWheelListener,ComponentListener {
+		private static final long serialVersionUID = 1L;
+		
+		@Override public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setComposite(AlphaComposite.Src);
+			g2.drawImage(graphicsimage, 0, 0, null);
 		}
+
+		@Override public void keyTyped(KeyEvent e) {}
+		@Override public void keyPressed(KeyEvent e) {System.out.println("KeyPressed: '"+e.getKeyChar()+"'");}
+		@Override public void keyReleased(KeyEvent e) {}
+		@Override public void mouseWheelMoved(MouseWheelEvent e) {System.out.println("MouseWheelMoved: "+e.getWheelRotation());}
+		@Override public void mouseDragged(MouseEvent e) {System.out.println("MouseDragged: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseMoved(MouseEvent e) {System.out.println("MouseMoved: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseClicked(MouseEvent e) {}
+		@Override public void mousePressed(MouseEvent e) {System.out.println("MousePressed: "+e.getX()+","+e.getY()+":"+e.getButton());}
+		@Override public void mouseReleased(MouseEvent e) {}
+		@Override public void mouseEntered(MouseEvent e) {}
+		@Override public void mouseExited(MouseEvent e) {}
+		@Override public void componentMoved(ComponentEvent e) {}
+		@Override public void componentShown(ComponentEvent e) {}
+		@Override public void componentHidden(ComponentEvent e) {}
+		@Override public void componentResized(ComponentEvent e) {}
 	}
-	private class MousePositionProcessor implements GLFWCursorPosCallbackI {
-		@Override public void invoke(long window, double xpos, double ypos) {
-			System.out.println("xpos: "+xpos+" ypos: "+ypos);
-		}
-	}
-	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
-		@Override public void invoke(long window, int button, int action, int mods) {
-			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
-		}
-	}
-	private class MouseWheelProcessor implements GLFWScrollCallbackI {
-		@Override public void invoke(long window, double xoffset, double yoffset) {
-			System.out.println("xoffset: "+xoffset+" yoffset: "+yoffset);
-		}
-	}
-	
+
 }

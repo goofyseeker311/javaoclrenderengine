@@ -17,8 +17,12 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
 	const int collen = 2160;
-	float4 camcol[collen] = {(float4)(0.0f,1.0f,1.0f,1.0f)};
-	float camcolz[collen] = {INFINITY};
+	float4 camcol[collen] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
+	float camcolz[collen] = {HUGE_VALF};
+	for (int i=0;i<collen;i++) {
+		camcol[i] = (float4)(0.0f,0.0f,0.0f,0.0f);
+		camcolz[i] = HUGE_VALF;
+	}
 
 	int tricount = trc[0];
 	int texcount = tec[0];
@@ -66,22 +70,26 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
-			if (fwdintpointsdist1>=0.1f) {
-				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalffovlen.y;
-				if (py1<0) {py1=0;}
-				if (py1>=camres.y) {py1=camres.y-1;}
-				if (fwdintpointsdist1<camcolz[py1]) {
-					camcolz[py1] = fwdintpointsdist1;
-					//camcol[py1] = tricolor;
-				}
-			}
-			if (fwdintpointsdist2>=0.1f) {
-				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalffovlen.y;
-				if (py2<0) {py2=0;}
-				if (py2>=camres.y) {py2=camres.y-1;}
-				if (fwdintpointsdist2<camcolz[py2]) {
-					camcolz[py2] = fwdintpointsdist2;
-					//camcol[py2] = tricolor;
+			if ((fwdintpointsdist1>=0.1f)&&(fwdintpointsdist2>=0.1f)) {
+				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
+				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
+				if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
+					if (py1<0) {py1=0;}
+					if (py1>=camres.y) {py1=camres.y-1;}
+					if (py2<0) {py2=0;}
+					if (py2>=camres.y) {py2=camres.y-1;}
+					int py1s = py1;
+					int py2s = py2;
+					if (py1>py2) {
+						py1s = py2;
+						py2s = py1;
+					}
+					for (int y=py1s;y<=py2s;y++) {
+						if (fwdintpointsdist1<camcolz[y]) {
+							camcolz[y] = fwdintpointsdist1;
+							camcol[y] = tricolor;
+						}
+					}
 				}
 			}
 		}
@@ -91,7 +99,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		float4 rgbapixel = camcol[y];
 		uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
 		int rgbacolorint = as_int(rgbacolor);
-		img[y*camres.x+xid] = rgbacolorint;
+		img[(camres.y-y-1)*camres.x+xid] = rgbacolorint;
 	}
 }
 
