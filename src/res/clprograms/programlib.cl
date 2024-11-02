@@ -19,7 +19,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	const int collen = 2160;
 	float4 camcol[collen] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
 	float camcolz[collen] = {HUGE_VALF};
-	for (int i=0;i<collen;i++) {
+	for (int i=0;i<camres.y;i++) {
 		camcol[i] = (float4)(0.0f,0.0f,0.0f,0.0f);
 		camcolz[i] = HUGE_VALF;
 	}
@@ -61,9 +61,9 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		float4 tripos3 = (float4)(tri[tid*13+6],tri[tid*13+7],tri[tid*13+8],0.0f);
 		float4 tricolor = (float4)(tri[tid*13+9],tri[tid*13+10],tri[tid*13+11],tri[tid*13+12]);
 
-		float8 intlines = planetriangleintersection(colplane, tripos1, tripos2, tripos3);
-		float4 colpos1 = intlines.s0123;
-		float4 colpos2 = intlines.s4567;
+		float8 intline = planetriangleintersection(colplane, tripos1, tripos2, tripos3);
+		float4 colpos1 = intline.s0123;
+		float4 colpos2 = intline.s4567;
 
 		if (colpos1.x!=NAN) {
 			float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
@@ -101,7 +101,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		if (camcolz[y]<imz[pixelind]) {
 			imz[pixelind] = camcolz[y];
 			float4 rgbapixel = camcol[y];
-			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
+			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.r), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.a));
 			int rgbacolorint = as_int(rgbacolor);
 			img[pixelind] = rgbacolorint;
 		}

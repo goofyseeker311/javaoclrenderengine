@@ -34,7 +34,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.8";
+	private static String programtitle = "Java OpenCL Render Engine v0.9.9.9";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -95,10 +95,10 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.graphicszbuffer = new float[graphicswidth*graphicsheight];
 		this.cameraposrot3fovres = new float[]{-5.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
-				4.0f,-1.0f,0.0f,  4.0f, 1.0f,0.0f,  4.0f, 0.0f,1.0f,  1.0f,0.0f,0.0f,1.0f,
-				3.0f,-2.0f,0.0f,  3.0f, 0.0f,0.0f,  3.0f,-1.0f,1.0f,  0.0f,1.0f,0.0f,1.0f,
-				2.0f, 0.0f,0.0f,  2.0f, 2.0f,0.0f,  2.0f, 1.0f,1.0f,  0.0f,0.0f,1.0f,1.0f,
-				1.0f,-1.0f,1.0f,  1.0f, 1.0f,1.0f,  1.0f, 0.0f,2.0f,  1.0f,0.0f,1.0f,1.0f,
+				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
+				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
+				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,1.0f,1.0f,
+				1.0f,-1.0f,-0.75f, 1.0f, 1.0f,-0.75f,  1.0f, 0.0f, 0.25f,  1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
 		this.triangletexturelist = new float[]{1.0f};
