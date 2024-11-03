@@ -48,7 +48,6 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float4 colupdirrot = matrixposmult(colupdir, cammat);
 	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
 	float colplanerayfov = vectorangle(colupdirrot, coldowndirrot);
-	float colhalffovlen = tan(colplanerayfov/2.0f);
 	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
 	float4 colplane = planefromnormalatpos(campos, colplanenorm);
 	float4 camdirplane = planefromnormalatpos(campos, camdirrot);
@@ -95,7 +94,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 			}
 		}
 	}
-	
+
 	for (int y=0;y<camres.y;y++) {
 		int pixelind = (camres.y-y-1)*camres.x+xid;
 		if (camcolz[y]<imz[pixelind]) {
@@ -167,11 +166,13 @@ float vectorangle(float4 dir1, float4 dir2) {
 
 float4 planefromnormalatpos(float4 pos, float4 dir) {
 	float4 retplane = normalize(dir);
-	retplane.w = -dot(pos,retplane);
+	retplane.w = -(pos.x*retplane.x + pos.y*retplane.y + pos.z*retplane.z);
 	return retplane;
 }
 float rayplaneintersection(float4 pos, float4 dir, float4 plane) {
-	float retdist = -(plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w)/(plane.x*dir.x+plane.y*dir.y+plane.z*dir.z+plane.w);
+	float top = plane.x*pos.x + plane.y*pos.y + plane.z*pos.z + plane.w;
+	float bottom = plane.x*dir.x + plane.y*dir.y + plane.z*dir.z;
+	float retdist = -top/bottom;
 	return retdist;
 }
 float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3) {

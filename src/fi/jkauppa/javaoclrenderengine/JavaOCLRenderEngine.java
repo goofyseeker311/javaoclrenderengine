@@ -32,7 +32,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.2";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = NULL;
     @SuppressWarnings("unused")
@@ -112,7 +112,7 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwSwapBuffers(window);
 		this.graphicsbuffer = new int[this.graphicslength];
 		this.graphicszbuffer = new float[this.graphicslength];
-		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
 				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
 				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
@@ -185,7 +185,7 @@ public class JavaOCLRenderEngine {
 		float ds = deltatimeseconds;
 		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
 				"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"] ("
-				+graphicswidth+"x"+graphicsheight+") "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
+				+graphicswidth+"x"+graphicsheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				);
 		int len = trianglelistlength[0]-1;
 		trianglelistpos3rgba[13*len+9] += 0.1f*ds; if (trianglelistpos3rgba[13*len+9]>1.0f) {trianglelistpos3rgba[13*len+9]=0.0f;}
