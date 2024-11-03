@@ -2,6 +2,17 @@
 
 Java LWJGL OpenCL vectorized cpu/gpu ray traced raster render engine.
 
+Keys:
+----------------
+```
+W       - forward
+S       - backward
+A       - strafe left
+D       - strafe right
+SPACE   - strafe up
+SHIFT   - strafe down
+```
+
 Compiling:
 ----------------
 
