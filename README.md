@@ -22,7 +22,7 @@ LWJGL/OpenCL 3.3.4: https://www.lwjgl.org/customize
 
 Eclipse IDE for Java Developers: https://www.eclipse.org/downloads/packages/
 
-Insert base lwjgl and opencl platform native jar packages as user library and in runnable jar export.
+Insert base lwjgl, opencl, opengl and glfw platform native jar packages as user library and in runnable jar export.
 
 Running:
 ----------------
