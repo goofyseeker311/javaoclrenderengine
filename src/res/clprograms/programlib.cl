@@ -37,9 +37,9 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
 	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
-	float4 coldir = normalize((float4)(1.0f,camcollen,0.0f,0.0f));
-	float4 colupdir = normalize((float4)(1.0f,camcollen,camhalffovlen.y,0.0f));
-	float4 coldowndir = normalize((float4)(1.0f,camcollen,-camhalffovlen.y,0.0f));
+	float4 coldir = (float4)(1.0f,camcollen,0.0f,0.0f);
+	float4 colupdir = (float4)(1.0f,camcollen,camhalffovlen.y,0.0f);
+	float4 coldowndir = (float4)(1.0f,camcollen,-camhalffovlen.y,0.0f);
 	float16 cammat = rotationmatrix(camrotrad);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
@@ -65,15 +65,15 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		float4 colpos1 = intline.s0123;
 		float4 colpos2 = intline.s4567;
 
-		if (colpos1.x!=NAN) {
+		if (!isnan(colpos1.x)) {
 			float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
 			float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
 			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
 			if ((fwdintpointsdist1>=0.1f)&&(fwdintpointsdist2>=0.1f)) {
-				int py1 = (camhalfres.y/colhalffovlen)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
-				int py2 = (camhalfres.y/colhalffovlen)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
+				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
+				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
 				if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
 					if (py1<0) {py1=0;}
 					if (py1>=camres.y) {py1=camres.y-1;}
@@ -152,7 +152,8 @@ float16 rotationmatrixaroundaxis(float4 axis, float rot) {
 	float4 axisn = normalize(axis);
 	float cosval = cos(rot);
 	float sinval = sin(rot);
-	float16 retmat = (float16)(cosval+axisn.x*axisn.x*(1-cosval),axisn.x*axisn.y*(1-cosval)-axisn.z*sinval,axisn.x*axisn.z*(1-cosval)+axisn.y*sinval,0,
+	float16 retmat = 
+			(float16)(cosval+axisn.x*axisn.x*(1-cosval),axisn.x*axisn.y*(1-cosval)-axisn.z*sinval,axisn.x*axisn.z*(1-cosval)+axisn.y*sinval,0,
 			axisn.y*axisn.x*(1-cosval)+axisn.z*sinval,cosval+axisn.y*axisn.y*(1-cosval),axisn.y*axisn.z*(1-cosval)-axisn.x*sinval,0,
 			axisn.z*axisn.x*(1-cosval)-axisn.y*sinval,axisn.z*axisn.y*(1-cosval)+axisn.x*sinval,cosval+axisn.z*axisn.z*(1-cosval),0,
 			0,0,0,1);
@@ -160,14 +161,14 @@ float16 rotationmatrixaroundaxis(float4 axis, float rot) {
 }
 
 float vectorangle(float4 dir1, float4 dir2) {
-	float retang = acos(dot(dir1,dir2))/(length(dir1)*length(dir2));
-	return retang;
+	float retangle = acos(dot(dir1,dir2))/(length(dir1)*length(dir2));
+	return retangle;
 }
 
 float4 planefromnormalatpos(float4 pos, float4 dir) {
-	float4 retpla = normalize(dir);
-	retpla.w = -dot(pos,retpla);
-	return retpla;
+	float4 retplane = normalize(dir);
+	retplane.w = -dot(pos,retplane);
+	return retplane;
 }
 float rayplaneintersection(float4 pos, float4 dir, float4 plane) {
 	float retdist = -(plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w)/(plane.x*dir.x+plane.y*dir.y+plane.z*dir.z+plane.w);

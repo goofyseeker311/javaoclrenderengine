@@ -34,7 +34,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private static String programtitle = "Java OpenCL Render Engine v0.9.9.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.0";
 	private static GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
 	private int[] pixelabgrbitmask = {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 	private DrawPanel graphicspanel = null;
@@ -65,6 +65,14 @@ public class JavaOCLRenderEngine extends JFrame {
 	private int[] triangletexturelength = null;
 	private float[] trianglesphbvhlist = null;
 	private int[] trianglesphbvhlength = null;
+	private boolean keyfwd = false;
+	private boolean keyback = false;
+	private boolean keyleft = false;
+	private boolean keyright = false;
+	private boolean keyup = false;
+	private boolean keydown = false;
+	private long nanolasttimetick = System.nanoTime();
+	private float lasttimedeltaseconds = 1.0f;
 
 	public JavaOCLRenderEngine(int vselecteddevice) {
 		JFrame.setDefaultLookAndFeelDecorated(true);
@@ -93,12 +101,12 @@ public class JavaOCLRenderEngine extends JFrame {
 		this.pack();
 		this.graphicsbuffer = new int[graphicswidth*graphicsheight];
 		this.graphicszbuffer = new float[graphicswidth*graphicsheight];
-		this.cameraposrot3fovres = new float[]{-5.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
 				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
 				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
 				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,1.0f,1.0f,
-				1.0f,-1.0f,-0.75f, 1.0f, 1.0f,-0.75f,  1.0f, 0.0f, 0.25f,  1.0f,0.0f,1.0f,1.0f,
+				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
 		this.triangletexturelist = new float[]{1.0f};
@@ -134,18 +142,30 @@ public class JavaOCLRenderEngine extends JFrame {
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
 	}
 
-	private class TickTimerTask extends TimerTask {@Override public void run() {tick();}}
+	private class TickTimerTask extends TimerTask {@Override public void run() {
+		long nanonewtimetick = System.nanoTime();
+		lasttimedeltaseconds = (nanonewtimetick - nanolasttimetick)/1000000.0f;
+		nanolasttimetick = nanonewtimetick;
+		tick(lasttimedeltaseconds);}
+	}
 
-	private void tick() {
+	private void tick(float deltatimeseconds) {
+		float ds = deltatimeseconds;
 		this.setTitle(programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
 				"fps, computetime: "+String.format("%.3f",computetimeavg).replace(',', '.')+"ms ["+usingdevice+"] ("
 				+graphicswidth+"x"+graphicsheight+")"
 				);
 		graphicspanel.paintImmediately(graphicspanel.getBounds());
 		int len = trianglelistlength[0]-1;
-		trianglelistpos3rgba[13*len+9] += 0.001f; if (trianglelistpos3rgba[13*len+9]>1.0f) {trianglelistpos3rgba[13*len+9]=0.0f;}
-		trianglelistpos3rgba[13*len+10] += 0.0015f; if (trianglelistpos3rgba[13*len+10]>1.0f) {trianglelistpos3rgba[13*len+10]=0.0f;}
-		trianglelistpos3rgba[13*len+11] += 0.00175f; if (trianglelistpos3rgba[13*len+11]>1.0f) {trianglelistpos3rgba[13*len+11]=0.0f;}
+		trianglelistpos3rgba[13*len+9] += 0.0001f*ds; if (trianglelistpos3rgba[13*len+9]>1.0f) {trianglelistpos3rgba[13*len+9]=0.0f;}
+		trianglelistpos3rgba[13*len+10] += 0.00015f*ds; if (trianglelistpos3rgba[13*len+10]>1.0f) {trianglelistpos3rgba[13*len+10]=0.0f;}
+		trianglelistpos3rgba[13*len+11] += 0.000175f*ds; if (trianglelistpos3rgba[13*len+11]>1.0f) {trianglelistpos3rgba[13*len+11]=0.0f;}
+		if (this.keyfwd) {cameraposrot3fovres[0] += 0.001*ds;}
+		if (this.keyback) {cameraposrot3fovres[0] -= 0.001*ds;}
+		if (this.keyleft) {cameraposrot3fovres[1] -= 0.001*ds;}
+		if (this.keyright) {cameraposrot3fovres[1] += 0.001*ds;}
+		if (this.keyup) {cameraposrot3fovres[2] += 0.001*ds;}
+		if (this.keydown) {cameraposrot3fovres[2] -= 0.001*ds;}
 		(new RenderThread()).start();
 	}
 
@@ -197,8 +217,6 @@ public class JavaOCLRenderEngine extends JFrame {
 		}
 
 		@Override public void keyTyped(KeyEvent e) {}
-		@Override public void keyPressed(KeyEvent e) {System.out.println("KeyPressed: '"+e.getKeyChar()+"'");}
-		@Override public void keyReleased(KeyEvent e) {}
 		@Override public void mouseWheelMoved(MouseWheelEvent e) {System.out.println("MouseWheelMoved: "+e.getWheelRotation());}
 		@Override public void mouseDragged(MouseEvent e) {System.out.println("MouseDragged: "+e.getX()+","+e.getY()+":"+e.getButton());}
 		@Override public void mouseMoved(MouseEvent e) {System.out.println("MouseMoved: "+e.getX()+","+e.getY()+":"+e.getButton());}
@@ -211,6 +229,25 @@ public class JavaOCLRenderEngine extends JFrame {
 		@Override public void componentShown(ComponentEvent e) {}
 		@Override public void componentHidden(ComponentEvent e) {}
 		@Override public void componentResized(ComponentEvent e) {}
+		
+		@Override public void keyPressed(KeyEvent e) {
+			System.out.println("KeyPressed: '"+e.getKeyChar()+"'");
+			if (e.getKeyCode()==KeyEvent.VK_W) {keyfwd = true;}
+			if (e.getKeyCode()==KeyEvent.VK_S) {keyback = true;}
+			if (e.getKeyCode()==KeyEvent.VK_A) {keyleft = true;}
+			if (e.getKeyCode()==KeyEvent.VK_D) {keyright = true;}
+			if (e.getKeyCode()==KeyEvent.VK_SPACE) {keyup = true;}
+			if (e.getKeyCode()==KeyEvent.VK_SHIFT) {keydown = true;}
+		}
+		@Override public void keyReleased(KeyEvent e) {
+			System.out.println("KeyReleased: '"+e.getKeyChar()+"'");
+			if (e.getKeyCode()==KeyEvent.VK_W) {keyfwd = false;}
+			if (e.getKeyCode()==KeyEvent.VK_S) {keyback = false;}
+			if (e.getKeyCode()==KeyEvent.VK_A) {keyleft = false;}
+			if (e.getKeyCode()==KeyEvent.VK_D) {keyright = false;}
+			if (e.getKeyCode()==KeyEvent.VK_SPACE) {keyup = false;}
+			if (e.getKeyCode()==KeyEvent.VK_SHIFT) {keydown = false;}
+		}
 	}
 
 }
