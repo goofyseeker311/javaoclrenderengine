@@ -97,11 +97,11 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	}
 	
 	for (int y=0;y<camres.y;y++) {
-		int pixelind = y*camres.x+xid;
+		int pixelind = (camres.y-y-1)*camres.x+xid;
 		if (camcolz[y]<imz[pixelind]) {
 			imz[pixelind] = camcolz[y];
 			float4 rgbapixel = camcol[y];
-			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.r), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.a));
+			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
 			int rgbacolorint = as_int(rgbacolor);
 			img[pixelind] = rgbacolorint;
 		}
