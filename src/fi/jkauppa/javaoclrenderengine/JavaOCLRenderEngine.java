@@ -23,7 +23,6 @@ import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL46;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
 import org.lwjgl.system.Callback;
@@ -32,12 +31,12 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.3";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = NULL;
-    @SuppressWarnings("unused")
+	@SuppressWarnings("unused")
 	private GLCapabilities caps = null;
-    @SuppressWarnings("unused")
+	@SuppressWarnings("unused")
 	private Callback debugProc = null;
 	private int vao = 0;
 	private int tex = 0;
@@ -51,7 +50,7 @@ public class JavaOCLRenderEngine {
 	private Timer ticktimer = new Timer();
 	private long tickrefreshrate = 60;
 	private long tickperiod = 1000/tickrefreshrate;
-	private ComputeLib computelib = new ComputeLib();
+	private ComputeLib computelib = null;
 	private int selecteddevice = 0;
 	private long device = NULL, queue = NULL, program = NULL;
 	private Device devicedata = null;
@@ -104,8 +103,8 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwShowWindow(window);
 		caps = GL.createCapabilities();
 		debugProc = GLUtil.setupDebugMessageCallback();
-        createQuadProgram();
-        createFullScreenQuad();
+		createQuadProgram();
+		createFullScreenQuad();
 		tex = createTexture(this.graphicswidth,this.graphicsheight);
 		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
@@ -125,6 +124,7 @@ public class JavaOCLRenderEngine {
 		this.trianglesphbvhlist = new float[]{2.0f,3.0f};
 		this.trianglesphbvhlength = new int[]{2};
 		this.selecteddevice = vselecteddevice;
+		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
 		this.devicedata = this.computelib.devicemap.get(device);
 		this.usingdevice = devicedata.devicename;
@@ -139,7 +139,6 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, triangletexturelength.length);
 		this.graphicspointerbuffer[7] = computelib.createBuffer(device, trianglesphbvhlist.length);
 		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
-		computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicsbuffer.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
@@ -149,12 +148,16 @@ public class JavaOCLRenderEngine {
 		while(!GLFW.glfwWindowShouldClose(window)) {
 			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
 			updateTexture(tex, graphicswidth, graphicsheight, graphicsbuffer);
-			GL46.glViewport(0, 0, graphicswidth, graphicsheight);
-	    	GL46.glUseProgram(quadProgram);
-	    	GL46.glBindVertexArray(vao);
-	    	GL46.glDrawArrays(GL46.GL_TRIANGLES, 0, 6);
-	    	GL46.glBindVertexArray(0);
-	    	GL46.glUseProgram(0);
+			GL31.glBindTexture(GL31.GL_TEXTURE_2D, tex);
+			GL31.glViewport(0, 0, graphicswidth, graphicsheight);
+			GL31.glUseProgram(quadProgram);
+			GL31.glBindVertexArray(vao);
+			GL31.glDrawArrays(GL31.GL_TRIANGLES, 0, 6);
+			GL31.glBindVertexArray(0);
+			GL31.glUseProgram(0);
+			GL31.glFlush();
+			GL31.glFinish();
+			GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 			GLFW.glfwSwapBuffers(window);
 			GLFW.glfwPollEvents();
 		}
@@ -206,8 +209,8 @@ public class JavaOCLRenderEngine {
 			if ((!threadrunning)&&(program!=NULL)) {
 				threadrunning = true;
 				long framestarttime = System.nanoTime();
-				computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicsbuffer.length);
-				computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicszbuffer.length);
+				computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicslength);
+				computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicslength);
 				computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
 				computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
 				computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
@@ -227,92 +230,93 @@ public class JavaOCLRenderEngine {
 			}
 		}
 	}
-	
-    private void createQuadProgram() {
-        int program = GL46.glCreateProgram();
-        int vshader = createShader("res/glshaders/texturedquad.vs", GL46.GL_VERTEX_SHADER, true);
-        int fshader = createShader("res/glshaders/texturedquad.fs", GL46.GL_FRAGMENT_SHADER, true);
-        GL46.glAttachShader(program, vshader);
-        GL46.glAttachShader(program, fshader);
-        GL46.glLinkProgram(program);
-        int linked = GL46.glGetProgrami(program, GL46.GL_LINK_STATUS);
-        String programLog = GL46.glGetProgramInfoLog(program);
-        if (programLog.trim().length() > 0) {System.err.println(programLog);}
-        if (linked == 0) {throw new AssertionError("Could not link program");}
-        GL46.glUseProgram(program);
-        int texLocation = GL46.glGetUniformLocation(program, "tex");
-        GL46.glUniform1i(texLocation, 0);
-        quadProgram_inputPosition = GL46.glGetAttribLocation(program, "position");
-        quadProgram_inputTextureCoords = GL46.glGetAttribLocation(program, "texCoords");
-        GL46.glUseProgram(0);
-        this.quadProgram = program;
-    }
 
-    private void createFullScreenQuad() {
-        vao = GL46.glGenVertexArrays();
-        GL46.glBindVertexArray(vao);
-        int positionVbo = GL46.glGenBuffers();
-        FloatBuffer fb = BufferUtils.createFloatBuffer(2 * 6);
-        fb.put(-1.0f).put(-1.0f);
-        fb.put(1.0f).put(-1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(-1.0f).put(1.0f);
-        fb.put(-1.0f).put(-1.0f);
-        fb.flip();
-        GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, positionVbo);
-        GL46.glBufferData(GL46.GL_ARRAY_BUFFER, fb, GL46.GL_STATIC_DRAW);
-        GL46.glVertexAttribPointer(quadProgram_inputPosition, 2, GL46.GL_FLOAT, false, 0, 0L);
-        GL46.glEnableVertexAttribArray(quadProgram_inputPosition);
-        int texCoordsVbo = GL46.glGenBuffers();
-        fb = BufferUtils.createFloatBuffer(2 * 6);
-        fb.put(0.0f).put(1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(1.0f).put(0.0f);
-        fb.put(1.0f).put(0.0f);
-        fb.put(0.0f).put(0.0f);
-        fb.put(0.0f).put(1.0f);
-        fb.flip();
-        GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, texCoordsVbo);
-        GL46.glBufferData(GL46.GL_ARRAY_BUFFER, fb, GL46.GL_STATIC_DRAW);
-        GL46.glVertexAttribPointer(quadProgram_inputTextureCoords, 2, GL46.GL_FLOAT, true, 0, 0L);
-        GL46.glEnableVertexAttribArray(quadProgram_inputTextureCoords);
-        GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, 0);
-        GL46.glBindVertexArray(0);
-    }
+	private void createQuadProgram() {
+		int program = GL31.glCreateProgram();
+		int vshader = createShader("res/glshaders/texturedquad.vs", GL31.GL_VERTEX_SHADER, true);
+		int fshader = createShader("res/glshaders/texturedquad.fs", GL31.GL_FRAGMENT_SHADER, true);
+		GL31.glAttachShader(program, vshader);
+		GL31.glAttachShader(program, fshader);
+		GL31.glLinkProgram(program);
+		int linked = GL31.glGetProgrami(program, GL31.GL_LINK_STATUS);
+		String programLog = GL31.glGetProgramInfoLog(program);
+		if (programLog.trim().length() > 0) {System.err.println(programLog);}
+		if (linked == 0) {throw new AssertionError("Could not link program");}
+		GL31.glUseProgram(program);
+		int texLocation = GL31.glGetUniformLocation(program, "tex");
+		GL31.glUniform1i(texLocation, 0);
+		quadProgram_inputPosition = GL31.glGetAttribLocation(program, "position");
+		quadProgram_inputTextureCoords = GL31.glGetAttribLocation(program, "texCoords");
+		GL31.glUseProgram(0);
+		this.quadProgram = program;
+	}
 
-    private int createTexture(int texturewidth, int textureheight) {
-        int id = GL46.glGenTextures();
-        GL46.glBindTexture(GL46.GL_TEXTURE_2D, id);
-        GL46.glTexParameteri(GL46.GL_TEXTURE_2D, GL46.GL_TEXTURE_MIN_FILTER, GL46.GL_NEAREST);
-        GL46.glTexParameteri(GL46.GL_TEXTURE_2D, GL46.GL_TEXTURE_MAG_FILTER, GL46.GL_NEAREST);
-        GL46.glTexImage2D(GL46.GL_TEXTURE_2D, 0, GL46.GL_RGBA8, texturewidth, textureheight, 0, GL46.GL_RGBA, GL46.GL_UNSIGNED_INT_8_8_8_8, MemoryUtil.NULL);
-        return id;
-    }
-    
+	private void createFullScreenQuad() {
+		vao = GL31.glGenVertexArrays();
+		GL31.glBindVertexArray(vao);
+		int positionVbo = GL31.glGenBuffers();
+		FloatBuffer fb = BufferUtils.createFloatBuffer(2 * 6);
+		fb.put(-1.0f).put(-1.0f);
+		fb.put(1.0f).put(-1.0f);
+		fb.put(1.0f).put(1.0f);
+		fb.put(1.0f).put(1.0f);
+		fb.put(-1.0f).put(1.0f);
+		fb.put(-1.0f).put(-1.0f);
+		fb.flip();
+		GL31.glBindBuffer(GL31.GL_ARRAY_BUFFER, positionVbo);
+		GL31.glBufferData(GL31.GL_ARRAY_BUFFER, fb, GL31.GL_STATIC_DRAW);
+		GL31.glVertexAttribPointer(quadProgram_inputPosition, 2, GL31.GL_FLOAT, false, 0, 0L);
+		GL31.glEnableVertexAttribArray(quadProgram_inputPosition);
+		int texCoordsVbo = GL31.glGenBuffers();
+		fb = BufferUtils.createFloatBuffer(2 * 6);
+		fb.put(0.0f).put(1.0f);
+		fb.put(1.0f).put(1.0f);
+		fb.put(1.0f).put(0.0f);
+		fb.put(1.0f).put(0.0f);
+		fb.put(0.0f).put(0.0f);
+		fb.put(0.0f).put(1.0f);
+		fb.flip();
+		GL31.glBindBuffer(GL31.GL_ARRAY_BUFFER, texCoordsVbo);
+		GL31.glBufferData(GL31.GL_ARRAY_BUFFER, fb, GL31.GL_STATIC_DRAW);
+		GL31.glVertexAttribPointer(quadProgram_inputTextureCoords, 2, GL31.GL_FLOAT, true, 0, 0L);
+		GL31.glEnableVertexAttribArray(quadProgram_inputTextureCoords);
+		GL31.glBindBuffer(GL31.GL_ARRAY_BUFFER, 0);
+		GL31.glBindVertexArray(0);
+	}
+
+	private int createTexture(int texturewidth, int textureheight) {
+		int id = GL31.glGenTextures();
+		GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
+		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MIN_FILTER, GL31.GL_NEAREST);
+		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MAG_FILTER, GL31.GL_NEAREST);
+		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGBA8, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, MemoryUtil.NULL);
+		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
+		return id;
+	}
+
     private void updateTexture(int id, int texturewidth, int textureheight, int[] texturebuffer) {
-        GL46.glBindTexture(GL46.GL_TEXTURE_2D, id);
-        GL46.glTexSubImage2D(GL46.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL46.GL_RGBA, GL46.GL_UNSIGNED_INT_8_8_8_8, texturebuffer);
+    	GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
+    	GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, texturebuffer);
     }
-    
-    private int createShader(String resource, int type, boolean loadresourcefromjar) {
-        int shader = GL46.glCreateShader(type);
-        String sourceShader = loadShader(resource, loadresourcefromjar);
-        ByteBuffer source = BufferUtils.createByteBuffer(8192);
-        source.put(sourceShader.getBytes()).rewind();
-        PointerBuffer strings = BufferUtils.createPointerBuffer(1);
-        IntBuffer lengths = BufferUtils.createIntBuffer(1);
-        strings.put(0, source);
-        lengths.put(0, source.remaining());
-        GL46.glShaderSource(shader, strings, lengths);
-        GL46.glCompileShader(shader);
-        int compiled = GL46.glGetShaderi(shader, GL46.GL_COMPILE_STATUS);
-        String shaderLog = GL46.glGetShaderInfoLog(shader);
-        if (shaderLog.trim().length() > 0) {System.err.println(shaderLog);}
-        if (compiled == 0) {throw new AssertionError("Could not compile shader");}
-        return shader;
-    }    
-    
+	
+	private int createShader(String resource, int type, boolean loadresourcefromjar) {
+		int shader = GL31.glCreateShader(type);
+		String sourceShader = loadShader(resource, loadresourcefromjar);
+		ByteBuffer source = BufferUtils.createByteBuffer(8192);
+		source.put(sourceShader.getBytes()).rewind();
+		PointerBuffer strings = BufferUtils.createPointerBuffer(1);
+		IntBuffer lengths = BufferUtils.createIntBuffer(1);
+		strings.put(0, source);
+		lengths.put(0, source.remaining());
+		GL31.glShaderSource(shader, strings, lengths);
+		GL31.glCompileShader(shader);
+		int compiled = GL31.glGetShaderi(shader, GL31.GL_COMPILE_STATUS);
+		String shaderLog = GL31.glGetShaderInfoLog(shader);
+		if (shaderLog.trim().length() > 0) {System.err.println(shaderLog);}
+		if (compiled == 0) {throw new AssertionError("Could not compile shader");}
+		return shader;
+	}    
+
 	private String loadShader(String filename, boolean loadresourcefromjar) {
 		String k = null;
 		if (filename!=null) {
@@ -330,7 +334,7 @@ public class JavaOCLRenderEngine {
 		}
 		return k;
 	}
-	
+
 
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {

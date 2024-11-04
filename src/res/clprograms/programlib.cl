@@ -16,9 +16,8 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float2 camfov = (float2)(cam[6],cam[7]);
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
-	const int collen = 2160;
-	float4 camcol[collen] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
-	float camcolz[collen] = {HUGE_VALF};
+	float4 camcol[2160] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
+	float camcolz[2160] = {HUGE_VALF};
 	for (int i=0;i<camres.y;i++) {
 		camcol[i] = (float4)(0.0f,0.0f,0.0f,0.0f);
 		camcolz[i] = HUGE_VALF;
@@ -100,7 +99,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 		if (camcolz[y]<imz[pixelind]) {
 			imz[pixelind] = camcolz[y];
 			float4 rgbapixel = camcol[y];
-			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.a), convert_uchar_sat(255*rgbapixel.b), convert_uchar_sat(255*rgbapixel.g), convert_uchar_sat(255*rgbapixel.r));
+			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.s3), convert_uchar_sat(255*rgbapixel.s2), convert_uchar_sat(255*rgbapixel.s1), convert_uchar_sat(255*rgbapixel.s0));
 			int rgbacolorint = as_int(rgbacolor);
 			img[pixelind] = rgbacolorint;
 		}
