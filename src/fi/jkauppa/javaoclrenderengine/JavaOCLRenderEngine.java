@@ -8,8 +8,6 @@ import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -31,7 +29,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.4";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = NULL;
 	@SuppressWarnings("unused")
@@ -47,7 +45,7 @@ public class JavaOCLRenderEngine {
 	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
-	private Timer ticktimer = new Timer();
+	private TickTimerThread ticktimer = new TickTimerThread();
 	private long tickrefreshrate = 60;
 	private long tickperiod = 1000/tickrefreshrate;
 	private ComputeLib computelib = null;
@@ -141,7 +139,7 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
-		this.ticktimer.scheduleAtFixedRate(new TickTimerTask(), 0, tickperiod);
+		this.ticktimer.start();
 	}
 
 	public void run() {
@@ -176,14 +174,7 @@ public class JavaOCLRenderEngine {
 		JavaOCLRenderEngine app = new JavaOCLRenderEngine(argdevice);
 		app.run();
 	}
-
-	private class TickTimerTask extends TimerTask {@Override public void run() {
-		long nanonewtimetick = System.nanoTime();
-		lasttimedeltaseconds = (nanonewtimetick - nanolasttimetick)/1000000000.0f;
-		nanolasttimetick = nanonewtimetick;
-		tick(lasttimedeltaseconds);}
-	}
-
+	
 	private void tick(float deltatimeseconds) {
 		float ds = deltatimeseconds;
 		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
@@ -201,6 +192,20 @@ public class JavaOCLRenderEngine {
 		if (this.keyup) {cameraposrot3fovres[2] += ds;}
 		if (this.keydown) {cameraposrot3fovres[2] -= ds;}
 		(new RenderThread()).start();
+	}
+
+	private class TickTimerThread extends Thread {
+		private boolean timerrunning = false;
+		@Override public void run() {
+			timerrunning = true;
+			while (timerrunning) {
+				long nanonewtimetick = System.nanoTime();
+				lasttimedeltaseconds = (nanonewtimetick - nanolasttimetick)/1000000000.0f;
+				nanolasttimetick = nanonewtimetick;
+				tick(lasttimedeltaseconds);
+				try {Thread.sleep(tickperiod/2);} catch (InterruptedException e) {}
+			}
+		}
 	}
 
 	private class RenderThread extends Thread {
@@ -230,7 +235,7 @@ public class JavaOCLRenderEngine {
 			}
 		}
 	}
-
+	
 	private void createQuadProgram() {
 		int program = GL31.glCreateProgram();
 		int vshader = createShader("res/glshaders/texturedquad.vs", GL31.GL_VERTEX_SHADER, true);
