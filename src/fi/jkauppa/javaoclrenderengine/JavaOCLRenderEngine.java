@@ -29,7 +29,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.5";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = NULL;
 	@SuppressWarnings("unused")
@@ -70,6 +70,7 @@ public class JavaOCLRenderEngine {
 	private boolean keyup = false;
 	private boolean keydown = false;
 	private long nanolasttimetick = System.nanoTime();
+	private double[] lastmousex = {0}, lastmousey = {0};
 	private float lasttimedeltaseconds = 1.0f;
 	private long monitor = NULL;
 	@SuppressWarnings("unused")
@@ -107,6 +108,7 @@ public class JavaOCLRenderEngine {
 		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
+		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
 		this.graphicsbuffer = new int[this.graphicslength];
 		this.graphicszbuffer = new float[this.graphicslength];
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
@@ -365,6 +367,16 @@ public class JavaOCLRenderEngine {
 	private class MousePositionProcessor implements GLFWCursorPosCallbackI {
 		@Override public void invoke(long window, double xpos, double ypos) {
 			System.out.println("xpos: "+xpos+" ypos: "+ypos);
+			double mousedeltax = xpos-lastmousex[0];
+			double mousedeltay = ypos-lastmousey[0];
+			cameraposrot3fovres[5] += 0.1f*mousedeltax;
+			cameraposrot3fovres[4] += 0.1f*mousedeltay;
+			if (cameraposrot3fovres[5]>360.0f) {cameraposrot3fovres[5] -= 360.0f;}
+			if (cameraposrot3fovres[5]<0.0f) {cameraposrot3fovres[5] += 360.0f;}
+			if (cameraposrot3fovres[4]>90.0f) {cameraposrot3fovres[4] = 90.0f;}
+			if (cameraposrot3fovres[4]<-90.0f) {cameraposrot3fovres[4] = -90.0f;}
+			lastmousex[0] = xpos;
+			lastmousey[0] = ypos;
 		}
 	}
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
