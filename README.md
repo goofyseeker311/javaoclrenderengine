@@ -42,6 +42,6 @@ CPU OpenCL:
 ----------------
 Enabling CPU as Windows OpenCL device:
 
-install w_opencl_runtime_p_2024.2.0.980.exe:
+install w_opencl_runtime_p_2025.0.0.1166.exe:
 
 https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
