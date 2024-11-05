@@ -39,12 +39,14 @@ public class ComputeLib {
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 	public void writeBufferi(long device, long queue, long vmem, int[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueWriteBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 
 	public void readBufferf(long device, long queue, long vmem, float[] v) {
@@ -52,12 +54,14 @@ public class ComputeLib {
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 	public void readBufferi(long device, long queue, long vmem, int[] v) {
 		MemoryStack clStack = MemoryStack.stackPush();
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueReadBuffer(queue, vmem, true, 0, v, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 
 	public void fillBufferf(long vmem, long queue, float fill, int size) {
@@ -68,6 +72,7 @@ public class ComputeLib {
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueFillBuffer(queue, vmem, pattern, 0, size*4, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 	public void fillBufferi(long vmem, long queue, int fill, int size) {
 		MemoryStack clStack = MemoryStack.stackPush();
@@ -77,6 +82,7 @@ public class ComputeLib {
 		PointerBuffer event = clStack.mallocPointer(1);
 		CL12.clEnqueueFillBuffer(queue, vmem, pattern, 0, size*4, null, event);
 		CL12.clWaitForEvents(event);
+		MemoryStack.stackPop();
 	}
 
 	public long createQueue(long device) {
@@ -84,7 +90,9 @@ public class ComputeLib {
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
-		return CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, errcode_ret);
+		long queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, errcode_ret);
+		MemoryStack.stackPop();
+		return queue;
 	}
 	public void waitForQueue(long queue) {
 		CL12.clFinish(queue);
@@ -95,7 +103,9 @@ public class ComputeLib {
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
-		return CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, errcode_ret);
+		long buffer = CL12.clCreateBuffer(context, CL12.CL_MEM_READ_WRITE, size*4, errcode_ret);
+		MemoryStack.stackPop();
+		return buffer;
 	}
 	public void removeBuffer(long vmem) {
 		CL12.clReleaseMemObject(vmem);
@@ -106,7 +116,9 @@ public class ComputeLib {
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		return CL12GL.clCreateFromGLTexture2D(context, CL12.CL_MEM_READ_WRITE, GL31.GL_TEXTURE_2D, 0, texture, errcode_ret);
+		long buffer = CL12GL.clCreateFromGLTexture2D(context, CL12.CL_MEM_READ_WRITE, GL31.GL_TEXTURE_2D, 0, texture, errcode_ret);
+		MemoryStack.stackPop();
+		return buffer;
 	}
 	public void acquireGLTextureBuffer(long queue, long vmem) {
 		CL12GL.clEnqueueAcquireGLObjects(queue, vmem, null, null);
@@ -144,6 +156,7 @@ public class ComputeLib {
 			System.out.println("compileProgram build failed:");
 			System.out.println(buildinfo);
 		}
+		MemoryStack.stackPop();
 		return program;
 	}
 	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int[] offset, int[] size, boolean waitgetruntime) {
@@ -175,6 +188,7 @@ public class ComputeLib {
 				runtime = (ctimeend[0]-ctimestart[0])/1000000.0f;
 			}
 		}
+		MemoryStack.stackPop();
 		return runtime;
 	}
 
@@ -214,6 +228,7 @@ public class ComputeLib {
 				}
 			}
 		}
+		MemoryStack.stackPop();
 		return devicesinit;
 	}
 
@@ -227,6 +242,7 @@ public class ComputeLib {
 				platforms = clPlatforms;
 			}
 		}
+		MemoryStack.stackPop();
 		return platforms;
 	}
 
@@ -240,6 +256,7 @@ public class ComputeLib {
 				devices = pp;
 			}
 		}
+		MemoryStack.stackPop();
 		return devices;
 	}
 
@@ -254,6 +271,7 @@ public class ComputeLib {
 				platforminfo = MemoryUtil.memUTF8(buffer, bytes - 1);
 			}
 		}
+		MemoryStack.stackPop();
 		return platforminfo;
 	}
 
@@ -268,6 +286,7 @@ public class ComputeLib {
 				deviceinfo = MemoryUtil.memUTF8(buffer, bytes - 1);
 			}
 		}
+		MemoryStack.stackPop();
 		return deviceinfo;
 	}
 
@@ -282,6 +301,7 @@ public class ComputeLib {
 				buildinfo = MemoryUtil.memUTF8(buffer, bytes - 1);
 			}
 		}
+		MemoryStack.stackPop();
 		return buildinfo;
 	}
 }

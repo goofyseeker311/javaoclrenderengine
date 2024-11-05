@@ -29,7 +29,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.6";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = NULL;
 	@SuppressWarnings("unused")
@@ -45,9 +45,6 @@ public class JavaOCLRenderEngine {
 	private float computetimeavg = 0.0f;
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
-	private TickTimerThread ticktimer = new TickTimerThread();
-	private long tickrefreshrate = 60;
-	private long tickperiod = 1000/tickrefreshrate;
 	private ComputeLib computelib = null;
 	private int selecteddevice = 0;
 	private long device = NULL, queue = NULL, program = NULL;
@@ -141,12 +138,36 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
-		this.ticktimer.start();
 	}
 
 	public void run() {
 		while(!GLFW.glfwWindowShouldClose(window)) {
 			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
+
+			long nanonewtimetick = System.nanoTime();
+			lasttimedeltaseconds = (nanonewtimetick - nanolasttimetick)/1000000000.0f;
+			nanolasttimetick = nanonewtimetick;
+			tick(lasttimedeltaseconds);
+			
+			long framestarttime = System.nanoTime();
+			computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicslength);
+			computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicslength);
+			computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
+			computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
+			computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
+			computelib.writeBufferf(device, queue, graphicspointerbuffer[5], triangletexturelist);
+			computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
+			computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
+			computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
+			computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, true);
+			computetimeavg = computetimeavg*0.9f+computetime*0.1f;
+			int[] newgraphicsbuffer = new int[graphicslength];
+			computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
+			graphicsbuffer = newgraphicsbuffer;
+			long frameendtime = System.nanoTime();
+			frametime = (frameendtime-framestarttime)/1000000.0f;
+			frametimeavg = frametimeavg*0.9f+frametime*0.1f;
+			
 			updateTexture(tex, graphicswidth, graphicsheight, graphicsbuffer);
 			GL31.glBindTexture(GL31.GL_TEXTURE_2D, tex);
 			GL31.glViewport(0, 0, graphicswidth, graphicsheight);
@@ -193,49 +214,6 @@ public class JavaOCLRenderEngine {
 		if (this.keyright) {cameraposrot3fovres[1] += ds;}
 		if (this.keyup) {cameraposrot3fovres[2] += ds;}
 		if (this.keydown) {cameraposrot3fovres[2] -= ds;}
-		(new RenderThread()).start();
-	}
-
-	private class TickTimerThread extends Thread {
-		private boolean timerrunning = false;
-		@Override public void run() {
-			timerrunning = true;
-			while (timerrunning) {
-				long nanonewtimetick = System.nanoTime();
-				lasttimedeltaseconds = (nanonewtimetick - nanolasttimetick)/1000000000.0f;
-				nanolasttimetick = nanonewtimetick;
-				tick(lasttimedeltaseconds);
-				try {Thread.sleep(tickperiod/2);} catch (InterruptedException e) {}
-			}
-		}
-	}
-
-	private class RenderThread extends Thread {
-		private static boolean threadrunning = false;
-		public void run() {
-			if ((!threadrunning)&&(program!=NULL)) {
-				threadrunning = true;
-				long framestarttime = System.nanoTime();
-				computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicslength);
-				computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicslength);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
-				computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[5], triangletexturelist);
-				computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
-				computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
-				computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
-				computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, true);
-				computetimeavg = computetimeavg*0.9f+computetime*0.1f;
-				int[] newgraphicsbuffer = new int[graphicslength];
-				computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
-				graphicsbuffer = newgraphicsbuffer;
-				long frameendtime = System.nanoTime();
-				frametime = (frameendtime-framestarttime)/1000000.0f;
-				frametimeavg = frametimeavg*0.9f+frametime*0.1f;
-				threadrunning = false;
-			}
-		}
 	}
 	
 	private void createQuadProgram() {
