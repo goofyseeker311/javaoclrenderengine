@@ -22,8 +22,8 @@ public class ComputeLib {
 	public TreeMap<Long,Device> devicemap = null;
 	public Long[] devicelist = null;
 
-	public ComputeLib(long window) {
-		this.devicemap = initClDevices(window);
+	public ComputeLib() {
+		this.devicemap = initClDevices();
 		devicelist = devicemap.keySet().toArray(new Long[devicemap.size()]);
 		for (int i=0;i<devicelist.length;i++) {
 			long device = devicelist[i];
@@ -199,63 +199,44 @@ public class ComputeLib {
 		public String devicename = null;
 	}
 
-	private TreeMap<Long,Device> initClDevices(long window) {
+	private TreeMap<Long,Device> initClDevices() {
 		TreeMap<Long,Device> devicesinit = new TreeMap<Long,Device>();
 		MemoryStack clStack = MemoryStack.stackPush();
-		PointerBuffer clPlatforms = getClPlatforms();
-		if (clPlatforms!=null) {
-			for (int p = 0; p < clPlatforms.capacity(); p++) {
-				long platform = clPlatforms.get(p);
-				PointerBuffer clCtxProps = clStack.mallocPointer(3);
-				clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
-				PointerBuffer clDevices = getClDevices(platform);
-				for (int d = 0; d < clDevices.capacity(); d++) {
-					long device = clDevices.get(d);
-					IntBuffer errcode_ret = clStack.callocInt(1);
-					long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
-					if (errcode_ret.get(errcode_ret.position())==CL12.CL_SUCCESS) {
-						Device devicedesc = new Device();
-						devicedesc.platform = platform;
-						devicedesc.context = context;
-						devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
-						devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME).trim();
-						devicedesc.plaformcaps = CL.createPlatformCapabilities(platform);
-						devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME).trim();
-						devicesinit.put(device, devicedesc);
+		IntBuffer pi = clStack.mallocInt(1);
+		if (CL12.clGetPlatformIDs(null, pi)==CL12.CL_SUCCESS) {
+			PointerBuffer clPlatforms = clStack.mallocPointer(pi.get(0));
+			if (CL12.clGetPlatformIDs(clPlatforms, (IntBuffer)null)==CL12.CL_SUCCESS) {
+				for (int p = 0; p < clPlatforms.capacity(); p++) {
+					long platform = clPlatforms.get(p);
+					PointerBuffer clCtxProps = clStack.mallocPointer(3);
+					clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
+					IntBuffer pi2 = clStack.mallocInt(1);
+					if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, null, pi2)==CL12.CL_SUCCESS) {
+						PointerBuffer clDevices = clStack.mallocPointer(pi2.get(0));
+						if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, clDevices, (IntBuffer)null)==CL12.CL_SUCCESS) {
+							for (int d = 0; d < clDevices.capacity(); d++) {
+								long device = clDevices.get(d);
+								IntBuffer errcode_ret = clStack.callocInt(1);
+								long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+								int errcode_ret_int = errcode_ret.get(errcode_ret.position());
+								if (errcode_ret_int==CL12.CL_SUCCESS) {
+									Device devicedesc = new Device();
+									devicedesc.platform = platform;
+									devicedesc.context = context;
+									devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
+									devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME).trim();
+									devicedesc.plaformcaps = CL.createPlatformCapabilities(platform);
+									devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME).trim();
+									devicesinit.put(device, devicedesc);
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 		MemoryStack.stackPop();
 		return devicesinit;
-	}
-
-	private PointerBuffer getClPlatforms() {
-		PointerBuffer platforms = null;
-		MemoryStack clStack = MemoryStack.stackPush();
-		IntBuffer pi = clStack.mallocInt(1);
-		if (CL12.clGetPlatformIDs(null, pi)==CL12.CL_SUCCESS) {
-			PointerBuffer clPlatforms = clStack.mallocPointer(pi.get(0));
-			if (CL12.clGetPlatformIDs(clPlatforms, (IntBuffer)null)==CL12.CL_SUCCESS) {
-				platforms = clPlatforms;
-			}
-		}
-		MemoryStack.stackPop();
-		return platforms;
-	}
-
-	private PointerBuffer getClDevices(long platform) {
-		PointerBuffer devices = null;
-		MemoryStack clStack = MemoryStack.stackPush();
-		IntBuffer pi = clStack.mallocInt(1);
-		if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, null, pi)==CL12.CL_SUCCESS) {
-			PointerBuffer pp = clStack.mallocPointer(pi.get(0));
-			if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, pp, (IntBuffer)null)==CL12.CL_SUCCESS) {
-				devices = pp;
-			}
-		}
-		MemoryStack.stackPop();
-		return devices;
 	}
 
 	private String getClPlatformInfo(long platform, int param) {

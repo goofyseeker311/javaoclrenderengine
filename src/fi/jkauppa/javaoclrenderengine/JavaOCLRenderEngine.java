@@ -27,7 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.0.8";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
@@ -121,7 +121,7 @@ public class JavaOCLRenderEngine {
 		this.trianglesphbvhlist = new float[]{2.0f,3.0f};
 		this.trianglesphbvhlength = new int[]{2};
 		this.selecteddevice = vselecteddevice;
-		this.computelib = new ComputeLib(window);
+		this.computelib = new ComputeLib();
 		this.device = this.computelib.devicelist[selecteddevice];
 		this.devicedata = this.computelib.devicemap.get(device);
 		this.usingdevice = devicedata.devicename;
