@@ -1,7 +1,5 @@
 package fi.jkauppa.javaoclrenderengine;
 
-import static org.lwjgl.system.MemoryUtil.NULL;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -145,13 +143,13 @@ public class ComputeLib {
 		return k;
 	}
 	public long compileProgram(long device, String source) {
-		long program = NULL;
+		long program = MemoryUtil.NULL;
 		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		program = CL12.clCreateProgramWithSource(context, source, errcode_ret);
-		if (CL12.clBuildProgram(program, device, "", null, NULL)!=CL12.CL_SUCCESS) {
+		if (CL12.clBuildProgram(program, device, "", null, MemoryUtil.NULL)!=CL12.CL_SUCCESS) {
 			String buildinfo = getClProgramBuildInfo(program, device, CL12.CL_PROGRAM_BUILD_LOG);
 			System.out.println("compileProgram build failed:");
 			System.out.println(buildinfo);
@@ -193,9 +191,9 @@ public class ComputeLib {
 	}
 
 	public static class Device {
-		public long platform = NULL;
-		public long context = NULL;
-		public long queue = NULL;
+		public long platform = MemoryUtil.NULL;
+		public long context = MemoryUtil.NULL;
+		public long queue = MemoryUtil.NULL;
 		public String platformname = null;
 		public CLCapabilities plaformcaps = null;
 		public String devicename = null;
@@ -214,7 +212,7 @@ public class ComputeLib {
 				for (int d = 0; d < clDevices.capacity(); d++) {
 					long device = clDevices.get(d);
 					IntBuffer errcode_ret = clStack.callocInt(1);
-					long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, NULL, errcode_ret);
+					long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
 					if (errcode_ret.get(errcode_ret.position())==CL12.CL_SUCCESS) {
 						Device devicedesc = new Device();
 						devicedesc.platform = platform;
