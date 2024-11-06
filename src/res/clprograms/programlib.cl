@@ -16,13 +16,6 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 	float2 camfov = (float2)(cam[6],cam[7]);
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
-	float4 camcol[2160] = {(float4)(0.0f,0.0f,0.0f,0.0f)};
-	float camcolz[2160] = {HUGE_VALF};
-	for (int i=0;i<camres.y;i++) {
-		camcol[i] = (float4)(0.0f,0.0f,0.0f,0.0f);
-		camcolz[i] = HUGE_VALF;
-	}
-
 	int tricount = trc[0];
 	int texcount = tec[0];
 	int bvhcount = bvc[0];
@@ -84,24 +77,17 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						py2s = py1;
 					}
 					for (int y=py1s;y<=py2s;y++) {
-						if (fwdintpointsdist1<camcolz[y]) {
-							camcolz[y] = fwdintpointsdist1;
-							camcol[y] = tricolor;
+						int pixelind = (camres.y-y-1)*camres.x+xid;
+						if (fwdintpointsdist1<imz[pixelind]) {
+							imz[pixelind] = fwdintpointsdist1;
+							float4 rgbapixel = tricolor;
+							uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.s3), convert_uchar_sat(255*rgbapixel.s2), convert_uchar_sat(255*rgbapixel.s1), convert_uchar_sat(255*rgbapixel.s0));
+							int rgbacolorint = as_int(rgbacolor);
+							img[pixelind] = rgbacolorint;
 						}
 					}
 				}
 			}
-		}
-	}
-
-	for (int y=0;y<camres.y;y++) {
-		int pixelind = (camres.y-y-1)*camres.x+xid;
-		if (camcolz[y]<imz[pixelind]) {
-			imz[pixelind] = camcolz[y];
-			float4 rgbapixel = camcol[y];
-			uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.s3), convert_uchar_sat(255*rgbapixel.s2), convert_uchar_sat(255*rgbapixel.s1), convert_uchar_sat(255*rgbapixel.s0));
-			int rgbacolorint = as_int(rgbacolor);
-			img[pixelind] = rgbacolorint;
 		}
 	}
 }
