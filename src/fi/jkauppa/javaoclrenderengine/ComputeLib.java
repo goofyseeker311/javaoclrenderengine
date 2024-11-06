@@ -9,26 +9,37 @@ import java.util.TreeMap;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWNativeGLX;
+import org.lwjgl.glfw.GLFWNativeWGL;
+import org.lwjgl.glfw.GLFWNativeX11;
+import org.lwjgl.opencl.APPLEGLSharing;
 import org.lwjgl.opencl.CL;
 import org.lwjgl.opencl.CL12;
 import org.lwjgl.opencl.CL12GL;
 import org.lwjgl.opencl.CLCapabilities;
 import org.lwjgl.opencl.CLContextCallback;
-import org.lwjgl.opengl.GL31;
+import org.lwjgl.opencl.KHRGLSharing;
+import org.lwjgl.opengl.CGL;
+import org.lwjgl.opengl.WGL;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
 
 public class ComputeLib {
 	public TreeMap<Long,Device> devicemap = null;
 	public Long[] devicelist = null;
 
-	public ComputeLib() {
-		this.devicemap = initClDevices();
+	public ComputeLib(long window) {
+		this.devicemap = initClDevices(window);
 		devicelist = devicemap.keySet().toArray(new Long[devicemap.size()]);
 		for (int i=0;i<devicelist.length;i++) {
 			long device = devicelist[i];
 			Device devicedata = devicemap.get(device);
-			System.out.println("OpenCL device["+i+"]: "+devicedata.devicename);
+			System.out.print("OpenCL device["+i+"]: "+devicedata.devicename);
+			if (devicedata.platformcontextsharing) {
+				System.out.print(" (OpenGL context sharing supported)");
+			}
+			System.out.println();
 		}
 	}
 
@@ -109,19 +120,19 @@ public class ComputeLib {
 		CL12.clReleaseMemObject(vmem);
 	}
 
-	public long createBufferFromGLTexture(long device, int texture) {
+	public long createSharedGLBuffer(long device, int glbuffer) {
 		MemoryStack clStack = MemoryStack.stackPush();
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
-		long buffer = CL12GL.clCreateFromGLTexture2D(context, CL12.CL_MEM_READ_WRITE, GL31.GL_TEXTURE_2D, 0, texture, errcode_ret);
+		long buffer = CL12GL.clCreateFromGLBuffer(context, CL12.CL_MEM_READ_WRITE, glbuffer, errcode_ret);
 		MemoryStack.stackPop();
 		return buffer;
 	}
-	public void acquireGLTextureBuffer(long queue, long vmem) {
+	public void acquireSharedGLBuffer(long queue, long vmem) {
 		CL12GL.clEnqueueAcquireGLObjects(queue, vmem, null, null);
 	}
-	public void releaseGLTextureBuffer(long queue, long vmem) {
+	public void releaseSharedGLBuffer(long queue, long vmem) {
 		CL12GL.clEnqueueReleaseGLObjects(queue, vmem, null, null);
 	}
 
@@ -196,10 +207,11 @@ public class ComputeLib {
 		public long queue = MemoryUtil.NULL;
 		public String platformname = null;
 		public CLCapabilities plaformcaps = null;
+		public boolean platformcontextsharing = false;
 		public String devicename = null;
 	}
 
-	private TreeMap<Long,Device> initClDevices() {
+	private TreeMap<Long,Device> initClDevices(long window) {
 		TreeMap<Long,Device> devicesinit = new TreeMap<Long,Device>();
 		MemoryStack clStack = MemoryStack.stackPush();
 		IntBuffer pi = clStack.mallocInt(1);
@@ -208,8 +220,17 @@ public class ComputeLib {
 			if (CL12.clGetPlatformIDs(clPlatforms, (IntBuffer)null)==CL12.CL_SUCCESS) {
 				for (int p = 0; p < clPlatforms.capacity(); p++) {
 					long platform = clPlatforms.get(p);
+					CLCapabilities platformcaps = CL.createPlatformCapabilities(platform);
 					PointerBuffer clCtxProps = clStack.mallocPointer(3);
 					clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
+					PointerBuffer clCtxPropsSharing = clStack.mallocPointer(7);
+					switch (Platform.get()) {
+					case WINDOWS: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeWGL.glfwGetWGLContext(window)).put(KHRGLSharing.CL_WGL_HDC_KHR).put(WGL.wglGetCurrentDC()); break;
+					case FREEBSD:
+					case LINUX: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeGLX.glfwGetGLXContext(window)).put(KHRGLSharing.CL_GLX_DISPLAY_KHR).put(GLFWNativeX11.glfwGetX11Display()); break;
+					case MACOSX: clCtxPropsSharing.put(APPLEGLSharing.CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE).put(CGL.CGLGetShareGroup(CGL.CGLGetCurrentContext()));
+					}
+					clCtxPropsSharing.put(CL12.CL_CONTEXT_PLATFORM).put(platform).put(MemoryUtil.NULL).flip();
 					IntBuffer pi2 = clStack.mallocInt(1);
 					if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, null, pi2)==CL12.CL_SUCCESS) {
 						PointerBuffer clDevices = clStack.mallocPointer(pi2.get(0));
@@ -217,7 +238,14 @@ public class ComputeLib {
 							for (int d = 0; d < clDevices.capacity(); d++) {
 								long device = clDevices.get(d);
 								IntBuffer errcode_ret = clStack.callocInt(1);
-								long context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+								long context = MemoryUtil.NULL;
+								boolean contextsharing = false;
+								if (platformcaps.cl_khr_gl_sharing || platformcaps.cl_APPLE_gl_sharing) {
+									context = CL12.clCreateContext(clCtxPropsSharing, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+									contextsharing = true;
+								} else {
+									context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+								}
 								int errcode_ret_int = errcode_ret.get(errcode_ret.position());
 								if (errcode_ret_int==CL12.CL_SUCCESS) {
 									Device devicedesc = new Device();
@@ -225,8 +253,9 @@ public class ComputeLib {
 									devicedesc.context = context;
 									devicedesc.queue = CL12.clCreateCommandQueue(context, device, CL12.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
 									devicedesc.platformname = getClPlatformInfo(platform, CL12.CL_PLATFORM_NAME).trim();
-									devicedesc.plaformcaps = CL.createPlatformCapabilities(platform);
+									devicedesc.plaformcaps = platformcaps;
 									devicedesc.devicename = getClDeviceInfo(device, CL12.CL_DEVICE_NAME).trim();
+									devicedesc.platformcontextsharing = contextsharing;
 									devicesinit.put(device, devicedesc);
 								}
 							}
