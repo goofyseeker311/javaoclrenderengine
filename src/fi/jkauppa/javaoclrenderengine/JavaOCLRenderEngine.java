@@ -27,7 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.2";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
@@ -234,7 +234,7 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
-		computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, true);
+		computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, 1, true);
 		computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 		if (!this.glinterop) {
 			int[] newgraphicsbuffer = new int[graphicslength];
