@@ -29,6 +29,9 @@ public class ComputeLib {
 	public TreeMap<Long,Device> devicemap = null;
 	public Long[] devicelist = null;
 
+	public ComputeLib() {
+		this(MemoryUtil.NULL);
+	}
 	public ComputeLib(long window) {
 		this.devicemap = initClDevices(window);
 		devicelist = devicemap.keySet().toArray(new Long[devicemap.size()]);
@@ -221,31 +224,39 @@ public class ComputeLib {
 				for (int p = 0; p < clPlatforms.capacity(); p++) {
 					long platform = clPlatforms.get(p);
 					CLCapabilities platformcaps = CL.createPlatformCapabilities(platform);
-					PointerBuffer clCtxProps = clStack.mallocPointer(3);
-					clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
-					PointerBuffer clCtxPropsSharing = clStack.mallocPointer(7);
-					switch (Platform.get()) {
-					case WINDOWS: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeWGL.glfwGetWGLContext(window)).put(KHRGLSharing.CL_WGL_HDC_KHR).put(WGL.wglGetCurrentDC()); break;
-					case FREEBSD:
-					case LINUX: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeGLX.glfwGetGLXContext(window)).put(KHRGLSharing.CL_GLX_DISPLAY_KHR).put(GLFWNativeX11.glfwGetX11Display()); break;
-					case MACOSX: clCtxPropsSharing.put(APPLEGLSharing.CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE).put(CGL.CGLGetShareGroup(CGL.CGLGetCurrentContext()));
-					}
-					clCtxPropsSharing.put(CL12.CL_CONTEXT_PLATFORM).put(platform).put(MemoryUtil.NULL).flip();
 					IntBuffer pi2 = clStack.mallocInt(1);
 					if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, null, pi2)==CL12.CL_SUCCESS) {
 						PointerBuffer clDevices = clStack.mallocPointer(pi2.get(0));
 						if (CL12.clGetDeviceIDs(platform, CL12.CL_DEVICE_TYPE_ALL, clDevices, (IntBuffer)null)==CL12.CL_SUCCESS) {
 							for (int d = 0; d < clDevices.capacity(); d++) {
 								long device = clDevices.get(d);
+								
 								IntBuffer errcode_ret = clStack.callocInt(1);
+								int errcode_ret_int = 1;
 								boolean contextsharing = false;
-								long context = CL12.clCreateContext(clCtxPropsSharing, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
-								int errcode_ret_int = errcode_ret.get(errcode_ret.position());
-								if (errcode_ret_int==CL12.CL_SUCCESS) {
-									contextsharing = true;
-								} else {
+								long context = MemoryUtil.NULL;
+								if (window!=MemoryUtil.NULL) {
+									PointerBuffer clCtxPropsSharing = clStack.mallocPointer(7);
+									switch (Platform.get()) {
+									case WINDOWS: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeWGL.glfwGetWGLContext(window)).put(KHRGLSharing.CL_WGL_HDC_KHR).put(WGL.wglGetCurrentDC()); break;
+									case FREEBSD:
+									case LINUX: clCtxPropsSharing.put(KHRGLSharing.CL_GL_CONTEXT_KHR).put(GLFWNativeGLX.glfwGetGLXContext(window)).put(KHRGLSharing.CL_GLX_DISPLAY_KHR).put(GLFWNativeX11.glfwGetX11Display()); break;
+									case MACOSX: clCtxPropsSharing.put(APPLEGLSharing.CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE).put(CGL.CGLGetShareGroup(CGL.CGLGetCurrentContext()));
+									}
+									clCtxPropsSharing.put(CL12.CL_CONTEXT_PLATFORM).put(platform).put(MemoryUtil.NULL).flip();
+									context = CL12.clCreateContext(clCtxPropsSharing, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+									errcode_ret_int = errcode_ret.get(errcode_ret.position());
+									if (errcode_ret_int==CL12.CL_SUCCESS) {
+										contextsharing = true;
+									}
+								}
+								
+								if (errcode_ret_int!=CL12.CL_SUCCESS) {
+									PointerBuffer clCtxProps = clStack.mallocPointer(3);
+									clCtxProps.put(0, CL12.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
 									context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
 								}
+								
 								errcode_ret_int = errcode_ret.get(errcode_ret.position());
 								if (errcode_ret_int==CL12.CL_SUCCESS) {
 									Device devicedesc = new Device();
