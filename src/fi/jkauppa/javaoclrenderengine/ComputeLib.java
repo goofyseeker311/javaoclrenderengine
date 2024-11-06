@@ -238,15 +238,15 @@ public class ComputeLib {
 							for (int d = 0; d < clDevices.capacity(); d++) {
 								long device = clDevices.get(d);
 								IntBuffer errcode_ret = clStack.callocInt(1);
-								long context = MemoryUtil.NULL;
 								boolean contextsharing = false;
-								if (platformcaps.cl_khr_gl_sharing || platformcaps.cl_APPLE_gl_sharing) {
-									context = CL12.clCreateContext(clCtxPropsSharing, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+								long context = CL12.clCreateContext(clCtxPropsSharing, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
+								int errcode_ret_int = errcode_ret.get(errcode_ret.position());
+								if (errcode_ret_int==CL12.CL_SUCCESS) {
 									contextsharing = true;
 								} else {
 									context = CL12.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
 								}
-								int errcode_ret_int = errcode_ret.get(errcode_ret.position());
+								errcode_ret_int = errcode_ret.get(errcode_ret.position());
 								if (errcode_ret_int==CL12.CL_SUCCESS) {
 									Device devicedesc = new Device();
 									devicedesc.platform = platform;

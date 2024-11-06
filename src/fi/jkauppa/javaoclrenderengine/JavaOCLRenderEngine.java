@@ -27,7 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.0.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.0";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
