@@ -9,7 +9,7 @@ float rayplaneintersection(float4 pos, float4 dir, float4 plane);
 float8 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4 pos3);
 float planepointdistance(float4 pos, float4 plane);
 
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec, global const float *bvh, global const int *bvc) {
+kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec, global const float *bvh, global const int *bvc) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -81,10 +81,14 @@ kernel void renderview(global float *img, global float *imz, global const float 
 						if (fwdintpointsdist1<imz[pixelind]) {
 							imz[pixelind] = fwdintpointsdist1;
 							float4 rgbapixel = tricolor;
-							img[pixelind*4+0] = rgbapixel.s0;
-							img[pixelind*4+1] = rgbapixel.s1;
-							img[pixelind*4+2] = rgbapixel.s2;
-							img[pixelind*4+3] = rgbapixel.s3;
+							float4 pixelf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
+							float4 pixelfs = pixelf;
+							if (pixelfs.s0>1023.0f) {pixelfs.s0=1023.0f;}
+							if (pixelfs.s1>1023.0f) {pixelfs.s1=1023.0f;}
+							if (pixelfs.s2>1023.0f) {pixelfs.s2=1023.0f;}
+							if (pixelfs.s3>3.0f) {pixelfs.s3=3.0f;}
+							int rgbacolorint = convert_int(pixelf.s3)<<30 | convert_int(pixelf.s2)<<20 | convert_int(pixelf.s1)<<10 | convert_int(pixelf.s0);
+							img[pixelind] = rgbacolorint;
 						}
 					}
 				}

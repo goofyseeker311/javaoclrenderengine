@@ -27,8 +27,9 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.6";
-	private int graphicswidth = 0, graphicsheight = 0, graphicscount = 0, graphicslength = 0;
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.7";
+	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
+	private float graphicsaspectratio = 16.0f/9.0f, graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
 	private GLCapabilities caps = null;
@@ -53,7 +54,7 @@ public class JavaOCLRenderEngine {
 	private Device devicedata = null;
 	private String usingdevice = null;
 	private long[] graphicspointerbuffer = new long[9];
-	private float[] graphicsbuffer = null;
+	private int[] graphicsbuffer = null;
 	private float[] graphicszbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3rgba = null;
@@ -95,8 +96,9 @@ public class JavaOCLRenderEngine {
 		if (vglinterop==0) {
 			this.glinterop = false;
 		}
-		this.graphicscount = this.graphicswidth*this.graphicsheight;
-		this.graphicslength = this.graphicscount*4;
+		this.graphicsaspectratio = (float)this.graphicswidth/this.graphicsheight;
+		this.graphicsvfov = this.graphicshfov/this.graphicsaspectratio;
+		this.graphicslength = this.graphicswidth*this.graphicsheight;
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_RED_BITS, videomode.redBits());
@@ -124,13 +126,13 @@ public class JavaOCLRenderEngine {
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
 		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
-		this.graphicsbuffer = new float[this.graphicslength];
-		this.graphicszbuffer = new float[this.graphicscount];
-		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
+		this.graphicsbuffer = null;
+		this.graphicszbuffer = new float[this.graphicslength];
+		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
-				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  9.0f,0.0f,0.0f,1.0f,
-				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,9.0f,0.0f,1.0f,
-				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,9.0f,1.0f,
+				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
+				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
+				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,1.0f,1.0f,
 				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
@@ -151,6 +153,7 @@ public class JavaOCLRenderEngine {
 		if (this.glinterop) {
 			this.graphicspointerbuffer[0] = computelib.createSharedGLBuffer(device, buf);
 		} else {
+			this.graphicsbuffer = new int[this.graphicslength];
 			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicsbuffer.length);
 		}
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicszbuffer.length);
@@ -232,7 +235,7 @@ public class JavaOCLRenderEngine {
 	public void render() {
 		long framestarttime = System.nanoTime();
 		computelib.fillBufferi(graphicspointerbuffer[0], queue, 0x00000000, graphicslength);
-		computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicscount);
+		computelib.fillBufferf(graphicspointerbuffer[1], queue, Float.POSITIVE_INFINITY, graphicslength);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
@@ -243,8 +246,8 @@ public class JavaOCLRenderEngine {
 		computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, 1, true);
 		computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 		if (!this.glinterop) {
-			float[] newgraphicsbuffer = new float[graphicslength];
-			computelib.readBufferf(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
+			int[] newgraphicsbuffer = new int[graphicslength];
+			computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
 			graphicsbuffer = newgraphicsbuffer;
 		}
 		long frameendtime = System.nanoTime();
@@ -310,7 +313,7 @@ public class JavaOCLRenderEngine {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MIN_FILTER, GL31.GL_NEAREST);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MAG_FILTER, GL31.GL_NEAREST);
-		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGBA32F, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_FLOAT, MemoryUtil.NULL);
+		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGB10_A2, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, MemoryUtil.NULL);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		return id;
 	}
@@ -326,12 +329,12 @@ public class JavaOCLRenderEngine {
 	private void updateTexture(int tid, int bid, int texturewidth, int textureheight) {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, tid);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, bid);
-		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_FLOAT, 0);
+		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-    private void transferBuffer(int id, float[] texturebuffer) {
+    private void transferBuffer(int id, int[] texturebuffer) {
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
     	GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
