@@ -41,9 +41,9 @@ java -jar javaoclrendergine.jar <device-index=0> <full-screen=0> <gl-interop=1>
 OpenCL:
 ----------------
 - Enabling CPU as Windows OpenCL device:
-
   - install w_opencl_runtime_p_2025.0.0.1166.exe: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
 
-- Enabling GPU as Debian OpenCL device:
-
+- Enabling CPU/GPU as Debian OpenCL device:
   - sudo apt install ocl-icd-opencl-dev
+  - setup intel oneapi repo: https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2025-0/apt-005.html
+  - sudo apt install intel-oneapi-runtime-openc
