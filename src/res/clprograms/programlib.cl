@@ -81,8 +81,13 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						if (fwdintpointsdist1<imz[pixelind]) {
 							imz[pixelind] = fwdintpointsdist1;
 							float4 rgbapixel = tricolor;
-							uchar4 rgbacolor = (uchar4)(convert_uchar_sat(255*rgbapixel.s3), convert_uchar_sat(255*rgbapixel.s2), convert_uchar_sat(255*rgbapixel.s1), convert_uchar_sat(255*rgbapixel.s0));
-							int rgbacolorint = as_int(rgbacolor);
+							float4 pixelf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
+							float4 pixelfs = pixelf;
+							if (pixelfs.s0>1023.0f) {pixelfs.s0=1023.0f;}
+							if (pixelfs.s1>1023.0f) {pixelfs.s1=1023.0f;}
+							if (pixelfs.s2>1023.0f) {pixelfs.s2=1023.0f;}
+							if (pixelfs.s3>3.0f) {pixelfs.s3=3.0f;}
+							int rgbacolorint = convert_int(pixelf.s3)<<30 | convert_int(pixelf.s2)<<20 | convert_int(pixelf.s1)<<10 | convert_int(pixelf.s0);
 							img[pixelind] = rgbacolorint;
 						}
 					}

@@ -27,7 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.4";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
@@ -96,6 +96,8 @@ public class JavaOCLRenderEngine {
 			this.glinterop = false;
 		}
 		this.graphicslength = this.graphicswidth*this.graphicsheight;
+		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
+		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, fullscreenmonitor, MemoryUtil.NULL))==MemoryUtil.NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
@@ -304,7 +306,7 @@ public class JavaOCLRenderEngine {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MIN_FILTER, GL31.GL_NEAREST);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MAG_FILTER, GL31.GL_NEAREST);
-		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGBA8, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, MemoryUtil.NULL);
+		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGB10_A2, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, MemoryUtil.NULL);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		return id;
 	}
@@ -320,7 +322,7 @@ public class JavaOCLRenderEngine {
 	private void updateTexture(int tid, int bid, int texturewidth, int textureheight) {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, tid);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, bid);
-		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_8_8_8_8, 0);
+		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
@@ -366,7 +368,6 @@ public class JavaOCLRenderEngine {
 		}
 		return k;
 	}
-
 
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
