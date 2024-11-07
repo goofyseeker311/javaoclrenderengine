@@ -45,5 +45,5 @@ OpenCL:
 
 - Enabling CPU/GPU as Debian OpenCL device:
   - sudo apt install ocl-icd-opencl-dev
-  - setup intel oneapi repo: https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2025-0/apt-005.html
+  - setup intel oneapi debian apt repo: https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2025-0/apt-005.html
   - sudo apt install intel-oneapi-runtime-openc
