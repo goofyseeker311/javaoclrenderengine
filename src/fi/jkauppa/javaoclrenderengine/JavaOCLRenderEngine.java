@@ -27,7 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.6";
 	private int graphicswidth = 0, graphicsheight = 0, graphicscount = 0, graphicslength = 0;
 	private long window = MemoryUtil.NULL;
 	@SuppressWarnings("unused")
@@ -99,6 +99,9 @@ public class JavaOCLRenderEngine {
 		this.graphicslength = this.graphicscount*4;
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
+		GLFW.glfwWindowHint(GLFW.GLFW_RED_BITS, videomode.redBits());
+		GLFW.glfwWindowHint(GLFW.GLFW_GREEN_BITS, videomode.greenBits());
+		GLFW.glfwWindowHint(GLFW.GLFW_BLUE_BITS, videomode.blueBits());
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 		if ((window=GLFW.glfwCreateWindow(graphicswidth, graphicsheight, programtitle, fullscreenmonitor, MemoryUtil.NULL))==MemoryUtil.NULL) {System.out.println("GLFW create window failed."); System.exit(2);}
@@ -125,9 +128,9 @@ public class JavaOCLRenderEngine {
 		this.graphicszbuffer = new float[this.graphicscount];
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, 70.0f,39.375f, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
-				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
-				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
-				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,1.0f,1.0f,
+				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  9.0f,0.0f,0.0f,1.0f,
+				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,9.0f,0.0f,1.0f,
+				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,9.0f,1.0f,
 				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
