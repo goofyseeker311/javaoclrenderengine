@@ -1,11 +1,20 @@
 package fi.jkauppa.javaoclrenderengine;
 
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsEnvironment;
+import java.awt.Transparency;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+
+import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -27,7 +36,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.8";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.1.9";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicsaspectratio = 16.0f/9.0f, graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -53,16 +62,14 @@ public class JavaOCLRenderEngine {
 	private long device = MemoryUtil.NULL, queue = MemoryUtil.NULL, program = MemoryUtil.NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	private long[] graphicspointerbuffer = new long[9];
+	private long[] graphicspointerbuffer = new long[7];
 	private int[] graphicsbuffer = null;
 	private float[] graphicszbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3rgba = null;
 	private int[] trianglelistlength = null;
-	private float[] triangletexturelist = null;
+	private int[] triangletexturelist = null;
 	private int[] triangletexturelength = null;
-	private float[] trianglesphbvhlist = null;
-	private int[] trianglesphbvhlength = null;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -130,16 +137,16 @@ public class JavaOCLRenderEngine {
 		this.graphicszbuffer = new float[this.graphicslength];
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3rgba = new float[]{
-				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  1.0f,0.0f,0.0f,1.0f,
-				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,1.0f,0.0f,1.0f,
-				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,0.0f,1.0f,1.0f,
-				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  1.0f,0.0f,1.0f,1.0f,
+				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  0.0f,  0.0f,0.0f,0.0f,1.0f,1.0f,1.0f,
+				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,  0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,
+				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,  0.0f,0.0f,0.0f,1.0f,1.0f,1.0f,
+				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  0.0f,  0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,
 		};
-		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/13};
-		this.triangletexturelist = new float[]{1.0f};
+		this.trianglelistlength = new int[]{this.trianglelistpos3rgba.length/16};
+		BufferedImage textureimage = loadImage("res/images/icon.png", true);
+		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
+		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength = new int[]{1};
-		this.trianglesphbvhlist = new float[]{2.0f,3.0f};
-		this.trianglesphbvhlength = new int[]{2};
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -162,8 +169,8 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistlength.length);
 		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, triangletexturelength.length);
-		this.graphicspointerbuffer[7] = computelib.createBuffer(device, trianglesphbvhlist.length);
-		this.graphicspointerbuffer[8] = computelib.createBuffer(device, trianglesphbvhlength.length);
+		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
+		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
 		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
@@ -239,10 +246,6 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3rgba);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[4], trianglelistlength);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], triangletexturelist);
-		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], trianglesphbvhlist);
-		computelib.writeBufferi(device, queue, graphicspointerbuffer[8], trianglesphbvhlength);
 		computetime = computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth}, 1, true);
 		computetimeavg = computetimeavg*0.9f+computetime*0.1f;
 		if (!this.glinterop) {
@@ -376,6 +379,33 @@ public class JavaOCLRenderEngine {
 		return k;
 	}
 
+	public static BufferedImage loadImage(String filename, boolean loadresourcefromjar) {
+		BufferedImage k = null;
+		if (filename!=null) {
+			try {
+				File imagefile = new File(filename);
+				BufferedInputStream imagefilestream = null;
+				if (loadresourcefromjar) {
+					imagefilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(imagefile.getPath().replace(File.separatorChar, '/')));
+				}else {
+					imagefilestream = new BufferedInputStream(new FileInputStream(imagefile));
+				}
+				BufferedImage loadimage = ImageIO.read(imagefilestream);
+				if (loadimage!=null) {
+					GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+					BufferedImage loadimagevolatile = gc.createCompatibleImage(loadimage.getWidth(), loadimage.getHeight(), Transparency.TRANSLUCENT);
+					Graphics2D loadimagevolatilegfx = loadimagevolatile.createGraphics();
+					loadimagevolatilegfx.setComposite(AlphaComposite.Src);
+					loadimagevolatilegfx.drawImage(loadimage, 0, 0, null);
+					loadimagevolatilegfx.dispose();
+					k = loadimagevolatile;
+				}
+				imagefilestream.close();
+			} catch (Exception ex) {ex.printStackTrace();}
+		}
+		return k;
+	}
+	
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
 			System.out.println("key: "+key+" scancode: "+scancode+" action: "+action+" mods: "+mods);
