@@ -153,17 +153,19 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const float *tex, global const int *tec) {
+kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tec) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
 	float2 camfov = (float2)(cam[6],cam[7]);
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
-	int tricount = trc[0];
-	int texcount = tec[0];
+	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16;
 	const int texturesize = 2048;
+
+	int tricount = trc[0];
+	int texcount = tec[0];
 
 	float3 camrotrad = radians(camrot);
 	float2 camhalffovrad = radians(camfov/2.0f);
@@ -215,6 +217,10 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 			float2 colpointuv1 = colpos1uv.xy;
 			float2 colpointuv2 = colpos2uv.xy;
+			float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
+			float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
+			float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
+			float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
 
 			if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
 				if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
@@ -226,10 +232,12 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 					if (fwdintpointsdist1>=0.0f) {
 						fwdintpointsdist2 = planepointdistance(drawlinepos3, camdirplane);
 						upintpointsdist2 = planepointdistance(drawlinepos3, camupdirplane);
+						colpos2 = drawlinepos3;
 						colpointuv2 = drawlinepos3uv.xy;
 					} else {
 						fwdintpointsdist1 = planepointdistance(drawlinepos3, camdirplane);
 						upintpointsdist1 = planepointdistance(drawlinepos3, camupdirplane);
+						colpos1 = drawlinepos3;
 						colpointuv1 = drawlinepos3uv.xy;
 					}
 				}
@@ -245,12 +253,42 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 					if (py1>py2) {
 						py1s = py2;
 						py2s = py1;
+						float4 vpixelpointtemp  = vpixelpointd1;
+						vpixelpointd1 = vpixelpointd2;
+						vpixelpointd2 = vpixelpointtemp;
+						float vpixelyangtemp = vpixelyang1;
+						vpixelyang1 = vpixelyang2;
+						vpixelyang2 = vpixelyangtemp;
+						float4 colpostemp = colpos1;
+						colpos1 = colpos2;
+						colpos2 = colpostemp;
+						float2 colpointuvtemp = colpointuv1;
+						colpointuv1 = colpointuv2;
+						colpointuv2 = colpointuvtemp;
 					}
+					float4 vpixelpointdir12 = colpos2 - colpos1;
 					for (int y=py1s;y<=py2s;y++) {
+						float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+						float verticalangle = atan(camcolleny);
+						float vpixelcampointangle = verticalangle - vpixelyang1;
+						float8 vpixelpointdline = (float8)(0.0f);
+						vpixelpointdline.s0123 = vpixelpointd1;
+						vpixelpointdline.s4567 = vpixelpointd2;
+						float vpixelpointlenfrac = linearanglelengthinterpolation(camposzero, vpixelpointdline, vpixelcampointangle);
+						float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
+						float4 linepointdir = linepoint - campos;
+						float drawdistance = length(linepointdir);
+						float4 lineuvpoint1 = (float4)(colpointuv1.x,1.0f-colpointuv1.y,0.0f,0.0f);
+						float4 lineuvpoint2 = (float4)(colpointuv2.x,1.0f-colpointuv2.y,0.0f,0.0f);
+						float4 vpixelpointdir12uv = lineuvpoint2 - lineuvpoint1;
+						float4 lineuvpos = translatepos(lineuvpoint1, vpixelpointdir12uv, vpixelpointlenfrac);
+						float2 lineuv = (float2)(lineuvpos.x-(int)lineuvpos.x, lineuvpos.y-(int)lineuvpos.y);
+						int texind = (lineuv.y*texturesize+lineuv.x)*texturesize;
+
 						int pixelind = (camres.y-y-1)*camres.x+xid;
-						if (fwdintpointsdist1<imz[pixelind]) {
-							imz[pixelind] = fwdintpointsdist1;
-							float4 rgbapixel = 0xffffffff;
+						if (drawdistance<imz[pixelind]) {
+							imz[pixelind] = drawdistance;
+							float4 rgbapixel = tex[texind];
 							float4 pixelf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
 							int4 pixeli = convert_int4(pixelf);
 							if (pixeli.s0>1023) {pixeli.s0=1023;}
