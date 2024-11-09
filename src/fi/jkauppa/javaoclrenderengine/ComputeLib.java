@@ -139,7 +139,7 @@ public class ComputeLib {
 		CL12GL.clEnqueueReleaseGLObjects(queue, vmem, null, null);
 	}
 
-	public String loadProgram(String filename, boolean loadresourcefromjar) {
+	public static String loadProgram(String filename, boolean loadresourcefromjar) {
 		String k = null;
 		if (filename!=null) {
 			try {

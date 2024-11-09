@@ -2,9 +2,6 @@ package fi.jkauppa.javaoclrenderengine;
 
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsEnvironment;
-import java.awt.Transparency;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.BufferedInputStream;
@@ -146,7 +143,6 @@ public class JavaOCLRenderEngine {
 		BufferedImage textureimage = loadImage("res/images/icon.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
-		this.triangletexturelist = new int[] {0xff0000ff};
 		this.triangletexturelength = new int[]{1};
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
@@ -172,7 +168,7 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, triangletexturelength.length);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], triangletexturelength);
-		String programSource = this.computelib.loadProgram("res/clprograms/programlib.cl", true);
+		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
 
@@ -342,7 +338,7 @@ public class JavaOCLRenderEngine {
 	
 	private int createShader(String resource, int type, boolean loadresourcefromjar) {
 		int shader = GL31.glCreateShader(type);
-		String sourceShader = loadShader(resource, loadresourcefromjar);
+		String sourceShader = ComputeLib.loadProgram(resource, loadresourcefromjar);
 		ByteBuffer source = BufferUtils.createByteBuffer(8192);
 		source.put(sourceShader.getBytes()).rewind();
 		PointerBuffer strings = BufferUtils.createPointerBuffer(1);
@@ -358,24 +354,6 @@ public class JavaOCLRenderEngine {
 		return shader;
 	}    
 
-	private String loadShader(String filename, boolean loadresourcefromjar) {
-		String k = null;
-		if (filename!=null) {
-			try {
-				File textfile = new File(filename);
-				BufferedInputStream textfilestream = null;
-				if (loadresourcefromjar) {
-					textfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(textfile.getPath().replace(File.separatorChar, '/')));
-				}else {
-					textfilestream = new BufferedInputStream(new FileInputStream(textfile));
-				}
-				k = new String(textfilestream.readAllBytes());
-				textfilestream.close();
-			} catch (Exception ex) {ex.printStackTrace();}
-		}
-		return k;
-	}
-
 	public static BufferedImage loadImage(String filename, boolean loadresourcefromjar) {
 		BufferedImage k = null;
 		if (filename!=null) {
@@ -389,13 +367,12 @@ public class JavaOCLRenderEngine {
 				}
 				BufferedImage loadimage = ImageIO.read(imagefilestream);
 				if (loadimage!=null) {
-					GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
-					BufferedImage loadimagevolatile = gc.createCompatibleImage(loadimage.getWidth(), loadimage.getHeight(), Transparency.TRANSLUCENT);
-					Graphics2D loadimagevolatilegfx = loadimagevolatile.createGraphics();
-					loadimagevolatilegfx.setComposite(AlphaComposite.Src);
-					loadimagevolatilegfx.drawImage(loadimage, 0, 0, null);
-					loadimagevolatilegfx.dispose();
-					k = loadimagevolatile;
+					BufferedImage argbimage = new BufferedImage(loadimage.getWidth(), loadimage.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
+					Graphics2D argbimagegfx = argbimage.createGraphics();
+					argbimagegfx.setComposite(AlphaComposite.Src);
+					argbimagegfx.drawImage(loadimage, 0, 0, null);
+					argbimagegfx.dispose();
+					k = argbimage;
 				}
 				imagefilestream.close();
 			} catch (Exception ex) {ex.printStackTrace();}

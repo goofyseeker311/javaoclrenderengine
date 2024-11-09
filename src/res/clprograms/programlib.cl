@@ -282,22 +282,22 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						float4 lineuvpoint2 = (float4)(colpointuv2.x,1.0f-colpointuv2.y,0.0f,0.0f);
 						float4 vpixelpointdir12uv = lineuvpoint2 - lineuvpoint1;
 						float4 lineuvpos = translatepos(lineuvpoint1, vpixelpointdir12uv, vpixelpointlenfrac);
-						float2 lineuv = (float2)(lineuvpos.x-(int)lineuvpos.x, lineuvpos.y-(int)lineuvpos.y);
-						int texind = (lineuv.y*texturesize+lineuv.x)*texturesize;
+						float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
+						int texind = (lineuv.y*texturesize+lineuv.x)*(texturesize-1);
 
 						int pixelind = (camres.y-y-1)*camres.x+xid;
 						if (drawdistance<imz[pixelind]) {
 							imz[pixelind] = drawdistance;
-							int texpixel = tex[0];
+							int texpixel = tex[texind];
 							uchar4 texrgba = as_uchar4(texpixel);
 							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
-							float4 rgbapixel = texrgbaf;
-							float4 pixelf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
-							int4 pixeli = convert_int4(pixelf);
-							if (pixeli.s0>1023) {pixeli.s0=1023;}
-							if (pixeli.s1>1023) {pixeli.s1=1023;}
-							if (pixeli.s2>1023) {pixeli.s2=1023;}
-							if (pixeli.s3>3) {pixeli.s3=3;}
+							float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
+							float4 pixelrgbaf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
+							if (pixelrgbaf.s0>1023.0f) {pixelrgbaf.s0=1023.0f;}
+							if (pixelrgbaf.s1>1023.0f) {pixelrgbaf.s1=1023.0f;}
+							if (pixelrgbaf.s2>1023.0f) {pixelrgbaf.s2=1023.0f;}
+							if (pixelrgbaf.s3>3.0f) {pixelrgbaf.s3=3.0f;}
+							int4 pixeli = convert_int4(pixelrgbaf);
 							int rgbacolorint = pixeli.s3<<30 | pixeli.s2<<20 | pixeli.s1<<10 | pixeli.s0;
 							img[pixelind] = rgbacolorint;
 						}
