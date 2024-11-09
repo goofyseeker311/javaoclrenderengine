@@ -146,6 +146,7 @@ public class JavaOCLRenderEngine {
 		BufferedImage textureimage = loadImage("res/images/icon.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
+		this.triangletexturelist = new int[] {0xff0000ff};
 		this.triangletexturelength = new int[]{1};
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);

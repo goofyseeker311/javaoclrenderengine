@@ -288,7 +288,10 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						int pixelind = (camres.y-y-1)*camres.x+xid;
 						if (drawdistance<imz[pixelind]) {
 							imz[pixelind] = drawdistance;
-							float4 rgbapixel = tex[texind];
+							int texpixel = tex[0];
+							uchar4 texrgba = as_uchar4(texpixel);
+							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
+							float4 rgbapixel = texrgbaf;
 							float4 pixelf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
 							int4 pixeli = convert_int4(pixelf);
 							if (pixeli.s0>1023) {pixeli.s0=1023;}
