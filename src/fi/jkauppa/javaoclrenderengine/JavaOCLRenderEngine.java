@@ -132,12 +132,13 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
 		this.graphicsbuffer = null;
 		this.graphicszbuffer = new float[this.graphicslength];
-		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
+		this.cameraposrot3fovres = new float[]{-2.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3iduv3 = new float[]{
 				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  0.0f,  0.0f,0.0f,0.0f,1.0f,1.0f,1.0f,
 				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,  0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,
 				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,  0.0f,0.0f,0.0f,1.0f,1.0f,1.0f,
 				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  0.0f,  0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,
+				0.0f, 0.0f,-0.8f,  2.0f, 0.0f,-0.8f,  1.0f, 0.0f, 0.2f,  0.0f,  0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3iduv3.length/16};
 		BufferedImage textureimage = loadImage("res/images/icon.png", true);

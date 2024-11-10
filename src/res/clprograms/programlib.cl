@@ -146,7 +146,7 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	float vposstartdirlen = length(vposstartdir);
 	float startenddirlen = length(startenddir);
 	float startposangle = vectorangle(startvposdir, startenddir);
-	float endposangle = radians(180.0f)-startposangle-vposangle;
+	float endposangle = M_PI_F-startposangle-vposangle;
 	float startendangledirlen = vposstartdirlen*(sin(vposangle)/sin(endposangle));
 	float startendangledirlenfrac = startendangledirlen/startenddirlen;
 	retlenfrac = startendangledirlenfrac;
@@ -241,6 +241,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						colpointuv1 = drawlinepos3uv.xy;
 					}
 				}
+
 				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
 				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
 				if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
@@ -266,6 +267,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						colpointuv1 = colpointuv2;
 						colpointuv2 = colpointuvtemp;
 					}
+
 					float4 vpixelpointdir12 = colpos2 - colpos1;
 					for (int y=py1s;y<=py2s;y++) {
 						float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
@@ -283,7 +285,9 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						float4 vpixelpointdir12uv = lineuvpoint2 - lineuvpoint1;
 						float4 lineuvpos = translatepos(lineuvpoint1, vpixelpointdir12uv, vpixelpointlenfrac);
 						float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
-						int texind = (lineuv.y*texturesize+lineuv.x)*(texturesize-1);
+						int lineuvx = convert_int_rte(lineuv.x*(texturesize-1));
+						int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
+						int texind = lineuvy*texturesize+lineuvx;
 
 						int pixelind = (camres.y-y-1)*camres.x+xid;
 						if (drawdistance<imz[pixelind]) {
