@@ -137,7 +137,7 @@ float4 translatepos(float4 pos, float4 dir, float mult) {
 }
 
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle) {
-	float retlenfrac;
+	float retlenfrac = 0.0f;
 	float4 startpos = vline.s0123;
 	float4 endpos = vline.s4567;
 	float4 vposstartdir = startpos - vpos;
@@ -223,18 +223,20 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 					float4 drawlinedir12 = colpos2-colpos1;
 					float drawlinedir12dist = rayplanedistance(colpos1, drawlinedir12, rendercutplane);
 					float4 drawlinepos3 = translatepos(colpos1, drawlinedir12, drawlinedir12dist);
+					float fwdintpointsdist3 = planepointdistance(drawlinepos3, camdirplane);
+					float upintpointsdist3 = planepointdistance(drawlinepos3, camupdirplane);
 					float4 drawlinetexdir12 = colpos2uv - colpos1uv;
 					float4 drawlinepos3uv = translatepos(colpos1uv, drawlinetexdir12, drawlinedir12dist);
 					if (fwdintpointsdist1>=0.0f) {
-						fwdintpointsdist2 = planepointdistance(drawlinepos3, camdirplane);
-						upintpointsdist2 = planepointdistance(drawlinepos3, camupdirplane);
+						fwdintpointsdist2 = fwdintpointsdist3;
+						upintpointsdist2 = upintpointsdist3;
 						colpos2 = drawlinepos3;
-						colpointuv2 = drawlinepos3uv.xy;
+						colpos2uv = drawlinepos3uv;
 					} else {
-						fwdintpointsdist1 = planepointdistance(drawlinepos3, camdirplane);
-						upintpointsdist1 = planepointdistance(drawlinepos3, camupdirplane);
+						fwdintpointsdist1 = fwdintpointsdist3;
+						upintpointsdist1 = upintpointsdist3;
 						colpos1 = drawlinepos3;
-						colpointuv1 = drawlinepos3uv.xy;
+						colpos1uv = drawlinepos3uv;
 					}
 				}
 
@@ -264,9 +266,9 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						float4 colpostemp = colpos1;
 						colpos1 = colpos2;
 						colpos2 = colpostemp;
-						float2 colpointuvtemp = colpointuv1;
-						colpointuv1 = colpointuv2;
-						colpointuv2 = colpointuvtemp;
+						float4 colposuvtemp = colpos1uv;
+						colpos1uv = colpos2uv;
+						colpos2uv = colposuvtemp;
 					}
 
 					float4 vpixelpointdir12 = colpos2 - colpos1;
@@ -281,10 +283,8 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
 						float4 linepointdir = linepoint - campos;
 						float drawdistance = length(linepointdir);
-						float4 lineuvpoint1 = (float4)(colpointuv1.x,1.0f-colpointuv1.y,0.0f,0.0f);
-						float4 lineuvpoint2 = (float4)(colpointuv2.x,1.0f-colpointuv2.y,0.0f,0.0f);
-						float4 vpixelpointdir12uv = lineuvpoint2 - lineuvpoint1;
-						float4 lineuvpos = translatepos(lineuvpoint1, vpixelpointdir12uv, vpixelpointlenfrac);
+						float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
+						float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
 						float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
 						int lineuvx = convert_int_rte(lineuv.x*(texturesize-1));
 						int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
