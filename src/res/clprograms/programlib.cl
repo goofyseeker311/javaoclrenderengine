@@ -217,10 +217,6 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 			float2 colpointuv1 = colpos1uv.xy;
 			float2 colpointuv2 = colpos2uv.xy;
-			float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
-			float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
-			float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
-			float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
 
 			if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
 				if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
@@ -241,6 +237,11 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 						colpointuv1 = drawlinepos3uv.xy;
 					}
 				}
+
+				float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
+				float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
+				float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
+				float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
 
 				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
 				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
