@@ -215,8 +215,6 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 			float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
 			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
 			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
-			float2 colpointuv1 = colpos1uv.xy;
-			float2 colpointuv2 = colpos2uv.xy;
 
 			if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
 				if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
