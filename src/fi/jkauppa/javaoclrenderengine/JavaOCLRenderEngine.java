@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.1.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.2.0";
 	private int graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicsaspectratio = 16.0f/9.0f, graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -143,7 +143,7 @@ public class JavaOCLRenderEngine {
 				0.0f, 0.0f,-0.8f,  2.0f, 0.0f,-0.8f,  1.0f, 0.0f,-1.8f,  0.0f,  0.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
 		};
 		this.trianglelistlength = new int[]{this.trianglelistpos3iduv3.length/16};
-		BufferedImage textureimage = loadImage("res/images/icon.png", true);
+		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength = new int[]{1};

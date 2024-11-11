@@ -64,7 +64,7 @@ float16 rotationmatrixaroundaxis(float4 axis, float rot) {
 }
 
 float vectorangle(float4 dir1, float4 dir2) {
-	float retangle = acos(dot(dir1,dir2))/(length(dir1)*length(dir2));
+	float retangle = acos(dot(dir1,dir2)/(length(dir1)*length(dir2)));
 	return retangle;
 }
 
@@ -162,7 +162,7 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16;
-	const int texturesize = 2048;
+	const int texturesize = 1024;
 
 	int tricount = trc[0];
 	int texcount = tec[0];
