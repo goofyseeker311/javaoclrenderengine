@@ -153,7 +153,24 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void renderview(global int *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tec) {
+kernel void clearview(global float *img, global float *imz, global const float *cam) {
+	unsigned int xid=get_global_id(0);
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
+	float2 camfov = (float2)(cam[6],cam[7]);
+	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+
+	for (int y=0;y<camres.y;y++) {
+		int pixelind = y*camres.x+xid;
+		imz[pixelind] = INFINITY;
+		img[pixelind*4+0] = 0.0f;
+		img[pixelind*4+1] = 0.0f;
+		img[pixelind*4+2] = 0.0f;
+		img[pixelind*4+3] = 0.0f;
+	}
+}
+
+kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tec) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -295,14 +312,10 @@ kernel void renderview(global int *img, global float *imz, global const float *c
 							uchar4 texrgba = as_uchar4(texpixel);
 							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
 							float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-							float4 pixelrgbaf = (float4)(1023.0f*rgbapixel.s0, 1023.0f*rgbapixel.s1, 1023.0f*rgbapixel.s2, 3.0f*rgbapixel.s3);
-							if (pixelrgbaf.s0>1023.0f) {pixelrgbaf.s0=1023.0f;}
-							if (pixelrgbaf.s1>1023.0f) {pixelrgbaf.s1=1023.0f;}
-							if (pixelrgbaf.s2>1023.0f) {pixelrgbaf.s2=1023.0f;}
-							if (pixelrgbaf.s3>3.0f) {pixelrgbaf.s3=3.0f;}
-							int4 pixeli = convert_int4(pixelrgbaf);
-							int rgbacolorint = pixeli.s3<<30 | pixeli.s2<<20 | pixeli.s1<<10 | pixeli.s0;
-							img[pixelind] = rgbacolorint;
+							img[pixelind*4+0] = rgbapixel.s0;
+							img[pixelind*4+1] = rgbapixel.s1;
+							img[pixelind*4+2] = rgbapixel.s2;
+							img[pixelind*4+3] = rgbapixel.s3;
 						}
 					}
 				}

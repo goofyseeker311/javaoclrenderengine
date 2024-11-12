@@ -171,8 +171,7 @@ public class ComputeLib {
 		MemoryStack.stackPop();
 		return program;
 	}
-	public float runProgram(long device, long queue, long program, String entry, long[] fmem, int[] offset, int[] size, int repeat, boolean waitgetruntime) {
-		float runtime = 0.0f;
+	public void runProgram(long device, long queue, long program, String entry, long[] fmem, int[] offset, int[] size) {
 		MemoryStack clStack = MemoryStack.stackPush();
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		long kernel = CL12.clCreateKernel(program, entry, errcode_ret);
@@ -189,29 +188,9 @@ public class ComputeLib {
 				globalWorkSize.put(i, size[i]);
 			}
 			PointerBuffer event = clStack.mallocPointer(1);
-			PointerBuffer event2 = clStack.mallocPointer(1);
-			int kernel_error_int = CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
-			if ((kernel_error_int==CL12.CL_SUCCESS)&&(waitgetruntime)) {
-				if (repeat>1) {
-					for (int i=1;i<repeat;i++) {
-						CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event2);
-					}
-				} else {
-					event2 = event;
-				}
-				CL12.clWaitForEvents(event);
-				CL12.clWaitForEvents(event2);
-				long eventLong = event.get(0);
-				long eventLong2 = event2.get(0);
-				long[] ctimestart = {0};
-				long[] ctimeend = {0};
-				CL12.clGetEventProfilingInfo(eventLong, CL12.CL_PROFILING_COMMAND_START, ctimestart, (PointerBuffer)null);
-				CL12.clGetEventProfilingInfo(eventLong2, CL12.CL_PROFILING_COMMAND_END, ctimeend, (PointerBuffer)null);
-				runtime = (ctimeend[0]-ctimestart[0])/1000000.0f;
-			}
+			CL12.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
 		}
 		MemoryStack.stackPop();
-		return runtime;
 	}
 
 	public static class Device {
