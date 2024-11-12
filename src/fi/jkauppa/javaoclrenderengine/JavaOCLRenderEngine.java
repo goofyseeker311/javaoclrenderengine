@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.2.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.2.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -93,8 +93,8 @@ public class JavaOCLRenderEngine {
 			this.screenwidth = videomode.width();
 			this.screenheight = videomode.height();
 		}
-		this.graphicswidth = screenwidth*2;
-		this.graphicsheight = screenheight*2;
+		this.graphicswidth = screenwidth;
+		this.graphicsheight = screenheight;
 		if (vglinterop==0) {
 			this.glinterop = false;
 		}
