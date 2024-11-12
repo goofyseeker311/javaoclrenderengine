@@ -303,9 +303,9 @@ kernel void renderview(global float *img, global float *imz, global const float 
 					int texind = lineuvy*texturesize+lineuvx;
 
 					int pixelind = (camres.y-y-1)*camres.x+xid;
-					static global atomic_int isdrawing[3840];
-					while(atomic_load_explicit(&isdrawing[xid], memory_order_acquire, memory_scope_device)==1);
-					atomic_store_explicit(&isdrawing[xid], 1, memory_order_relaxed, memory_scope_device);
+					static global atomic_int isdrawing[7680*4320];
+					int checkval = 0;
+					while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
 					if (drawdistance<imz[pixelind]) {
 						imz[pixelind] = drawdistance;
 						int texpixel = tex[texind];
@@ -317,7 +317,7 @@ kernel void renderview(global float *img, global float *imz, global const float 
 						img[pixelind*4+2] = rgbapixel.s2;
 						img[pixelind*4+3] = rgbapixel.s3;
 					}
-					atomic_store_explicit(&isdrawing[xid], 0, memory_order_release, memory_scope_device);
+					atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 				}
 			}
 		}
