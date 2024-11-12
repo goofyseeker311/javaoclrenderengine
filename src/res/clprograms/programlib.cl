@@ -171,8 +171,8 @@ kernel void clearview(global float *img, global float *imz, global const float *
 }
 
 kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
-	unsigned int xid=get_global_id(0);
-	unsigned int tid=get_global_id(1);
+	unsigned int xid = get_global_id(0);
+	unsigned int tid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
 	float2 camfov = (float2)(cam[6],cam[7]);
@@ -303,6 +303,9 @@ kernel void renderview(global float *img, global float *imz, global const float 
 					int texind = lineuvy*texturesize+lineuvx;
 
 					int pixelind = (camres.y-y-1)*camres.x+xid;
+					static global atomic_int isdrawing[3840];
+					while(atomic_load_explicit(&isdrawing[xid], memory_order_acquire, memory_scope_device)==1);
+					atomic_store_explicit(&isdrawing[xid], 1, memory_order_relaxed, memory_scope_device);
 					if (drawdistance<imz[pixelind]) {
 						imz[pixelind] = drawdistance;
 						int texpixel = tex[texind];
@@ -314,6 +317,7 @@ kernel void renderview(global float *img, global float *imz, global const float 
 						img[pixelind*4+2] = rgbapixel.s2;
 						img[pixelind*4+3] = rgbapixel.s3;
 					}
+					atomic_store_explicit(&isdrawing[xid], 0, memory_order_release, memory_scope_device);
 				}
 			}
 		}
