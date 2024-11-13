@@ -10,8 +10,9 @@ float16 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
-kernel void temporalview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
+kernel void copyview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
+kernel void clearview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
+kernel void renderview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -155,7 +156,23 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void clearview(global float *img, global float *imz, global const float *cam) {
+kernel void copyview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
+	unsigned int xid=get_global_id(0);
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
+	float2 camfov = (float2)(cam[6],cam[7]);
+	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+
+	for (int y=0;y<camres.y;y++) {
+		int pixelind = y*camres.x+xid;
+		imo[pixelind*4+0] = img[pixelind*4+0];
+		imo[pixelind*4+1] = img[pixelind*4+1];
+		imo[pixelind*4+2] = img[pixelind*4+2];
+		imo[pixelind*4+3] = img[pixelind*4+3];
+	}
+}
+
+kernel void clearview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -172,7 +189,7 @@ kernel void clearview(global float *img, global float *imz, global const float *
 	}
 }
 
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
+kernel void renderview(global float *imo, global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);

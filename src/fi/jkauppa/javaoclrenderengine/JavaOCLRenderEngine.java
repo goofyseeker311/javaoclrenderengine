@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.2.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.2.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -57,7 +57,7 @@ public class JavaOCLRenderEngine {
 	private long device = MemoryUtil.NULL, queue = MemoryUtil.NULL, program = MemoryUtil.NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	private long[] graphicspointerbuffer = new long[5];
+	private long[] graphicspointerbuffer = new long[6];
 	private float[] graphicsbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3iduv3 = null;
@@ -165,11 +165,12 @@ public class JavaOCLRenderEngine {
 			this.graphicsbuffer = new float[this.graphicslength*4];
 			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength*4);
 		}
-		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
-		this.graphicspointerbuffer[2] = computelib.createBuffer(device, cameraposrot3fovres.length);
-		this.graphicspointerbuffer[3] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
-		this.graphicspointerbuffer[4] = computelib.createBuffer(device, triangletexturelist.length);
-		computelib.writeBufferi(device, queue, graphicspointerbuffer[4], triangletexturelist);
+		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength*4);
+		this.graphicspointerbuffer[2] = computelib.createBuffer(device, graphicslength);
+		this.graphicspointerbuffer[3] = computelib.createBuffer(device, cameraposrot3fovres.length);
+		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
+		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
@@ -236,10 +237,11 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3iduv3);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,trianglelistlength});
+		computelib.runProgram(device, queue, program, "copyview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.waitForQueue(queue);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
