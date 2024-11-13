@@ -10,8 +10,8 @@ float16 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
-kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
+kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -155,7 +155,7 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
+kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -172,16 +172,17 @@ kernel void clearview(global float *img, global float *imz, global const float *
 	}
 }
 
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex) {
+kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
+	unsigned int oid = get_global_id(2);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
 	float2 camfov = (float2)(cam[6],cam[7]);
 	int2 camres = (int2)((int)cam[8],(int)cam[9]);
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 16;
+	const int ts = 16, os = 9;
 	const int texturesize = 1024;
 	static global atomic_int isdrawing[7680*4320];
 
@@ -220,6 +221,21 @@ kernel void renderview(global float *img, global float *imz, global const float 
 	float4 tripos1uv = (float4)(tri[tid*ts+10],tri[tid*ts+11],0.0f,0.0f);
 	float4 tripos2uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
 	float4 tripos3uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+
+	float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+	float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+	float3 objrot = (float3)(radians(obj[oid*os+6]),radians(obj[oid*os+7]),radians(obj[oid*os+8]));
+
+	float16 objscamat = scalingmatrix(objsca);
+	float16 objrotmat = rotationmatrix(objrot);
+	float16 objmat = matrixmatmult(objscamat, objrotmat);
+	
+	tripos1 = matrixposmult(tripos1, objmat);
+	tripos2 = matrixposmult(tripos2, objmat);
+	tripos3 = matrixposmult(tripos3, objmat);
+	tripos1 = translatepos(tripos1, objpos, 1.0f);
+	tripos2 = translatepos(tripos2, objpos, 1.0f);
+	tripos3 = translatepos(tripos3, objpos, 1.0f);
 
 	float16 intline = planetriangleintersection(colplane, tripos1, tripos2, tripos3, tripos1uv, tripos2uv, tripos3uv);
 	float4 colpos1 = intline.s01234567.s0123;

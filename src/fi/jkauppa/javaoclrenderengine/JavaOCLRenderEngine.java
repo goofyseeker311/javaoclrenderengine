@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.2.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.0";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -57,12 +57,14 @@ public class JavaOCLRenderEngine {
 	private long device = MemoryUtil.NULL, queue = MemoryUtil.NULL, program = MemoryUtil.NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	private long[] graphicspointerbuffer = new long[5];
+	private long[] graphicspointerbuffer = new long[6];
 	private float[] graphicsbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3iduv3 = null;
 	private int trianglelistlength = 0;
 	private int[] triangletexturelist = null;
+	private float[] objectlistpos3sca3rot3 = null;
+	private int objectlistlength = 0;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -130,25 +132,30 @@ public class JavaOCLRenderEngine {
 		this.graphicsbuffer = null;
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3iduv3 = new float[]{
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 				
-				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 
-				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 		};
 		this.trianglelistlength = this.trianglelistpos3iduv3.length/16;
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
+		this.objectlistpos3sca3rot3 = new float[] {
+				0.0f,-5.0f,0.0f, 2.0f,2.0f,2.0f,  0.0f, 0.0f, 0.0f,
+				5.0f, 0.0f,0.0f, 1.0f,1.0f,1.0f, 10.0f,20.0f,45.0f,
+		};
+		this.objectlistlength = this.objectlistpos3sca3rot3.length/9;
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -168,8 +175,11 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
 		this.graphicspointerbuffer[2] = computelib.createBuffer(device, cameraposrot3fovres.length);
 		this.graphicspointerbuffer[3] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3iduv3);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, triangletexturelist.length);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[4], triangletexturelist);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, objectlistpos3sca3rot3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], objectlistpos3sca3rot3);
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
@@ -226,6 +236,12 @@ public class JavaOCLRenderEngine {
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
 				);
+		objectlistpos3sca3rot3[6] -= 0.1f;
+		objectlistpos3sca3rot3[7] -= 0.2f;
+		objectlistpos3sca3rot3[8] -= 0.5f;
+		objectlistpos3sca3rot3[15] += 0.5f;
+		objectlistpos3sca3rot3[16] += 0.6f;
+		objectlistpos3sca3rot3[17] += 0.7f;
 		if (this.keyfwd) {cameraposrot3fovres[0] += ds;}
 		if (this.keyback) {cameraposrot3fovres[0] -= ds;}
 		if (this.keyleft) {cameraposrot3fovres[1] -= ds;}
@@ -237,9 +253,9 @@ public class JavaOCLRenderEngine {
 	public void render() {
 		long framestarttime = System.nanoTime();
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3iduv3);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], objectlistpos3sca3rot3);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
-		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,trianglelistlength});
+		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.waitForQueue(queue);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
