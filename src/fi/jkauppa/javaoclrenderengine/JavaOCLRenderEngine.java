@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.2.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.2.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -241,7 +241,8 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,trianglelistlength});
-		computelib.runProgram(device, queue, program, "copyview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
+		computelib.runProgram(device, queue, program, "temporalview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
+		computelib.runProgram(device, queue, program, "temporalstep", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.waitForQueue(queue);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
