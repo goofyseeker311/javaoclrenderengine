@@ -10,6 +10,8 @@ float16 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
+kernel void temporalview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
+kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -181,6 +183,8 @@ kernel void renderview(global float *img, global float *imz, global const float 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16;
 	const int texturesize = 1024;
+	const int screenbuffersize = 7680*4320;
+	static global atomic_int isdrawing[screenbuffersize];
 
 	float3 camrotrad = radians(camrot);
 	float2 camhalffovrad = radians(camfov/2.0f);
@@ -303,7 +307,6 @@ kernel void renderview(global float *img, global float *imz, global const float 
 					int texind = lineuvy*texturesize+lineuvx;
 
 					int pixelind = (camres.y-y-1)*camres.x+xid;
-					static global atomic_int isdrawing[7680*4320];
 					int checkval = 0;
 					while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
 					if (drawdistance<imz[pixelind]) {

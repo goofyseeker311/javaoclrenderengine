@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.2.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.2.6";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -128,15 +128,22 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwSwapBuffers(window);
 		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
 		this.graphicsbuffer = null;
-		this.cameraposrot3fovres = new float[]{-1.0f,0.0f,0.2f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
+		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3iduv3 = new float[]{
-				4.0f,-1.0f, 0.0f,  4.0f, 1.0f, 0.0f,  4.0f, 0.0f, 1.0f,  0.0f,  0.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
-				3.0f,-1.5f, 0.0f,  3.0f, 0.5f, 0.0f,  3.0f,-0.5f, 1.0f,  0.0f,  0.0f,0.0f,1.0f,1.0f,1.0f,0.0f,
-				2.0f,-0.5f, 0.0f,  2.0f, 1.5f, 0.0f,  2.0f, 0.5f, 1.0f,  0.0f,  0.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
-				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f, 0.2f,  0.0f,  0.0f,0.0f,1.0f,1.0f,1.0f,0.0f,
-				1.0f,-1.0f,-0.8f,  1.0f, 1.0f,-0.8f,  1.0f, 0.0f,-1.8f,  0.0f,  0.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
-				0.0f, 0.0f,-0.8f,  2.0f, 0.0f,-0.8f,  1.0f, 0.0f, 0.2f,  0.0f,  0.0f,0.0f,1.0f,1.0f,1.0f,0.0f,
-				0.0f, 0.0f,-0.8f,  2.0f, 0.0f,-0.8f,  1.0f, 0.0f,-1.8f,  0.0f,  0.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				
+				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+
+				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
 		};
 		this.trianglelistlength = this.trianglelistpos3iduv3.length/16;
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
