@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -33,7 +34,8 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.0";
+	private Random rnd = new Random();
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -151,11 +153,19 @@ public class JavaOCLRenderEngine {
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
-		this.objectlistpos3sca3rot3 = new float[] {
-				0.0f,-5.0f,0.0f, 2.0f,2.0f,2.0f,  0.0f, 0.0f, 0.0f,
-				5.0f, 0.0f,0.0f, 1.0f,1.0f,1.0f, 10.0f,20.0f,45.0f,
-		};
-		this.objectlistlength = this.objectlistpos3sca3rot3.length/9;
+		this.objectlistlength = 1000;
+		this.objectlistpos3sca3rot3 = new float[objectlistlength*9];
+		for (int i=0;i<objectlistlength;i++) {
+			this.objectlistpos3sca3rot3[9*i+0] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
+			this.objectlistpos3sca3rot3[9*i+1] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
+			this.objectlistpos3sca3rot3[9*i+2] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
+			this.objectlistpos3sca3rot3[9*i+3] = 1.0f;
+			this.objectlistpos3sca3rot3[9*i+4] = 1.0f;
+			this.objectlistpos3sca3rot3[9*i+5] = 1.0f;
+			this.objectlistpos3sca3rot3[9*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[9*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[9*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+		}
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -236,12 +246,11 @@ public class JavaOCLRenderEngine {
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
 				);
-		objectlistpos3sca3rot3[6] -= 0.1f;
-		objectlistpos3sca3rot3[7] -= 0.2f;
-		objectlistpos3sca3rot3[8] -= 0.5f;
-		objectlistpos3sca3rot3[15] += 0.5f;
-		objectlistpos3sca3rot3[16] += 0.6f;
-		objectlistpos3sca3rot3[17] += 0.7f;
+		for (int i=0;i<objectlistlength;i++) {
+			objectlistpos3sca3rot3[9*i+6] += 15.0f*ds;
+			objectlistpos3sca3rot3[9*i+7] += 17.0f*ds;
+			objectlistpos3sca3rot3[9*i+8] += 19.0f*ds;
+		}
 		if (this.keyfwd) {cameraposrot3fovres[0] += ds;}
 		if (this.keyback) {cameraposrot3fovres[0] -= ds;}
 		if (this.keyleft) {cameraposrot3fovres[1] -= ds;}
