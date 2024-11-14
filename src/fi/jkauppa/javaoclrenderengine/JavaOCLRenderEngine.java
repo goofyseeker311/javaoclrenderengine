@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -153,12 +153,13 @@ public class JavaOCLRenderEngine {
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
-		this.objectlistlength = 1000;
+		this.objectlistlength = 5000;
+		float objectradius = 100.0f;
 		this.objectlistpos3sca3rot3 = new float[objectlistlength*9];
 		for (int i=0;i<objectlistlength;i++) {
-			this.objectlistpos3sca3rot3[9*i+0] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
-			this.objectlistpos3sca3rot3[9*i+1] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
-			this.objectlistpos3sca3rot3[9*i+2] = rnd.nextFloat(-1.0f, 1.0f)*50.0f;
+			this.objectlistpos3sca3rot3[9*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3[9*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3[9*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
 			this.objectlistpos3sca3rot3[9*i+3] = 1.0f;
 			this.objectlistpos3sca3rot3[9*i+4] = 1.0f;
 			this.objectlistpos3sca3rot3[9*i+5] = 1.0f;
