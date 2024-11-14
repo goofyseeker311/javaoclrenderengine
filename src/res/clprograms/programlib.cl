@@ -10,8 +10,9 @@ float16 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
-kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void renderview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -155,7 +156,7 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void clearview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -164,15 +165,42 @@ kernel void clearview(global float *img, global float *imz, global const float *
 
 	for (int y=0;y<camres.y;y++) {
 		int pixelind = y*camres.x+xid;
-		imz[pixelind] = INFINITY;
 		img[pixelind*4+0] = 0.0f;
 		img[pixelind*4+1] = 0.0f;
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 0.0f;
+		imz[pixelind] = INFINITY;
+		imh[pixelind] = -1;
 	}
 }
 
-kernel void renderview(global float *img, global float *imz, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+	unsigned int xid=get_global_id(0);
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
+	float2 camfov = (float2)(cam[6],cam[7]);
+	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+
+	int2 camhalfres = camres/2;
+	int crosslength = 20;
+
+	for (int y=camhalfres.y-crosslength;y<camhalfres.y+crosslength;y++) {
+		int pixelind = y*camres.x+camhalfres.x;
+		img[pixelind*4+0] = 2.0f;
+		img[pixelind*4+1] = 0.0f;
+		img[pixelind*4+2] = 0.0f;
+		img[pixelind*4+3] = 1.0f;
+	}
+	for (int x=camhalfres.x-crosslength;x<camhalfres.x+crosslength;x++) {
+		int pixelind = camhalfres.y*camres.x+x;
+		img[pixelind*4+0] = 2.0f;
+		img[pixelind*4+1] = 0.0f;
+		img[pixelind*4+2] = 0.0f;
+		img[pixelind*4+3] = 1.0f;
+	}
+}
+
+kernel void renderview(global float *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
@@ -326,6 +354,7 @@ kernel void renderview(global float *img, global float *imz, global const float 
 					while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
 					if (drawdistance<imz[pixelind]) {
 						imz[pixelind] = drawdistance;
+						imh[pixelind] = oid;
 						int texpixel = tex[texind];
 						uchar4 texrgba = as_uchar4(texpixel);
 						float4 texrgbaf = convert_float4(texrgba) / 255.0f;

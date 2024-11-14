@@ -35,7 +35,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -59,8 +59,11 @@ public class JavaOCLRenderEngine {
 	private long device = MemoryUtil.NULL, queue = MemoryUtil.NULL, program = MemoryUtil.NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	private long[] graphicspointerbuffer = new long[6];
+	private long[] graphicspointerbuffer = new long[7];
 	private float[] graphicsbuffer = null;
+	@SuppressWarnings("unused")
+	private float[] graphicszbuffer = null;
+	private int[] graphicshbuffer = null;
 	private float[] cameraposrot3fovres = null;
 	private float[] trianglelistpos3iduv3 = null;
 	private int trianglelistlength = 0;
@@ -131,7 +134,6 @@ public class JavaOCLRenderEngine {
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
 		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
-		this.graphicsbuffer = null;
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3iduv3 = new float[]{
 				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
@@ -180,17 +182,20 @@ public class JavaOCLRenderEngine {
 		if (this.glinterop) {
 			this.graphicspointerbuffer[0] = computelib.createSharedGLBuffer(device, buf);
 		} else {
-			this.graphicsbuffer = new float[this.graphicslength*4];
+			this.graphicsbuffer = new float[graphicslength*4];
 			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength*4);
 		}
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
-		this.graphicspointerbuffer[2] = computelib.createBuffer(device, cameraposrot3fovres.length);
-		this.graphicspointerbuffer[3] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], trianglelistpos3iduv3);
-		this.graphicspointerbuffer[4] = computelib.createBuffer(device, triangletexturelist.length);
-		computelib.writeBufferi(device, queue, graphicspointerbuffer[4], triangletexturelist);
-		this.graphicspointerbuffer[5] = computelib.createBuffer(device, objectlistpos3sca3rot3.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], objectlistpos3sca3rot3);
+		this.graphicszbuffer = new float[graphicslength];
+		this.graphicspointerbuffer[2] = computelib.createBuffer(device, graphicslength);
+		this.graphicshbuffer = new int[graphicslength];
+		this.graphicspointerbuffer[3] = computelib.createBuffer(device, cameraposrot3fovres.length);
+		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
+		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
+		this.graphicspointerbuffer[6] = computelib.createBuffer(device, objectlistpos3sca3rot3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
@@ -262,11 +267,13 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[2], cameraposrot3fovres);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], objectlistpos3sca3rot3);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
+		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
+		computelib.readBufferi(device, queue, graphicspointerbuffer[2], graphicshbuffer);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
 			computelib.readBufferf(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
@@ -446,6 +453,23 @@ public class JavaOCLRenderEngine {
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
 		@Override public void invoke(long window, int button, int action, int mods) {
 			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
+			if ((button==0)&&(action==1)) {
+				int hitobjind = graphicshbuffer[graphicswidth*graphicsheight/2+graphicswidth/2];
+				int hitobjindstep = hitobjind * 9;
+				if (hitobjind!=-1) {
+					if (objectlistpos3sca3rot3.length>=9) {
+						float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-9];
+						for (int i=0;i<hitobjindstep;i++) {
+							newobjectlistpos3sca3rot3[i] = objectlistpos3sca3rot3[i];
+						}
+						for (int i=hitobjindstep+9;i<objectlistpos3sca3rot3.length;i++) {
+							newobjectlistpos3sca3rot3[i-9] = objectlistpos3sca3rot3[i];
+						}
+						objectlistlength--;
+						objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
+					}
+				}
+			}
 		}
 	}
 	private class MouseWheelProcessor implements GLFWScrollCallbackI {
