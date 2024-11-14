@@ -8,15 +8,17 @@ Draws OpenCL image buffer to screen using OpenGL shared context interoperation o
 Input:
 ----------------
 ```
-W         - forward
-S         - backward
-A         - strafe left
-D         - strafe right
-SPACE     - strafe up
-SHIFT     - strafe down
-MOUSEX    - look horizontal
-MOUSEY    - look vertical
-MOUSELMB  - fire weapon
+W          - forward
+S          - backward
+A          - strafe left
+D          - strafe right
+SPACE      - strafe up
+SHIFT      - strafe down
+Q          - roll left
+E          - roll right
+MOUSEX     - look horizontal
+MOUSEY     - look vertical
+MOUSE-LMB  - fire weapon
 ```
 
 Compiling:
