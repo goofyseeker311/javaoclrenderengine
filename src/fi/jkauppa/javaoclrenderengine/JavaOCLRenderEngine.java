@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -63,7 +63,7 @@ public class JavaOCLRenderEngine {
 	private long device = MemoryUtil.NULL, queue = MemoryUtil.NULL, program = MemoryUtil.NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	private long[] graphicspointerbuffer = new long[7];
+	private long[] graphicspointerbuffer = new long[8];
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
@@ -74,6 +74,7 @@ public class JavaOCLRenderEngine {
 	private int[] triangletexturelist = null;
 	private float[] objectlistpos3sca3rot3 = null;
 	private int objectlistlength = 0;
+	private float[] cameramov3rot3 = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 	private Clip[] cannonsound = null;
 	private int cannonsoundind = 0;
 	private boolean cannonfiring = false;
@@ -85,8 +86,13 @@ public class JavaOCLRenderEngine {
 	private boolean keyright = false;
 	private boolean keyup = false;
 	private boolean keydown = false;
+	@SuppressWarnings("unused")
+	private boolean keyrleft = false;
+	@SuppressWarnings("unused")
+	private boolean keyrright = false;
 	private long nanolasttimetick = System.nanoTime();
-	private double[] lastmousex = {0}, lastmousey = {0};
+	private double[] mousex = {0}, mousey = {0};
+	private double lastmousex = 0, lastmousey = 0;
 	private float lasttimedeltaseconds = 0.0f;
 	private long monitor = MemoryUtil.NULL;
 	private GLFWVidMode videomode = null;
@@ -142,7 +148,8 @@ public class JavaOCLRenderEngine {
 		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
-		GLFW.glfwGetCursorPos(window, lastmousex, lastmousey);
+		GLFW.glfwGetCursorPos(window, mousex, mousey);
+		lastmousex = mousex[0]; lastmousey = mousey[0];
 		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
 		this.trianglelistpos3iduv3 = new float[]{
 				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
@@ -200,12 +207,15 @@ public class JavaOCLRenderEngine {
 		this.graphicspointerbuffer[2] = computelib.createBuffer(device, 1);
 		this.graphicshbuffer = new int[1];
 		this.graphicspointerbuffer[3] = computelib.createBuffer(device, cameraposrot3fovres.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
 		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, objectlistpos3sca3rot3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
+		this.graphicspointerbuffer[7] = computelib.createBuffer(device, cameramov3rot3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], cameramov3rot3);
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(device, programSource);
 	}
@@ -288,19 +298,30 @@ public class JavaOCLRenderEngine {
 			objectlistpos3sca3rot3[9*i+7] += 17.0f*ds;
 			objectlistpos3sca3rot3[9*i+8] += 19.0f*ds;
 		}
-		if (this.keyfwd) {cameraposrot3fovres[0] += ds;}
-		if (this.keyback) {cameraposrot3fovres[0] -= ds;}
-		if (this.keyleft) {cameraposrot3fovres[1] -= ds;}
-		if (this.keyright) {cameraposrot3fovres[1] += ds;}
-		if (this.keyup) {cameraposrot3fovres[2] += ds;}
-		if (this.keydown) {cameraposrot3fovres[2] -= ds;}
+		cameramov3rot3[0] = 0.0f;
+		cameramov3rot3[1] = 0.0f;
+		cameramov3rot3[2] = 0.0f;
+		cameramov3rot3[3] = 0.0f;
+		cameramov3rot3[4] = 0.0f;
+		cameramov3rot3[5] = 0.0f;
+		if (this.keyfwd) {cameramov3rot3[0] += ds;}
+		if (this.keyback) {cameramov3rot3[0] -= ds;}
+		if (this.keyleft) {cameramov3rot3[1] -= ds;}
+		if (this.keyright) {cameramov3rot3[1] += ds;}
+		if (this.keyup) {cameramov3rot3[2] += ds;}
+		if (this.keydown) {cameramov3rot3[2] -= ds;}
+		cameramov3rot3[5] = (float)(0.1f*(mousex[0]-lastmousex));
+		cameramov3rot3[4] = (float)(0.1f*(mousey[0]-lastmousey));
+		lastmousex = mousex[0];
+		lastmousey = mousey[0];
 	}
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferi(device, queue, graphicspointerbuffer[2], new int[]{-1});
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], cameramov3rot3);
+		computelib.runProgram(device, queue, program, "movecamera", new long[]{graphicspointerbuffer[3],graphicspointerbuffer[7]}, new int[]{0}, new int[]{1});
+		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.insertBarrier(queue);
@@ -482,6 +503,8 @@ public class JavaOCLRenderEngine {
 				if (key==GLFW.GLFW_KEY_D) {keyright = true;}
 				if (key==GLFW.GLFW_KEY_SPACE) {keyup = true;}
 				if (key==GLFW.GLFW_KEY_LEFT_SHIFT) {keydown = true;}
+				if (key==GLFW.GLFW_KEY_Q) {keyrleft = true;}
+				if (key==GLFW.GLFW_KEY_E) {keyrright = true;}
 			}
 			if (action==GLFW.GLFW_RELEASE) {
 				if (key==GLFW.GLFW_KEY_W) {keyfwd = false;}
@@ -490,21 +513,15 @@ public class JavaOCLRenderEngine {
 				if (key==GLFW.GLFW_KEY_D) {keyright = false;}
 				if (key==GLFW.GLFW_KEY_SPACE) {keyup = false;}
 				if (key==GLFW.GLFW_KEY_LEFT_SHIFT) {keydown = false;}
+				if (key==GLFW.GLFW_KEY_Q) {keyrleft = false;}
+				if (key==GLFW.GLFW_KEY_E) {keyrright = false;}
 			}
 		}
 	}
 	private class MousePositionProcessor implements GLFWCursorPosCallbackI {
 		@Override public void invoke(long window, double xpos, double ypos) {
-			double mousedeltax = xpos-lastmousex[0];
-			double mousedeltay = ypos-lastmousey[0];
-			cameraposrot3fovres[5] += 0.1f*mousedeltax;
-			cameraposrot3fovres[4] += 0.1f*mousedeltay;
-			if (cameraposrot3fovres[5]>360.0f) {cameraposrot3fovres[5] -= 360.0f;}
-			if (cameraposrot3fovres[5]<0.0f) {cameraposrot3fovres[5] += 360.0f;}
-			if (cameraposrot3fovres[4]>90.0f) {cameraposrot3fovres[4] = 90.0f;}
-			if (cameraposrot3fovres[4]<-90.0f) {cameraposrot3fovres[4] = -90.0f;}
-			lastmousex[0] = xpos;
-			lastmousey[0] = ypos;
+			mousex[0] = xpos;
+			mousey[0] = ypos;
 		}
 	}
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {

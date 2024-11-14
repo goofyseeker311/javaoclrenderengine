@@ -10,9 +10,10 @@ float16 planetriangleintersection(float4 plane, float4 pos1, float4 pos2, float4
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
-kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
-kernel void renderview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
-kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void movecamera(global float *cam, global const float *cmv);
+kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam);
+kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam);
+kernel void renderview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -156,7 +157,44 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void movecamera(global float *cam, global const float *cmv) {
+	unsigned int xid=get_global_id(0);
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
+	float2 camfov = (float2)(cam[6],cam[7]);
+	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+
+	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
+	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
+
+	float3 camrotrad = radians(camrot);
+	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
+	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
+	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
+	float16 cammat = rotationmatrix(camrotrad);
+	float4 camdirrot = matrixposmult(camdir, cammat);
+	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
+	float4 camupdirrot = matrixposmult(camupdir, cammat);
+
+	campos = translatepos(campos,camdirrot,camposdelta.x);
+	campos = translatepos(campos,camrightdirrot,camposdelta.y);
+	campos = translatepos(campos,camupdirrot,camposdelta.z);
+	camrot.x += camrotdelta.x;
+	camrot.y += camrotdelta.y;
+	camrot.z += camrotdelta.z;
+
+	if (camrot.y<-90.0f) {camrot.y = -90.0f;}
+	if (camrot.y>90.0f) {camrot.y = 90.0f;}
+
+	cam[0] = campos.x;
+	cam[1] = campos.y;
+	cam[2] = campos.z;
+	cam[3] = camrot.x;
+	cam[4] = camrot.y;
+	cam[5] = camrot.z;
+}
+
+kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -171,9 +209,11 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 		img[pixelind*4+3] = 0.0f;
 		imz[pixelind] = INFINITY;
 	}
+
+	imh[0] = -1;
 }
 
-kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
@@ -199,7 +239,7 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 	}
 }
 
-kernel void renderview(global float *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void renderview(global float *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
