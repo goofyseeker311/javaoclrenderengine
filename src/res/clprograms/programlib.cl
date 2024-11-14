@@ -160,47 +160,51 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 kernel void movecamera(global float *cam, global const float *cmv) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
-	float2 camfov = (float2)(cam[6],cam[7]);
-	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+	float2 camfov = (float2)(cam[3],cam[4]);
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
+	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
-	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
-	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
-
-	float3 camrotrad = radians(camrot);
 	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
 	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
-	float16 cammat = rotationmatrix(camrotrad);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);
 
+	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
+	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
+
 	campos = translatepos(campos,camdirrot,camposdelta.x);
 	campos = translatepos(campos,camrightdirrot,camposdelta.y);
 	campos = translatepos(campos,camupdirrot,camposdelta.z);
-	camrot.x += camrotdelta.x;
-	camrot.y += camrotdelta.y;
-	camrot.z += camrotdelta.z;
-
-	if (camrot.y<-90.0f) {camrot.y = -90.0f;}
-	if (camrot.y>90.0f) {camrot.y = 90.0f;}
+	float16 camrotdeltamat = rotationmatrix(camrotdelta);
+	cammat = matrixmatmult(cammat, camrotdeltamat);
 
 	cam[0] = campos.x;
 	cam[1] = campos.y;
 	cam[2] = campos.z;
-	cam[3] = camrot.x;
-	cam[4] = camrot.y;
-	cam[5] = camrot.z;
+	cam[7] = cammat.s0;
+	cam[8] = cammat.s1;
+	cam[9] = cammat.s2;
+	cam[10] = cammat.s3;
+	cam[11] = cammat.s4;
+	cam[12] = cammat.s5;
+	cam[13] = cammat.s6;
+	cam[14] = cammat.s7;
+	cam[15] = cammat.s8;
+	cam[16] = cammat.s9;
+	cam[17] = cammat.sA;
+	cam[18] = cammat.sB;
+	cam[19] = cammat.sC;
+	cam[20] = cammat.sD;
+	cam[21] = cammat.sE;
+	cam[22] = cammat.sF;
 }
 
 kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam) {
 	unsigned int xid=get_global_id(0);
-	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
-	float2 camfov = (float2)(cam[6],cam[7]);
-	int2 camres = (int2)((int)cam[8],(int)cam[9]);
-
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
+	imh[0] = -1;
 	for (int y=0;y<camres.y;y++) {
 		int pixelind = y*camres.x+xid;
 		img[pixelind*4+0] = 0.0f;
@@ -209,17 +213,10 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 		img[pixelind*4+3] = 0.0f;
 		imz[pixelind] = INFINITY;
 	}
-
-	imh[0] = -1;
 }
 
 kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam) {
-	unsigned int xid=get_global_id(0);
-	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
-	float2 camfov = (float2)(cam[6],cam[7]);
-	int2 camres = (int2)((int)cam[8],(int)cam[9]);
-
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
 
@@ -244,16 +241,15 @@ kernel void renderview(global float *img, global float *imz, global int *imh , g
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float3 camrot = (float3)(cam[3],cam[4],cam[5]);
-	float2 camfov = (float2)(cam[6],cam[7]);
-	int2 camres = (int2)((int)cam[8],(int)cam[9]);
+	float2 camfov = (float2)(cam[3],cam[4]);
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
+	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16, os = 9;
 	const int texturesize = 1024;
 	static global atomic_int isdrawing[7680*4320];
 
-	float3 camrotrad = radians(camrot);
 	float2 camhalffovrad = radians(camfov/2.0f);
 	float2 camhalffovlen = (float2)(tan(camhalffovrad.x), tan(camhalffovrad.y));
 	int2 camhalfres = camres/2;
@@ -265,7 +261,6 @@ kernel void renderview(global float *img, global float *imz, global int *imh , g
 	float4 coldir = (float4)(1.0f,camcollen,0.0f,0.0f);
 	float4 colupdir = (float4)(1.0f,camcollen,camhalffovlen.y,0.0f);
 	float4 coldowndir = (float4)(1.0f,camcollen,-camhalffovlen.y,0.0f);
-	float16 cammat = rotationmatrix(camrotrad);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);

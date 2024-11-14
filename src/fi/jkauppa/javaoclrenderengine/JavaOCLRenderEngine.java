@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -68,13 +68,13 @@ public class JavaOCLRenderEngine {
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
-	private float[] cameraposrot3fovres = null;
+	private float[] camerapos3fov2res2rotmat16 = null;
 	private float[] trianglelistpos3iduv3 = null;
 	private int trianglelistlength = 0;
 	private int[] triangletexturelist = null;
 	private float[] objectlistpos3sca3rot3 = null;
 	private int objectlistlength = 0;
-	private float[] cameramov3rot3 = {0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
+	private float[] cameramov3rot3 = null;
 	private Clip[] cannonsound = null;
 	private int cannonsoundind = 0;
 	private boolean cannonfiring = false;
@@ -150,7 +150,8 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwSwapBuffers(window);
 		GLFW.glfwGetCursorPos(window, mousex, mousey);
 		lastmousex = mousex[0]; lastmousey = mousey[0];
-		this.cameraposrot3fovres = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight};
+		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
+		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.trianglelistpos3iduv3 = new float[]{
 				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
 				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
@@ -206,8 +207,8 @@ public class JavaOCLRenderEngine {
 		this.graphicszbuffer = new float[graphicslength];
 		this.graphicspointerbuffer[2] = computelib.createBuffer(device, 1);
 		this.graphicshbuffer = new int[1];
-		this.graphicspointerbuffer[3] = computelib.createBuffer(device, cameraposrot3fovres.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
+		this.graphicspointerbuffer[3] = computelib.createBuffer(device, camerapos3fov2res2rotmat16.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], camerapos3fov2res2rotmat16);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
 		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
@@ -310,8 +311,10 @@ public class JavaOCLRenderEngine {
 		if (this.keyright) {cameramov3rot3[1] += ds;}
 		if (this.keyup) {cameramov3rot3[2] += ds;}
 		if (this.keydown) {cameramov3rot3[2] -= ds;}
-		cameramov3rot3[5] = (float)(0.1f*(mousex[0]-lastmousex));
-		cameramov3rot3[4] = (float)(0.1f*(mousey[0]-lastmousey));
+		if (this.keyrleft) {cameramov3rot3[3] += ds;}
+		if (this.keyrright) {cameramov3rot3[3] -= ds;}
+		cameramov3rot3[5] = (float)(0.001f*(mousex[0]-lastmousex));
+		cameramov3rot3[4] = (float)(0.001f*(mousey[0]-lastmousey));
 		lastmousex = mousex[0];
 		lastmousey = mousey[0];
 	}
@@ -323,6 +326,7 @@ public class JavaOCLRenderEngine {
 		computelib.runProgram(device, queue, program, "movecamera", new long[]{graphicspointerbuffer[3],graphicspointerbuffer[7]}, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
+		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
