@@ -13,6 +13,8 @@ import java.nio.IntBuffer;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 
@@ -37,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.6";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -159,10 +161,7 @@ public class JavaOCLRenderEngine {
 				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 		};
 		this.trianglelistlength = this.trianglelistpos3iduv3.length/16;
-		cannonsound = new Clip[50];
-		for (int i=0;i<cannonsound.length;i++) {
-			cannonsound[i] = loadSound("res/sounds/firecannon.wav", true);
-		}
+		cannonsound = loadSound("res/sounds/firecannon.wav", 50, true);
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
@@ -448,8 +447,8 @@ public class JavaOCLRenderEngine {
 		return k;
 	}
 
-	public static Clip loadSound(String filename, boolean loadresourcefromjar) {
-		Clip k = null;
+	public static Clip[] loadSound(String filename, int copies, boolean loadresourcefromjar) {
+		Clip[] k = null;
 		if (filename!=null) {
 			try {
 				File soundfile = new File(filename);
@@ -459,9 +458,15 @@ public class JavaOCLRenderEngine {
 				} else {
 					soundfilestream = new BufferedInputStream(new FileInputStream(soundfile));
 				}
-				Clip loadsound = AudioSystem.getClip();
-				loadsound.open(AudioSystem.getAudioInputStream(soundfilestream));
-				k = loadsound;
+				AudioInputStream soundfileaudiostream = AudioSystem.getAudioInputStream(soundfilestream);
+				AudioFormat soundfileaudioformat = soundfileaudiostream.getFormat();
+				byte[] soundbytes = soundfileaudiostream.readAllBytes();
+				Clip[] loadsounds = new Clip[copies];
+				for (int i=0;i<copies;i++) {
+					loadsounds[i] = AudioSystem.getClip();
+					loadsounds[i].open(soundfileaudioformat, soundbytes, 0, soundbytes.length);
+				}
+				k = loadsounds;
 				soundfilestream.close();
 			} catch (Exception ex) {ex.printStackTrace();}
 		}
@@ -470,7 +475,6 @@ public class JavaOCLRenderEngine {
 	
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
-			System.out.println("key: "+key+" scancode: "+scancode+" action: "+action+" mods: "+mods);
 			if (action==GLFW.GLFW_PRESS) {
 				if (key==GLFW.GLFW_KEY_W) {keyfwd = true;}
 				if (key==GLFW.GLFW_KEY_S) {keyback = true;}
@@ -491,7 +495,6 @@ public class JavaOCLRenderEngine {
 	}
 	private class MousePositionProcessor implements GLFWCursorPosCallbackI {
 		@Override public void invoke(long window, double xpos, double ypos) {
-			System.out.println("xpos: "+xpos+" ypos: "+ypos);
 			double mousedeltax = xpos-lastmousex[0];
 			double mousedeltay = ypos-lastmousey[0];
 			cameraposrot3fovres[5] += 0.1f*mousedeltax;
@@ -506,7 +509,6 @@ public class JavaOCLRenderEngine {
 	}
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
 		@Override public void invoke(long window, int button, int action, int mods) {
-			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
 			if ((button==0)&&(action==1)) {
 				cannonfiring = true;
 			}

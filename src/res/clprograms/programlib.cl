@@ -185,14 +185,14 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 
 	for (int y=camhalfres.y-crosslength;y<camhalfres.y+crosslength;y++) {
 		int pixelind = y*camres.x+camhalfres.x;
-		img[pixelind*4+0] = 2.0f;
+		img[pixelind*4+0] = 1000.0f;
 		img[pixelind*4+1] = 0.0f;
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 1.0f;
 	}
 	for (int x=camhalfres.x-crosslength;x<camhalfres.x+crosslength;x++) {
 		int pixelind = camhalfres.y*camres.x+x;
-		img[pixelind*4+0] = 2.0f;
+		img[pixelind*4+0] = 1000.0f;
 		img[pixelind*4+1] = 0.0f;
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 1.0f;
