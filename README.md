@@ -16,8 +16,8 @@ SPACE      - strafe up
 SHIFT      - strafe down
 Q          - roll left
 E          - roll right
-MOUSEX     - look horizontal
-MOUSEY     - look vertical
+MOUSE-X    - look horizontal
+MOUSE-Y    - look vertical
 MOUSE-LMB  - fire weapon
 ```
 
