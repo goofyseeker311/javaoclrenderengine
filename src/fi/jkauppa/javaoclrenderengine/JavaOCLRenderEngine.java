@@ -37,7 +37,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -74,6 +74,9 @@ public class JavaOCLRenderEngine {
 	private int objectlistlength = 0;
 	private Clip[] cannonsound = null;
 	private int cannonsoundind = 0;
+	private boolean cannonfiring = false;
+	private float cannonfiringlast = 0;
+	private float cannonfiringdelta = 0.02f;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -82,7 +85,7 @@ public class JavaOCLRenderEngine {
 	private boolean keydown = false;
 	private long nanolasttimetick = System.nanoTime();
 	private double[] lastmousex = {0}, lastmousey = {0};
-	private float lasttimedeltaseconds = 1.0f;
+	private float lasttimedeltaseconds = 0.0f;
 	private long monitor = MemoryUtil.NULL;
 	private GLFWVidMode videomode = null;
 	private KeyProcessor keyprocessor = new KeyProcessor();
@@ -156,7 +159,7 @@ public class JavaOCLRenderEngine {
 				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 		};
 		this.trianglelistlength = this.trianglelistpos3iduv3.length/16;
-		cannonsound = new Clip[10];
+		cannonsound = new Clip[50];
 		for (int i=0;i<cannonsound.length;i++) {
 			cannonsound[i] = loadSound("res/sounds/firecannon.wav", true);
 		}
@@ -195,8 +198,8 @@ public class JavaOCLRenderEngine {
 		}
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
 		this.graphicszbuffer = new float[graphicslength];
-		this.graphicspointerbuffer[2] = computelib.createBuffer(device, graphicslength);
-		this.graphicshbuffer = new int[graphicslength];
+		this.graphicspointerbuffer[2] = computelib.createBuffer(device, 1);
+		this.graphicshbuffer = new int[1];
 		this.graphicspointerbuffer[3] = computelib.createBuffer(device, cameraposrot3fovres.length);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
@@ -260,6 +263,27 @@ public class JavaOCLRenderEngine {
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
 				);
+		cannonfiringlast += ds;
+		if ((cannonfiring)&&(cannonfiringlast>cannonfiringdelta)) {
+			cannonfiringlast = 0.0f;
+			cannonsound[cannonsoundind].stop();
+			cannonsound[cannonsoundind].setFramePosition(0);
+			cannonsound[cannonsoundind].start();
+			if (++cannonsoundind>=cannonsound.length) {cannonsoundind = 0;}
+			int hitobjind = graphicshbuffer[0];
+			int hitobjindstep = hitobjind * 9;
+			if (hitobjind!=-1) {
+				float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-9];
+				for (int i=0;i<hitobjindstep;i++) {
+					newobjectlistpos3sca3rot3[i] = objectlistpos3sca3rot3[i];
+				}
+				for (int i=hitobjindstep+9;i<objectlistpos3sca3rot3.length;i++) {
+					newobjectlistpos3sca3rot3[i-9] = objectlistpos3sca3rot3[i];
+				}
+				objectlistlength--;
+				objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
+			}
+		}
 		for (int i=0;i<objectlistlength;i++) {
 			objectlistpos3sca3rot3[9*i+6] += 15.0f*ds;
 			objectlistpos3sca3rot3[9*i+7] += 17.0f*ds;
@@ -275,10 +299,12 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
+		computelib.writeBufferi(device, queue, graphicspointerbuffer[2], new int[]{-1});
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], cameraposrot3fovres);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
+		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
 		computelib.readBufferi(device, queue, graphicspointerbuffer[2], graphicshbuffer);
@@ -482,23 +508,10 @@ public class JavaOCLRenderEngine {
 		@Override public void invoke(long window, int button, int action, int mods) {
 			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
 			if ((button==0)&&(action==1)) {
-				cannonsound[cannonsoundind].stop();
-				cannonsound[cannonsoundind].setFramePosition(0);
-				cannonsound[cannonsoundind].start();
-				if (++cannonsoundind>=cannonsound.length) {cannonsoundind = 0;}
-				int hitobjind = graphicshbuffer[graphicswidth*graphicsheight/2+graphicswidth/2];
-				int hitobjindstep = hitobjind * 9;
-				if (hitobjind!=-1) {
-					float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-9];
-					for (int i=0;i<hitobjindstep;i++) {
-						newobjectlistpos3sca3rot3[i] = objectlistpos3sca3rot3[i];
-					}
-					for (int i=hitobjindstep+9;i<objectlistpos3sca3rot3.length;i++) {
-						newobjectlistpos3sca3rot3[i-9] = objectlistpos3sca3rot3[i];
-					}
-					objectlistlength--;
-					objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
-				}
+				cannonfiring = true;
+			}
+			if ((button==0)&&(action==0)) {
+				cannonfiring = false;
 			}
 		}
 	}

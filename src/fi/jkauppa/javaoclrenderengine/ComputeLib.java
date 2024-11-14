@@ -109,6 +109,12 @@ public class ComputeLib {
 	public void waitForQueue(long queue) {
 		CL30.clFinish(queue);
 	}
+	public void insertBarrier(long queue) {
+		MemoryStack clStack = MemoryStack.stackPush();
+		PointerBuffer event = clStack.mallocPointer(1);
+		CL30.clEnqueueBarrierWithWaitList(queue, null, event);
+		MemoryStack.stackPop();
+	}
 
 	public long createBuffer(long device, int size) {
 		MemoryStack clStack = MemoryStack.stackPush();

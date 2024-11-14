@@ -170,7 +170,6 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 0.0f;
 		imz[pixelind] = INFINITY;
-		imh[pixelind] = -1;
 	}
 }
 
@@ -354,7 +353,7 @@ kernel void renderview(global float *img, global float *imz, global int *imh , g
 					while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
 					if (drawdistance<imz[pixelind]) {
 						imz[pixelind] = drawdistance;
-						imh[pixelind] = oid;
+						if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
 						int texpixel = tex[texind];
 						uchar4 texrgba = as_uchar4(texpixel);
 						float4 texrgbaf = convert_float4(texrgba) / 255.0f;
