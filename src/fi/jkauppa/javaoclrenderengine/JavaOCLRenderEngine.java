@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.4.0";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -334,7 +334,8 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "renderview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
+		//computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
+		computelib.runProgram(device, queue, program, "renderrayview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);

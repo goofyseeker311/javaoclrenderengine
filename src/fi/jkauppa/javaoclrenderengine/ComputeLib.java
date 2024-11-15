@@ -194,7 +194,10 @@ public class ComputeLib {
 				globalWorkSize.put(i, size[i]);
 			}
 			PointerBuffer event = clStack.mallocPointer(1);
-			CL30.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
+			errcode_ret_int = CL30.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
+			if (errcode_ret_int!=CL30.CL_SUCCESS) {
+				System.out.println("runProgram kernel enqueue failed: "+errcode_ret_int);
+			}
 		}
 		MemoryStack.stackPop();
 	}
