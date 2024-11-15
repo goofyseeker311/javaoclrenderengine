@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.3.8";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.3.9";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -64,7 +64,7 @@ public class JavaOCLRenderEngine {
 	private Device devicedata = null;
 	private String usingdevice = null;
 	private long[] graphicspointerbuffer = new long[8];
-	private float[] graphicsbuffer = null;
+	private int[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
@@ -86,9 +86,7 @@ public class JavaOCLRenderEngine {
 	private boolean keyright = false;
 	private boolean keyup = false;
 	private boolean keydown = false;
-	@SuppressWarnings("unused")
 	private boolean keyrleft = false;
-	@SuppressWarnings("unused")
 	private boolean keyrright = false;
 	private long nanolasttimetick = System.nanoTime();
 	private double[] mousex = {0}, mousey = {0};
@@ -144,7 +142,7 @@ public class JavaOCLRenderEngine {
 		createQuadProgram();
 		createFullScreenQuad();
 		tex = createTexture(this.graphicswidth,this.graphicsheight);
-		buf = createBuffer(graphicslength*4);
+		buf = createBuffer(graphicslength);
 		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
@@ -176,7 +174,16 @@ public class JavaOCLRenderEngine {
 		this.objectlistlength = 100;
 		float objectradius = 20.0f;
 		this.objectlistpos3sca3rot3 = new float[objectlistlength*9];
-		for (int i=0;i<objectlistlength;i++) {
+		this.objectlistpos3sca3rot3[0] = 5.0f;
+		this.objectlistpos3sca3rot3[1] = 0.0f;
+		this.objectlistpos3sca3rot3[2] = 0.0f;
+		this.objectlistpos3sca3rot3[3] = 1.0f;
+		this.objectlistpos3sca3rot3[4] = 1.0f;
+		this.objectlistpos3sca3rot3[5] = 1.0f;
+		this.objectlistpos3sca3rot3[6] = 0.0f;
+		this.objectlistpos3sca3rot3[7] = 0.0f;
+		this.objectlistpos3sca3rot3[8] = 0.0f;
+		for (int i=1;i<objectlistlength;i++) {
 			this.objectlistpos3sca3rot3[9*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
 			this.objectlistpos3sca3rot3[9*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
 			this.objectlistpos3sca3rot3[9*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
@@ -200,8 +207,8 @@ public class JavaOCLRenderEngine {
 		if (this.glinterop) {
 			this.graphicspointerbuffer[0] = computelib.createSharedGLBuffer(device, buf);
 		} else {
-			this.graphicsbuffer = new float[graphicslength*4];
-			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength*4);
+			this.graphicsbuffer = new int[graphicslength];
+			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength);
 		}
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
 		this.graphicszbuffer = new float[graphicslength];
@@ -294,7 +301,7 @@ public class JavaOCLRenderEngine {
 				objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
 			}
 		}
-		for (int i=0;i<objectlistlength;i++) {
+		for (int i=1;i<objectlistlength;i++) {
 			objectlistpos3sca3rot3[9*i+6] += 15.0f*ds;
 			objectlistpos3sca3rot3[9*i+7] += 17.0f*ds;
 			objectlistpos3sca3rot3[9*i+8] += 19.0f*ds;
@@ -333,8 +340,8 @@ public class JavaOCLRenderEngine {
 		computelib.waitForQueue(queue);
 		computelib.readBufferi(device, queue, graphicspointerbuffer[2], graphicshbuffer);
 		if (!this.glinterop) {
-			float[] newgraphicsbuffer = new float[graphicslength*4];
-			computelib.readBufferf(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
+			int[] newgraphicsbuffer = new int[graphicslength];
+			computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
 			graphicsbuffer = newgraphicsbuffer;
 		}
 		long frameendtime = System.nanoTime();
@@ -402,7 +409,7 @@ public class JavaOCLRenderEngine {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MIN_FILTER, GL31.GL_LINEAR);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MAG_FILTER, GL31.GL_LINEAR);
-		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGB32F, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_FLOAT, MemoryUtil.NULL);
+		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGB10_A2, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, MemoryUtil.NULL);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		return id;
 	}
@@ -418,12 +425,12 @@ public class JavaOCLRenderEngine {
 	private void updateTexture(int tid, int bid, int texturewidth, int textureheight) {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, tid);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, bid);
-		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_FLOAT, 0);
+		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-    private void transferBuffer(int id, float[] texturebuffer) {
+    private void transferBuffer(int id, int[] texturebuffer) {
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
     	GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);

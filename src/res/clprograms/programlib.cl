@@ -1,8 +1,10 @@
 float4 matrixposmult(const float4 pos, const float16 mat);
 float16 matrixmatmult(const float16 vmat1, const float16 vmat2);
-float16 rotationmatrix(float3 rot);
 float16 scalingmatrix(float3 sca);
+float16 rotationmatrix(float3 rot);
 float16 rotationmatrixaroundaxis(float4 axis, float rot);
+float16 rotationmatrixlookhorizontalroll(float3 rot);
+float16 rotationmatrixlookdir(float4 lookat, float rollaxis);
 float vectorangle(float4 dir1, float4 dir2);
 float4 planefromnormalatpos(float4 pos, float4 dir);
 float rayplanedistance(float4 pos, float4 dir, float4 plane);
@@ -11,9 +13,9 @@ float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
 kernel void movecamera(global float *cam, global const float *cmv);
-kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam);
-kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam);
-kernel void renderview(global float *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
+kernel void clearview(global int *img, global float *imz, global int *imh, global const float *cam);
+kernel void rendercross(global int *img, global float *imz, global int *imh, global const float *cam);
+kernel void renderview(global int *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -44,15 +46,15 @@ float16 matrixmatmult(const float16 vmat1, const float16 vmat2) {
 	return retmat;
 }
 
+float16 scalingmatrix(float3 sca) {
+	float16 retmat = (float16)(sca.x,0,0,0,0,sca.y,0,0,0,0,sca.z,0,0,0,0,1);
+	return retmat;
+}
 float16 rotationmatrix(float3 rot) {
 	float16 xrot = (float16)(1,0,0,0,0,cos(rot.x),-sin(rot.x),0,0,sin(rot.x),cos(rot.x),0,0,0,0,1);
 	float16 yrot = (float16)(cos(rot.y),0,sin(rot.y),0,0,1,0,0,-sin(rot.y),0,cos(rot.y),0,0,0,0,1);
 	float16 zrot = (float16)(cos(rot.z),-sin(rot.z),0,0,sin(rot.z),cos(rot.z),0,0,0,0,1,0,0,0,0,1);
 	float16 retmat = matrixmatmult(zrot,matrixmatmult(yrot, xrot));
-	return retmat;
-}
-float16 scalingmatrix(float3 sca) {
-	float16 retmat = (float16)(sca.x,0,0,0,0,sca.y,0,0,0,0,sca.z,0,0,0,0,1);
 	return retmat;
 }
 float16 rotationmatrixaroundaxis(float4 axis, float rot) {
@@ -163,6 +165,8 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	float2 camfov = (float2)(cam[3],cam[4]);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
+	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
+	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
 
 	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
@@ -171,12 +175,10 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);
 
-	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
-	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
-
 	campos = translatepos(campos,camdirrot,camposdelta.x);
 	campos = translatepos(campos,camrightdirrot,camposdelta.y);
 	campos = translatepos(campos,camupdirrot,camposdelta.z);
+
 	float16 camrotdeltamat = rotationmatrix(camrotdelta);
 	cammat = matrixmatmult(cammat, camrotdeltamat);
 
@@ -201,42 +203,34 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	cam[22] = cammat.sF;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global const float *cam) {
+kernel void clearview(global int *img, global float *imz, global int *imh, global const float *cam) {
 	unsigned int xid=get_global_id(0);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	imh[0] = -1;
 	for (int y=0;y<camres.y;y++) {
 		int pixelind = y*camres.x+xid;
-		img[pixelind*4+0] = 0.0f;
-		img[pixelind*4+1] = 0.0f;
-		img[pixelind*4+2] = 0.0f;
-		img[pixelind*4+3] = 0.0f;
+		img[pixelind] = 0x00000000;
 		imz[pixelind] = INFINITY;
 	}
 }
 
-kernel void rendercross(global float *img, global float *imz, global int *imh, global const float *cam) {
+kernel void rendercross(global int *img, global float *imz, global int *imh, global const float *cam) {
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
 
+	int crosscolor = 0b11000000000000000000001111111111;
 	for (int y=camhalfres.y-crosslength;y<camhalfres.y+crosslength;y++) {
 		int pixelind = y*camres.x+camhalfres.x;
-		img[pixelind*4+0] = 1000.0f;
-		img[pixelind*4+1] = 0.0f;
-		img[pixelind*4+2] = 0.0f;
-		img[pixelind*4+3] = 1.0f;
+		img[pixelind] = crosscolor;
 	}
 	for (int x=camhalfres.x-crosslength;x<camhalfres.x+crosslength;x++) {
 		int pixelind = camhalfres.y*camres.x+x;
-		img[pixelind*4+0] = 1000.0f;
-		img[pixelind*4+1] = 0.0f;
-		img[pixelind*4+2] = 0.0f;
-		img[pixelind*4+3] = 1.0f;
+		img[pixelind] = crosscolor;
 	}
 }
 
-kernel void renderview(global float *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
+kernel void renderview(global int *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
@@ -393,10 +387,8 @@ kernel void renderview(global float *img, global float *imz, global int *imh , g
 						uchar4 texrgba = as_uchar4(texpixel);
 						float4 texrgbaf = convert_float4(texrgba) / 255.0f;
 						float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-						img[pixelind*4+0] = rgbapixel.s0;
-						img[pixelind*4+1] = rgbapixel.s1;
-						img[pixelind*4+2] = rgbapixel.s2;
-						img[pixelind*4+3] = rgbapixel.s3;
+						int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
+						img[pixelind] = pixelcolor;
 					}
 					atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 				}
