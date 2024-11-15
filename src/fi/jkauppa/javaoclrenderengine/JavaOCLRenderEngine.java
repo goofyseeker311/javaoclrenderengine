@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.4.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.4.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -173,7 +173,7 @@ public class JavaOCLRenderEngine {
 		this.triangletexturelist = textureimagedataint.getData();
 		this.objectlistlength = 100;
 		float objectradius = 20.0f;
-		this.objectlistpos3sca3rot3 = new float[objectlistlength*9];
+		this.objectlistpos3sca3rot3 = new float[objectlistlength*13];
 		this.objectlistpos3sca3rot3[0] = 5.0f;
 		this.objectlistpos3sca3rot3[1] = 0.0f;
 		this.objectlistpos3sca3rot3[2] = 0.0f;
@@ -183,16 +183,24 @@ public class JavaOCLRenderEngine {
 		this.objectlistpos3sca3rot3[6] = 0.0f;
 		this.objectlistpos3sca3rot3[7] = 0.0f;
 		this.objectlistpos3sca3rot3[8] = 0.0f;
+		this.objectlistpos3sca3rot3[9] = 0.0f;
+		this.objectlistpos3sca3rot3[10] = 0.0f;
+		this.objectlistpos3sca3rot3[11] = 0.0f;
+		this.objectlistpos3sca3rot3[12] = (float)Math.sqrt(3);
 		for (int i=1;i<objectlistlength;i++) {
-			this.objectlistpos3sca3rot3[9*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[9*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[9*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[9*i+3] = 1.0f;
-			this.objectlistpos3sca3rot3[9*i+4] = 1.0f;
-			this.objectlistpos3sca3rot3[9*i+5] = 1.0f;
-			this.objectlistpos3sca3rot3[9*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3[9*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3[9*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[13*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3[13*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3[13*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3[13*i+3] = 1.0f;
+			this.objectlistpos3sca3rot3[13*i+4] = 1.0f;
+			this.objectlistpos3sca3rot3[13*i+5] = 1.0f;
+			this.objectlistpos3sca3rot3[13*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[13*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[13*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3[13*i+9] = 0.0f;
+			this.objectlistpos3sca3rot3[13*i+10] = 0.0f;
+			this.objectlistpos3sca3rot3[13*i+11] = 0.0f;
+			this.objectlistpos3sca3rot3[13*i+12] = (float)Math.sqrt(3);
 		}
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
@@ -288,23 +296,23 @@ public class JavaOCLRenderEngine {
 			cannonsound[cannonsoundind].start();
 			if (++cannonsoundind>=cannonsound.length) {cannonsoundind = 0;}
 			int hitobjind = graphicshbuffer[0];
-			int hitobjindstep = hitobjind * 9;
+			int hitobjindstep = hitobjind * 13;
 			if (hitobjind!=-1) {
-				float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-9];
+				float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-13];
 				for (int i=0;i<hitobjindstep;i++) {
 					newobjectlistpos3sca3rot3[i] = objectlistpos3sca3rot3[i];
 				}
-				for (int i=hitobjindstep+9;i<objectlistpos3sca3rot3.length;i++) {
-					newobjectlistpos3sca3rot3[i-9] = objectlistpos3sca3rot3[i];
+				for (int i=hitobjindstep+13;i<objectlistpos3sca3rot3.length;i++) {
+					newobjectlistpos3sca3rot3[i-13] = objectlistpos3sca3rot3[i];
 				}
 				objectlistlength--;
 				objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
 			}
 		}
 		for (int i=1;i<objectlistlength;i++) {
-			objectlistpos3sca3rot3[9*i+6] += 15.0f*ds;
-			objectlistpos3sca3rot3[9*i+7] += 17.0f*ds;
-			objectlistpos3sca3rot3[9*i+8] += 19.0f*ds;
+			objectlistpos3sca3rot3[13*i+6] += 15.0f*ds;
+			objectlistpos3sca3rot3[13*i+7] += 17.0f*ds;
+			objectlistpos3sca3rot3[13*i+8] += 19.0f*ds;
 		}
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
