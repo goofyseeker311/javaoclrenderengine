@@ -39,7 +39,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.4.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.4.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -72,7 +72,7 @@ public class JavaOCLRenderEngine {
 	private float[] trianglelistpos3iduv3 = null;
 	private int trianglelistlength = 0;
 	private int[] triangletexturelist = null;
-	private float[] objectlistpos3sca3rot3 = null;
+	private float[] objectlistpos3sca3rot3relsph4 = null;
 	private int objectlistlength = 0;
 	private float[] cameramov3rot3 = null;
 	private Clip[] cannonsound = null;
@@ -171,36 +171,36 @@ public class JavaOCLRenderEngine {
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
-		this.objectlistlength = 100;
-		float objectradius = 20.0f;
-		this.objectlistpos3sca3rot3 = new float[objectlistlength*13];
-		this.objectlistpos3sca3rot3[0] = 5.0f;
-		this.objectlistpos3sca3rot3[1] = 0.0f;
-		this.objectlistpos3sca3rot3[2] = 0.0f;
-		this.objectlistpos3sca3rot3[3] = 1.0f;
-		this.objectlistpos3sca3rot3[4] = 1.0f;
-		this.objectlistpos3sca3rot3[5] = 1.0f;
-		this.objectlistpos3sca3rot3[6] = 0.0f;
-		this.objectlistpos3sca3rot3[7] = 0.0f;
-		this.objectlistpos3sca3rot3[8] = 0.0f;
-		this.objectlistpos3sca3rot3[9] = 0.0f;
-		this.objectlistpos3sca3rot3[10] = 0.0f;
-		this.objectlistpos3sca3rot3[11] = 0.0f;
-		this.objectlistpos3sca3rot3[12] = (float)Math.sqrt(3);
+		this.objectlistlength = 1000;
+		float objectradius = 50.0f;
+		this.objectlistpos3sca3rot3relsph4 = new float[objectlistlength*13];
+		this.objectlistpos3sca3rot3relsph4[0] = 5.0f;
+		this.objectlistpos3sca3rot3relsph4[1] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[2] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[3] = 1.0f;
+		this.objectlistpos3sca3rot3relsph4[4] = 1.0f;
+		this.objectlistpos3sca3rot3relsph4[5] = 1.0f;
+		this.objectlistpos3sca3rot3relsph4[6] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[7] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[8] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[9] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[10] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[11] = 0.0f;
+		this.objectlistpos3sca3rot3relsph4[12] = (float)Math.sqrt(3);
 		for (int i=1;i<objectlistlength;i++) {
-			this.objectlistpos3sca3rot3[13*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[13*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[13*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3[13*i+3] = 1.0f;
-			this.objectlistpos3sca3rot3[13*i+4] = 1.0f;
-			this.objectlistpos3sca3rot3[13*i+5] = 1.0f;
-			this.objectlistpos3sca3rot3[13*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3[13*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3[13*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3[13*i+9] = 0.0f;
-			this.objectlistpos3sca3rot3[13*i+10] = 0.0f;
-			this.objectlistpos3sca3rot3[13*i+11] = 0.0f;
-			this.objectlistpos3sca3rot3[13*i+12] = (float)Math.sqrt(3);
+			this.objectlistpos3sca3rot3relsph4[13*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3relsph4[13*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3relsph4[13*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
+			this.objectlistpos3sca3rot3relsph4[13*i+3] = 1.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+4] = 1.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+5] = 1.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+9] = 0.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+10] = 0.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+11] = 0.0f;
+			this.objectlistpos3sca3rot3relsph4[13*i+12] = (float)Math.sqrt(3);
 		}
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
@@ -228,8 +228,8 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], trianglelistpos3iduv3);
 		this.graphicspointerbuffer[5] = computelib.createBuffer(device, triangletexturelist.length);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[5], triangletexturelist);
-		this.graphicspointerbuffer[6] = computelib.createBuffer(device, objectlistpos3sca3rot3.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
+		this.graphicspointerbuffer[6] = computelib.createBuffer(device, objectlistpos3sca3rot3relsph4.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3relsph4);
 		this.graphicspointerbuffer[7] = computelib.createBuffer(device, cameramov3rot3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], cameramov3rot3);
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
@@ -298,21 +298,21 @@ public class JavaOCLRenderEngine {
 			int hitobjind = graphicshbuffer[0];
 			int hitobjindstep = hitobjind * 13;
 			if (hitobjind!=-1) {
-				float[] newobjectlistpos3sca3rot3 = new float[objectlistpos3sca3rot3.length-13];
+				float[] newobjectlistpos3sca3rot3relsph4 = new float[objectlistpos3sca3rot3relsph4.length-13];
 				for (int i=0;i<hitobjindstep;i++) {
-					newobjectlistpos3sca3rot3[i] = objectlistpos3sca3rot3[i];
+					newobjectlistpos3sca3rot3relsph4[i] = objectlistpos3sca3rot3relsph4[i];
 				}
-				for (int i=hitobjindstep+13;i<objectlistpos3sca3rot3.length;i++) {
-					newobjectlistpos3sca3rot3[i-13] = objectlistpos3sca3rot3[i];
+				for (int i=hitobjindstep+13;i<objectlistpos3sca3rot3relsph4.length;i++) {
+					newobjectlistpos3sca3rot3relsph4[i-13] = objectlistpos3sca3rot3relsph4[i];
 				}
 				objectlistlength--;
-				objectlistpos3sca3rot3 = newobjectlistpos3sca3rot3;
+				objectlistpos3sca3rot3relsph4 = newobjectlistpos3sca3rot3relsph4;
 			}
 		}
 		for (int i=1;i<objectlistlength;i++) {
-			objectlistpos3sca3rot3[13*i+6] += 15.0f*ds;
-			objectlistpos3sca3rot3[13*i+7] += 17.0f*ds;
-			objectlistpos3sca3rot3[13*i+8] += 19.0f*ds;
+			objectlistpos3sca3rot3relsph4[13*i+6] += 15.0f*ds;
+			objectlistpos3sca3rot3relsph4[13*i+7] += 17.0f*ds;
+			objectlistpos3sca3rot3relsph4[13*i+8] += 19.0f*ds;
 		}
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
@@ -336,13 +336,12 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3relsph4);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], cameramov3rot3);
 		computelib.runProgram(device, queue, program, "movecamera", new long[]{graphicspointerbuffer[3],graphicspointerbuffer[7]}, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.insertBarrier(queue);
-		//computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.runProgram(device, queue, program, "renderrayview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});

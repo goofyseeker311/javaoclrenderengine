@@ -14,6 +14,8 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
 float4 triangleplane(float16 vtri);
 float16 planetriangleintersection(float4 plane, float16 vtri);
 float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
+float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
+float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 camfov, float16 cammat);
 kernel void movecamera(global float *cam, global const float *cmv);
 kernel void clearview(global int *img, global float *imz, global int *imh, global const float *cam);
 kernel void rendercross(global int *img, global float *imz, global int *imh, global const float *cam);
@@ -247,10 +249,58 @@ float raypointdistance(float4 vpos, float4 vdir, float4 vpoint) {
 	return dist;
 }
 
+float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 camfov, float16 cammat) {
+	float4 rect = (float4)(NAN);
+	float4 vpoint = (float4)(vsphere.x,vsphere.y,vsphere.z,0.0f);
+	float4 lvec = vpoint - campos;
+	float lvecl = length(lvec);
+	float2 camhalffov = camfov / 2.0f;
+	int2 camhalfres = camres / 2;
+	float2 camhalffovmult = 1.0f/tan(camhalffov);
+	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
+	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
+	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
+	float4 camdirrot = matrixposmult(camdir, cammat);
+	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
+	float4 camupdirrot = matrixposmult(camupdir, cammat);
+	float4 camdirplane = planefromnormalatpos(campos, camdirrot);
+	float4 camrightdirplane = planefromnormalatpos(campos, camrightdirrot);
+	float4 camupdirplane = planefromnormalatpos(campos, camupdirrot);
+	float fwdintpointsdirdist = planepointdistance(vpoint, camdirplane);
+	float fwdintpointsrightdirdist = planepointdistance(vpoint, camrightdirplane);
+	float fwdintpointsupdirdist = planepointdistance(vpoint, camupdirplane);
+	float prjspherehalfang = asin(vsphere.w/lvecl);
+	if (isnan(prjspherehalfang)) {prjspherehalfang=180.0f;}
+	float hangle = atan(fwdintpointsrightdirdist/fwdintpointsdirdist);
+	float vangle = atan(fwdintpointsupdirdist/fwdintpointsdirdist);
+	float hangle1 = hangle-prjspherehalfang;
+	float hangle2 = hangle+prjspherehalfang;
+	float vangle1 = vangle-prjspherehalfang;
+	float vangle2 = vangle+prjspherehalfang;
+	if (hangle1<-camhalffov.x) {hangle1=-camhalffov.x;}
+	if (hangle2>camhalffov.x) {hangle2=camhalffov.x;}
+	if (vangle1<-camhalffov.y) {vangle1=-camhalffov.y;}
+	if (vangle2>camhalffov.y) {vangle2=camhalffov.y;}
+	int hcenterind1 = (int)convert_int_rtp(camhalffovmult.x*camhalfres.x*(tan(hangle1))+camhalfres.x);
+	int hcenterind2 = (int)convert_int_rtn(camhalffovmult.x*camhalfres.x*(tan(hangle2))+camhalfres.x);
+	int vcenterind1 = (int)convert_int_rtp(camhalffovmult.y*camhalfres.y*(tan(vangle1))+camhalfres.y);
+	int vcenterind2 = (int)convert_int_rtn(camhalffovmult.y*camhalfres.y*(tan(vangle2))+camhalfres.y);
+	if (hcenterind1<0) {hcenterind1=0;}
+	if (hcenterind2>=camres.x) {hcenterind2=camres.x-1;}
+	if (vcenterind1<0) {vcenterind1=0;}
+	if (vcenterind2>=camres.y) {vcenterind2=camres.y-1;}
+	int spherewidth = hcenterind2-hcenterind1+1;
+	int sphereheight = vcenterind2-vcenterind1+1;
+	if ((hcenterind1<camres.x)&&(hcenterind2>=0)&&(vcenterind1<camres.y)&&(vcenterind2>=0)&&(spherewidth>0)&&(sphereheight>0)) {
+		rect = (float4)(hcenterind1,vcenterind1,spherewidth,sphereheight);
+	}
+	return rect;
+}
+
 kernel void movecamera(global float *cam, global const float *cmv) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float2 camfov = (float2)(cam[3],cam[4]);
+	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
@@ -323,7 +373,7 @@ kernel void renderplaneview(global int *img, global float *imz, global int *imh 
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float2 camfov = (float2)(cam[3],cam[4]);
+	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
@@ -332,8 +382,8 @@ kernel void renderplaneview(global int *img, global float *imz, global int *imh 
 	const int texturesize = 1024;
 	static global atomic_int isdrawing[7680*4320];
 
-	float2 camhalffovrad = radians(camfov/2.0f);
-	float2 camhalffovlen = (float2)(tan(camhalffovrad.x), tan(camhalffovrad.y));
+	float2 camhalffov = camfov/2.0f;
+	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
 	int2 camhalfres = camres/2;
 	float camcollen = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 
@@ -395,108 +445,112 @@ kernel void renderplaneview(global int *img, global float *imz, global int *imh 
 
 	float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 	float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-	float4 objbvc = objpos + objsphdirrot;
-	float ppdist = planepointdistance(objbvc, colplane);
+	float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+	float4 rectf = projectedsphererect(campos, objbvc, camres, camfov, cammat);
 
-	if (ppdist<=objsph.w) {
-		float16 intline = planetriangleintersection(colplane, vtri);
-		float4 colpos1 = intline.s01234567.s0123;
-		float4 colpos2 = intline.s01234567.s4567;
-		float4 colpos1uv = intline.s89abcdef.s0123;
-		float4 colpos2uv = intline.s89abcdef.s4567;
+	if ((!isnan(rectf.x)) &&((xid>=rectf.x)&&(xid<=(rectf.x+rectf.z-1)))){
+		float ppdist = planepointdistance(objbvc, colplane);
 
-		if (!isnan(colpos1.x)) {
-			float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
-			float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
-			float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
-			float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
+		if (ppdist<=objsph.w) {
+			float16 intline = planetriangleintersection(colplane, vtri);
+			float4 colpos1 = intline.s01234567.s0123;
+			float4 colpos2 = intline.s01234567.s4567;
+			float4 colpos1uv = intline.s89abcdef.s0123;
+			float4 colpos2uv = intline.s89abcdef.s4567;
 
-			if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
-				if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
-					float4 drawlinedir12 = colpos2-colpos1;
-					float drawlinedir12dist = rayplanedistance(colpos1, drawlinedir12, rendercutplane);
-					float4 drawlinepos3 = translatepos(colpos1, drawlinedir12, drawlinedir12dist);
-					float fwdintpointsdist3 = planepointdistance(drawlinepos3, camdirplane);
-					float upintpointsdist3 = planepointdistance(drawlinepos3, camupdirplane);
-					float4 drawlinetexdir12 = colpos2uv - colpos1uv;
-					float4 drawlinepos3uv = translatepos(colpos1uv, drawlinetexdir12, drawlinedir12dist);
-					if (fwdintpointsdist1>=0.0f) {
-						fwdintpointsdist2 = fwdintpointsdist3;
-						upintpointsdist2 = upintpointsdist3;
-						colpos2 = drawlinepos3;
-						colpos2uv = drawlinepos3uv;
-					} else {
-						fwdintpointsdist1 = fwdintpointsdist3;
-						upintpointsdist1 = upintpointsdist3;
-						colpos1 = drawlinepos3;
-						colpos1uv = drawlinepos3uv;
-					}
-				}
+			if (!isnan(colpos1.x)) {
+				float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
+				float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
+				float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
+				float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
-				float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
-				float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
-				float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
-				float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
-
-				int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
-				int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
-				if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
-					if (py1<0) {py1=0;}
-					if (py1>=camres.y) {py1=camres.y-1;}
-					if (py2<0) {py2=0;}
-					if (py2>=camres.y) {py2=camres.y-1;}
-					int py1s = py1;
-					int py2s = py2;
-					if (py1>py2) {
-						py1s = py2;
-						py2s = py1;
-						float4 vpixelpointtemp  = vpixelpointd1;
-						vpixelpointd1 = vpixelpointd2;
-						vpixelpointd2 = vpixelpointtemp;
-						float vpixelyangtemp = vpixelyang1;
-						vpixelyang1 = vpixelyang2;
-						vpixelyang2 = vpixelyangtemp;
-						float4 colpostemp = colpos1;
-						colpos1 = colpos2;
-						colpos2 = colpostemp;
-						float4 colposuvtemp = colpos1uv;
-						colpos1uv = colpos2uv;
-						colpos2uv = colposuvtemp;
-					}
-
-					float4 vpixelpointdir12 = colpos2 - colpos1;
-					for (int y=py1s;y<=py2s;y++) {
-						float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
-						float verticalangle = atan(camcolleny);
-						float vpixelcampointangle = verticalangle - vpixelyang1;
-						float8 vpixelpointdline = (float8)(0.0f);
-						vpixelpointdline.s0123 = vpixelpointd1;
-						vpixelpointdline.s4567 = vpixelpointd2;
-						float vpixelpointlenfrac = linearanglelengthinterpolation(camposzero, vpixelpointdline, vpixelcampointangle);
-						float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
-						float4 linepointdir = linepoint - campos;
-						float drawdistance = length(linepointdir);
-						float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
-						float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
-						float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
-						int lineuvx = convert_int_rte(lineuv.x*(texturesize-1));
-						int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
-						int texind = lineuvy*texturesize+lineuvx;
-
-						int pixelind = (camres.y-y-1)*camres.x+xid;
-						int checkval = 0;
-						while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
-						if (drawdistance<imz[pixelind]) {
-							imz[pixelind] = drawdistance;
-							if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
-							int texpixel = tex[texind];
-							uchar4 texrgba = as_uchar4(texpixel);
-							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
-							float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-							int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
-							img[pixelind] = pixelcolor;
+				if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
+					if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
+						float4 drawlinedir12 = colpos2-colpos1;
+						float drawlinedir12dist = rayplanedistance(colpos1, drawlinedir12, rendercutplane);
+						float4 drawlinepos3 = translatepos(colpos1, drawlinedir12, drawlinedir12dist);
+						float fwdintpointsdist3 = planepointdistance(drawlinepos3, camdirplane);
+						float upintpointsdist3 = planepointdistance(drawlinepos3, camupdirplane);
+						float4 drawlinetexdir12 = colpos2uv - colpos1uv;
+						float4 drawlinepos3uv = translatepos(colpos1uv, drawlinetexdir12, drawlinedir12dist);
+						if (fwdintpointsdist1>=0.0f) {
+							fwdintpointsdist2 = fwdintpointsdist3;
+							upintpointsdist2 = upintpointsdist3;
+							colpos2 = drawlinepos3;
+							colpos2uv = drawlinepos3uv;
+						} else {
+							fwdintpointsdist1 = fwdintpointsdist3;
+							upintpointsdist1 = upintpointsdist3;
+							colpos1 = drawlinepos3;
+							colpos1uv = drawlinepos3uv;
 						}
-						atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
+					}
+
+					float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
+					float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
+					float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
+					float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
+
+					int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
+					int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
+					if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
+						if (py1<0) {py1=0;}
+						if (py1>=camres.y) {py1=camres.y-1;}
+						if (py2<0) {py2=0;}
+						if (py2>=camres.y) {py2=camres.y-1;}
+						int py1s = py1;
+						int py2s = py2;
+						if (py1>py2) {
+							py1s = py2;
+							py2s = py1;
+							float4 vpixelpointtemp  = vpixelpointd1;
+							vpixelpointd1 = vpixelpointd2;
+							vpixelpointd2 = vpixelpointtemp;
+							float vpixelyangtemp = vpixelyang1;
+							vpixelyang1 = vpixelyang2;
+							vpixelyang2 = vpixelyangtemp;
+							float4 colpostemp = colpos1;
+							colpos1 = colpos2;
+							colpos2 = colpostemp;
+							float4 colposuvtemp = colpos1uv;
+							colpos1uv = colpos2uv;
+							colpos2uv = colposuvtemp;
+						}
+
+						float4 vpixelpointdir12 = colpos2 - colpos1;
+						for (int y=py1s;y<=py2s;y++) {
+							float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+							float verticalangle = atan(camcolleny);
+							float vpixelcampointangle = verticalangle - vpixelyang1;
+							float8 vpixelpointdline = (float8)(0.0f);
+							vpixelpointdline.s0123 = vpixelpointd1;
+							vpixelpointdline.s4567 = vpixelpointd2;
+							float vpixelpointlenfrac = linearanglelengthinterpolation(camposzero, vpixelpointdline, vpixelcampointangle);
+							float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
+							float4 linepointdir = linepoint - campos;
+							float drawdistance = length(linepointdir);
+							float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
+							float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
+							float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
+							int lineuvx = convert_int_rte(lineuv.x*(texturesize-1));
+							int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
+							int texind = lineuvy*texturesize+lineuvx;
+
+							int pixelind = (camres.y-y-1)*camres.x+xid;
+							int checkval = 0;
+							while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
+							if (drawdistance<imz[pixelind]) {
+								imz[pixelind] = drawdistance;
+								if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
+								int texpixel = tex[texind];
+								uchar4 texrgba = as_uchar4(texpixel);
+								float4 texrgbaf = convert_float4(texrgba) / 255.0f;
+								float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
+								int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
+								img[pixelind] = pixelcolor;
+							}
+							atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
+						}
 					}
 				}
 			}
@@ -509,7 +563,7 @@ kernel void renderrayview(global int *img, global float *imz, global int *imh , 
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
-	float2 camfov = (float2)(cam[3],cam[4]);
+	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
@@ -518,8 +572,8 @@ kernel void renderrayview(global int *img, global float *imz, global int *imh , 
 	const int texturesize = 1024;
 	static global atomic_int isdrawing[7680*4320];
 
-	float2 camhalffovrad = radians(camfov/2.0f);
-	float2 camhalffovlen = (float2)(tan(camhalffovrad.x), tan(camhalffovrad.y));
+	float2 camhalffov = camfov/2.0f;
+	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
 	int2 camhalfres = camres/2;
 	float camraylenx = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 
@@ -568,45 +622,53 @@ kernel void renderrayview(global int *img, global float *imz, global int *imh , 
 	vtri.s7 = tripos3.y;
 	vtri.s8 = tripos3.z;
 
-	for (int y=0;y<camres.y;y++) {
-		float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
-		float4 raydir = (float4)(1.0f,camraylenx,camrayleny,0.0f);
-		float4 raydirrot = matrixposmult(raydir, cammat);
-		float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-		float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-		float4 objbvc = objpos + objsphdirrot;
-		float rayobjdist = raypointdistance(campos, raydirrot, objbvc);
+	float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+	float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+	float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+	float4 rectf = projectedsphererect(campos, objbvc, camres, camfov, cammat);
 
-		if (rayobjdist<=objsph.w) {
-			float8 intposuv = raytriangleintersection(campos, raydirrot, vtri);
-			float4 intpos = intposuv.s0123;
-			float4 intuv = intposuv.s4567;
+	if ((!isnan(rectf.x)) &&((xid>=rectf.x)&&(xid<=(rectf.x+rectf.z-1)))){
+		int4 rectfi = convert_int4_rtn(rectf);
+		int ystart = rectfi.y;
+		int yend = rectfi.y+rectfi.w-1;
+		
+		for (int y=ystart;y<=yend;y++) {
+			float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+			float4 raydir = (float4)(1.0f,camraylenx,camrayleny,0.0f);
+			float4 raydirrot = matrixposmult(raydir, cammat);
+			float rayobjdist = raypointdistance(campos, raydirrot, objbvc);
 
-			if (!isnan(intpos.x)) {
-				float4 linepointdir = intpos - campos;
-				float drawdistance = length(linepointdir);
-				float camrayintposdist = planepointdistance(intpos, camdirplane);
+			if (rayobjdist<=objsph.w) {
+				float8 intposuv = raytriangleintersection(campos, raydirrot, vtri);
+				float4 intpos = intposuv.s0123;
+				float4 intuv = intposuv.s4567;
 
-				if (camrayintposdist>=0.0f) {
-					float2 pointuv = (float2)(intuv.x-floor(intuv.x), intuv.y-floor(intuv.y));
-					int pointuvx = convert_int_rte(pointuv.x*(texturesize-1));
-					int pointuvy = convert_int_rte(pointuv.y*(texturesize-1));
-					int texind = pointuvy*texturesize+pointuvx;
+				if (!isnan(intpos.x)) {
+					float4 linepointdir = intpos - campos;
+					float drawdistance = length(linepointdir);
+					float camrayintposdist = planepointdistance(intpos, camdirplane);
 
-					int pixelind = (camres.y-y-1)*camres.x+xid;
-					int checkval = 0;
-					while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
-					if (drawdistance<imz[pixelind]) {
-						imz[pixelind] = drawdistance;
-						if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
-						int texpixel = tex[texind];
-						uchar4 texrgba = as_uchar4(texpixel);
-						float4 texrgbaf = convert_float4(texrgba) / 255.0f;
-						float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-						int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
-						img[pixelind] = pixelcolor;
+					if (camrayintposdist>=0.0f) {
+						float2 pointuv = (float2)(intuv.x-floor(intuv.x), intuv.y-floor(intuv.y));
+						int pointuvx = convert_int_rte(pointuv.x*(texturesize-1));
+						int pointuvy = convert_int_rte(pointuv.y*(texturesize-1));
+						int texind = pointuvy*texturesize+pointuvx;
+
+						int pixelind = (camres.y-y-1)*camres.x+xid;
+						int checkval = 0;
+						while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
+						if (drawdistance<imz[pixelind]) {
+							imz[pixelind] = drawdistance;
+							if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
+							int texpixel = tex[texind];
+							uchar4 texrgba = as_uchar4(texpixel);
+							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
+							float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
+							int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
+							img[pixelind] = pixelcolor;
+						}
+						atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 					}
-					atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 				}
 			}
 		}
