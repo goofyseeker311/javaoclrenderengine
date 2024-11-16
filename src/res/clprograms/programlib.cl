@@ -16,10 +16,10 @@ float16 planetriangleintersection(float4 plane, float16 vtri);
 float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
 float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
 float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 camfov, float16 cammat);
-kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv);
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv);
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv);
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv);
+kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj);
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj);
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj);
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -248,8 +248,7 @@ float raypointdistance(float4 vpos, float4 vdir, float4 vpoint) {
 	return dist;
 }
 
-kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv) {
-	unsigned int xid=get_global_id(0);
+kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -292,7 +291,7 @@ kernel void movecamera(global float *img, global float *imz, global int *imh, gl
 	cam[22] = cammat.sF;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv) {
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj) {
 	unsigned int xid=get_global_id(0);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	imh[0] = -1;
@@ -306,7 +305,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	}
 }
 
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv) {
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj) {
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
@@ -328,14 +327,13 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 	}
 }
 
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const float *cmv) {
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj) {
 	unsigned int xid = get_global_id(0);
 	unsigned int oid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
-	int tric = trc[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16, os = 13;
@@ -383,6 +381,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	float ppdist = planepointdistance(objbvc, colplane);
 
 	if (ppdist<=objsph.w) {
+		int tric = trc[0];
 		for (int tid=0;tid<tric;tid++) {
 
 			float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
