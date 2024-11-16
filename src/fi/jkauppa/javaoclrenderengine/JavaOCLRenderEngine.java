@@ -24,6 +24,8 @@ import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWImage;
+import org.lwjgl.glfw.GLFWImage.Buffer;
 import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 import org.lwjgl.glfw.GLFWScrollCallbackI;
@@ -39,7 +41,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.4.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.4.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -64,7 +66,7 @@ public class JavaOCLRenderEngine {
 	private Device devicedata = null;
 	private String usingdevice = null;
 	private long[] graphicspointerbuffer = new long[8];
-	private int[] graphicsbuffer = null;
+	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
@@ -142,7 +144,7 @@ public class JavaOCLRenderEngine {
 		createQuadProgram();
 		createFullScreenQuad();
 		tex = createTexture(this.graphicswidth,this.graphicsheight);
-		buf = createBuffer(graphicslength);
+		buf = createBuffer(graphicslength*4);
 		GL31.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		GL31.glClear(GL31.GL_COLOR_BUFFER_BIT);
 		GLFW.glfwSwapBuffers(window);
@@ -168,6 +170,8 @@ public class JavaOCLRenderEngine {
 		};
 		this.trianglelistlength = this.trianglelistpos3iduv3.length/16;
 		cannonsound = loadSound("res/sounds/firecannon.wav", 50, true);
+		BufferedImage iconimage = loadImage("res/images/icon.png", true);
+		this.setIcon(iconimage);
 		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
@@ -215,8 +219,8 @@ public class JavaOCLRenderEngine {
 		if (this.glinterop) {
 			this.graphicspointerbuffer[0] = computelib.createSharedGLBuffer(device, buf);
 		} else {
-			this.graphicsbuffer = new int[graphicslength];
-			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength);
+			this.graphicsbuffer = new float[graphicslength*4];
+			this.graphicspointerbuffer[0] = computelib.createBuffer(device, graphicslength*4);
 		}
 		this.graphicspointerbuffer[1] = computelib.createBuffer(device, graphicslength);
 		this.graphicszbuffer = new float[graphicslength];
@@ -338,18 +342,18 @@ public class JavaOCLRenderEngine {
 		long framestarttime = System.nanoTime();
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[6], objectlistpos3sca3rot3relsph4);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[7], cameramov3rot3);
-		computelib.runProgram(device, queue, program, "movecamera", new long[]{graphicspointerbuffer[3],graphicspointerbuffer[7]}, new int[]{0}, new int[]{1});
+		computelib.runProgram(device, queue, program, "movecamera", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "renderrayview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
+		computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0,0}, new int[]{graphicswidth,trianglelistlength,objectlistlength});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
 		computelib.readBufferi(device, queue, graphicspointerbuffer[2], graphicshbuffer);
 		if (!this.glinterop) {
-			int[] newgraphicsbuffer = new int[graphicslength];
-			computelib.readBufferi(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
+			float[] newgraphicsbuffer = new float[graphicslength*4];
+			computelib.readBufferf(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
 			graphicsbuffer = newgraphicsbuffer;
 		}
 		long frameendtime = System.nanoTime();
@@ -417,7 +421,7 @@ public class JavaOCLRenderEngine {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, id);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MIN_FILTER, GL31.GL_LINEAR);
 		GL31.glTexParameteri(GL31.GL_TEXTURE_2D, GL31.GL_TEXTURE_MAG_FILTER, GL31.GL_LINEAR);
-		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGB10_A2, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, MemoryUtil.NULL);
+		GL31.glTexImage2D(GL31.GL_TEXTURE_2D, 0, GL31.GL_RGBA32F, texturewidth, textureheight, 0, GL31.GL_RGBA, GL31.GL_FLOAT, MemoryUtil.NULL);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		return id;
 	}
@@ -433,12 +437,12 @@ public class JavaOCLRenderEngine {
 	private void updateTexture(int tid, int bid, int texturewidth, int textureheight) {
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, tid);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, bid);
-		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_UNSIGNED_INT_2_10_10_10_REV, 0);
+		GL31.glTexSubImage2D(GL31.GL_TEXTURE_2D, 0, 0, 0, texturewidth, textureheight, GL31.GL_RGBA, GL31.GL_FLOAT, 0);
 		GL31.glBindTexture(GL31.GL_TEXTURE_2D, 0);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-    private void transferBuffer(int id, int[] texturebuffer) {
+    private void transferBuffer(int id, float[] texturebuffer) {
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
     	GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
     	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
@@ -459,7 +463,30 @@ public class JavaOCLRenderEngine {
 		if (shaderLog.trim().length() > 0) {System.err.println(shaderLog);}
 		if (compiled == 0) {throw new AssertionError("Could not compile shader");}
 		return shader;
-	}    
+	}
+	
+	private void setIcon(BufferedImage iconimage) {
+		DataBufferInt iconimagedataint = (DataBufferInt)iconimage.getRaster().getDataBuffer();
+		int[] iconimageints = iconimagedataint.getData();
+		IntBuffer iconimageintbuffer = IntBuffer.wrap(iconimageints);
+		ByteBuffer iconimagebytebuffer = MemoryUtil.memAlloc(iconimageints.length*4);
+		iconimagebytebuffer.asIntBuffer().put(iconimageintbuffer);
+		for (int i=0;i<iconimageints.length;i++) {
+			byte cr = iconimagebytebuffer.get(i*4+2);
+			byte cg = iconimagebytebuffer.get(i*4+1);
+			byte cb = iconimagebytebuffer.get(i*4+0);
+			byte ca = iconimagebytebuffer.get(i*4+3);
+			iconimagebytebuffer.put(i*4+0, cr);
+			iconimagebytebuffer.put(i*4+1, cg);
+			iconimagebytebuffer.put(i*4+2, cb);
+			iconimagebytebuffer.put(i*4+3, ca);
+		}
+		Buffer iconimagebuffer = GLFWImage.create(1);
+		GLFWImage iconglfwimage = GLFWImage.create().set(iconimage.getWidth(), iconimage.getHeight(), iconimagebytebuffer);
+		iconimagebuffer.put(0, iconglfwimage);
+		GLFW.glfwSetWindowIcon(window, iconimagebuffer);
+		MemoryUtil.memFree(iconimagebytebuffer);
+	}
 
 	public static BufferedImage loadImage(String filename, boolean loadresourcefromjar) {
 		BufferedImage k = null;

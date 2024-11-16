@@ -16,11 +16,11 @@ float16 planetriangleintersection(float4 plane, float16 vtri);
 float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
 float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
 float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 camfov, float16 cammat);
-kernel void movecamera(global float *cam, global const float *cmv);
-kernel void clearview(global int *img, global float *imz, global int *imh, global const float *cam);
-kernel void rendercross(global int *img, global float *imz, global int *imh, global const float *cam);
-kernel void renderplaneview(global int *img, global float *imz, global int *imh, global const float *cam, global const float *tri, global const int *tex, global const float *obj);
-kernel void renderrayview(global int *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj);
+kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -297,7 +297,7 @@ float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 ca
 	return rect;
 }
 
-kernel void movecamera(global float *cam, global const float *cmv) {
+kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	unsigned int xid=get_global_id(0);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
@@ -341,34 +341,43 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	cam[22] = cammat.sF;
 }
 
-kernel void clearview(global int *img, global float *imz, global int *imh, global const float *cam) {
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	unsigned int xid=get_global_id(0);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	imh[0] = -1;
 	for (int y=0;y<camres.y;y++) {
 		int pixelind = y*camres.x+xid;
-		img[pixelind] = 0x00000000;
+		img[pixelind*4+0] = 0.0f;
+		img[pixelind*4+1] = 0.0f;
+		img[pixelind*4+2] = 0.0f;
+		img[pixelind*4+3] = 0.0f;
 		imz[pixelind] = INFINITY;
 	}
 }
 
-kernel void rendercross(global int *img, global float *imz, global int *imh, global const float *cam) {
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
 
-	int crosscolor = 0b11000000000000000000001111111111;
+	float4 crosscolor = (float4)(1000.0f,0.0f,0.0f,1.0f);
 	for (int y=camhalfres.y-crosslength;y<camhalfres.y+crosslength;y++) {
 		int pixelind = y*camres.x+camhalfres.x;
-		img[pixelind] = crosscolor;
+		img[pixelind*4+0] = crosscolor.s0;
+		img[pixelind*4+1] = crosscolor.s1;
+		img[pixelind*4+2] = crosscolor.s2;
+		img[pixelind*4+3] = crosscolor.s3;
 	}
 	for (int x=camhalfres.x-crosslength;x<camhalfres.x+crosslength;x++) {
 		int pixelind = camhalfres.y*camres.x+x;
-		img[pixelind] = crosscolor;
+		img[pixelind*4+0] = crosscolor.s0;
+		img[pixelind*4+1] = crosscolor.s1;
+		img[pixelind*4+2] = crosscolor.s2;
+		img[pixelind*4+3] = crosscolor.s3;
 	}
 }
 
-kernel void renderplaneview(global int *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
@@ -546,8 +555,10 @@ kernel void renderplaneview(global int *img, global float *imz, global int *imh 
 								uchar4 texrgba = as_uchar4(texpixel);
 								float4 texrgbaf = convert_float4(texrgba) / 255.0f;
 								float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-								int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
-								img[pixelind] = pixelcolor;
+								img[pixelind*4+0] = rgbapixel.s0;
+								img[pixelind*4+1] = rgbapixel.s1;
+								img[pixelind*4+2] = rgbapixel.s2;
+								img[pixelind*4+3] = rgbapixel.s3;
 							}
 							atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 						}
@@ -558,7 +569,7 @@ kernel void renderplaneview(global int *img, global float *imz, global int *imh 
 	}
 }
 
-kernel void renderrayview(global int *img, global float *imz, global int *imh , global const float *cam, global const float *tri, global const int *tex, global const float *obj) {
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *tex, global const float *obj, global const float *cmv) {
 	unsigned int xid = get_global_id(0);
 	unsigned int tid = get_global_id(1);
 	unsigned int oid = get_global_id(2);
@@ -664,8 +675,10 @@ kernel void renderrayview(global int *img, global float *imz, global int *imh , 
 							uchar4 texrgba = as_uchar4(texpixel);
 							float4 texrgbaf = convert_float4(texrgba) / 255.0f;
 							float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-							int pixelcolor = (convert_int(rgbapixel.s3*3.0f)<<30) | (convert_int(rgbapixel.s2*1023.0f)<<20) | (convert_int(rgbapixel.s1*1023.0f)<<10) | convert_int(rgbapixel.s0*1023.0f);
-							img[pixelind] = pixelcolor;
+							img[pixelind*4+0] = rgbapixel.s0;
+							img[pixelind*4+1] = rgbapixel.s1;
+							img[pixelind*4+2] = rgbapixel.s2;
+							img[pixelind*4+3] = rgbapixel.s3;
 						}
 						atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 					}
