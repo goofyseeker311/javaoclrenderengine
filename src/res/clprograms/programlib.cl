@@ -496,7 +496,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 
 							int pixelind = (camres.y-y-1)*camres.x+xid;
 							int checkval = 0;
-							while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
+							//while(!atomic_compare_exchange_strong_explicit(&isdrawing[pixelind], &checkval, 1, memory_order_acquire, memory_order_relaxed, memory_scope_device)) {checkval = 0;}
 							if (drawdistance<imz[pixelind]) {
 								imz[pixelind] = drawdistance;
 								if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
@@ -509,7 +509,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								img[pixelind*4+2] = rgbapixel.s2;
 								img[pixelind*4+3] = rgbapixel.s3;
 							}
-							atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
+							//atomic_store_explicit(&isdrawing[pixelind], 0, memory_order_release, memory_scope_device);
 						}
 					}
 				}
