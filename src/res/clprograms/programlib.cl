@@ -413,6 +413,9 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				vtri.s7 = tripos3.y;
 				vtri.s8 = tripos3.z;
 
+				float4 triplane = triangleplane(vtri);
+				float4 trinorm = (float4)(triplane.xyz, 0.0f);
+
 				float16 intline = planetriangleintersection(colplane, vtri);
 				float4 colpos1 = intline.s01234567.s0123;
 				float4 colpos2 = intline.s01234567.s4567;
@@ -493,8 +496,9 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								vpixelpointdline.s4567 = vpixelpointd2;
 								float vpixelpointlenfrac = linearanglelengthinterpolation(camposzero, vpixelpointdline, vpixelcampointangle);
 								float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
-								float4 linepointdir = linepoint - campos;
-								float drawdistance = length(linepointdir);
+								float4 camray = linepoint - campos;
+								float drawdistance = length(camray);
+								
 								float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
 								float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
 								float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
@@ -502,18 +506,26 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
 								int texind = lineuvy*texturesize+lineuvx;
 
+								float shadingmultiplier = 1.0f;
+								float triangleviewangle = vectorangle(camray, trinorm);
+								if (triangleviewangle<M_PI_2_F) {triangleviewangle=M_PI_F-triangleviewangle;}
+								triangleviewangle -= M_PI_2_F;
+								if (triangleviewangle<0.0f) {triangleviewangle=0.0f;}
+								shadingmultiplier = triangleviewangle/M_PI_2_F;
+
 								int pixelind = (camres.y-y-1)*camres.x+xid;
 								if (drawdistance<imz[pixelind]) {
 									imz[pixelind] = drawdistance;
 									if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
-									int texpixel = tex[texind];
-									uchar4 texrgba = as_uchar4(texpixel);
-									float4 texrgbaf = convert_float4(texrgba) / 255.0f;
-									float4 rgbapixel = (float4)(texrgbaf.s2,texrgbaf.s1,texrgbaf.s0,texrgbaf.s3);
-									img[pixelind*4+0] = rgbapixel.s0;
-									img[pixelind*4+1] = rgbapixel.s1;
-									img[pixelind*4+2] = rgbapixel.s2;
-									img[pixelind*4+3] = rgbapixel.s3;
+									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+									float texr = texrgbaf.s2*shadingmultiplier;
+									float texg = texrgbaf.s1*shadingmultiplier;
+									float texb = texrgbaf.s0*shadingmultiplier;
+									float texa = texrgbaf.s3;
+									img[pixelind*4+0] = texr;
+									img[pixelind*4+1] = texg;
+									img[pixelind*4+2] = texb;
+									img[pixelind*4+3] = texa;
 								}
 							}
 						}
