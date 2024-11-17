@@ -53,5 +53,4 @@ OpenCL:
   - sudo apt install intel-oneapi-runtime-opencl
 
 - Features support:
-  - Atomic z-buffer write-lock synchronization functions require OpenCL C 2.0 or OpenCL C 3.0 or newer and the __opencl_c_generic_address_space, __opencl_c_atomic_order_seq_cst, and __opencl_c_atomic_scope_device features.
-  - Other OpenCL api functions and direct context buffer sharing require OpenCL C 1.2 with OpenGL interoperation support from the OpenCL device. Falls back to CPU buffer copy if OpenCL device does not support context sharing.
+  - OpenCL api functions and direct context buffer sharing require OpenCL C 1.2 with OpenGL interoperation support from the OpenCL device. Falls back to CPU buffer copy if OpenCL device does not support context sharing.
