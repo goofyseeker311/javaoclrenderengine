@@ -338,7 +338,6 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 16, os = 13, vs = 10;
 	const int texturesize = 1024;
-	static global atomic_int isdrawing[7680*4320];
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
