@@ -15,11 +15,11 @@ float4 triangleplane(float16 vtri);
 float16 planetriangleintersection(float4 plane, float16 vtri);
 float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
 float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
-float4 projectedsphererect(float4 campos, float4 vsphere, int2 camres, float2 camfov, float16 cammat);
 kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc);
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc);
 kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc);
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -248,6 +248,103 @@ float raypointdistance(float4 vpos, float4 vdir, float4 vpoint) {
 	return dist;
 }
 
+float4 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc) {
+	float4 raycolor = (float4)(NAN);
+	float4 campos = vray.s0123;
+	float4 camdir = vray.s4567;
+
+	const int ts = 16, os = 13, texturesize = 1024;
+	float rayz = INFINITY;
+
+	int objc = obc[0];
+	for (int oid=0;oid<objc;oid++) {
+
+		float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+		float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+		float3 objrot = (float3)(radians(obj[oid*os+6]),radians(obj[oid*os+7]),radians(obj[oid*os+8]));
+		float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+
+		float16 objscamat = scalingmatrix(objsca);
+		float16 objrotmat = rotationmatrix(objrot);
+		float16 objmat = matrixmatmult(objscamat, objrotmat);
+
+		float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+		float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+		float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+		float rpdist = raypointdistance(campos, camdir, objbvc);
+
+		if (rpdist<=objsph.w) {
+			int tric = trc[0];
+			for (int tid=0;tid<tric;tid++) {
+
+				float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+				float tritexid = tri[tid*ts+9];
+				float4 tripos1uv = (float4)(tri[tid*ts+10],tri[tid*ts+11],0.0f,0.0f);
+				float4 tripos2uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+				float4 tripos3uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+				
+				tripos1 = matrixposmult(tripos1, objmat);
+				tripos2 = matrixposmult(tripos2, objmat);
+				tripos3 = matrixposmult(tripos3, objmat);
+				tripos1 = translatepos(tripos1, objpos, 1.0f);
+				tripos2 = translatepos(tripos2, objpos, 1.0f);
+				tripos3 = translatepos(tripos3, objpos, 1.0f);
+
+				vtri.s0 = tripos1.x;
+				vtri.s1 = tripos1.y;
+				vtri.s2 = tripos1.z;
+				vtri.s3 = tripos2.x;
+				vtri.s4 = tripos2.y;
+				vtri.s5 = tripos2.z;
+				vtri.s6 = tripos3.x;
+				vtri.s7 = tripos3.y;
+				vtri.s8 = tripos3.z;
+
+				float4 triplane = triangleplane(vtri);
+				float4 trinorm = (float4)(triplane.xyz, 0.0f);
+
+				float8 intpos = raytriangleintersection(campos, camdir, vtri);
+				float4 raypos = intpos.s0123;
+				float4 rayposuv = intpos.s4567;
+
+				if (!isnan(raypos.x)) {
+					float4 camray = raypos - campos;
+					float drawdistance = length(camray);
+
+					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+					int2 posuvint = convert_int_rte(posuv*(texturesize-1));
+					int texind = posuvint.y*texturesize+posuvint.x;
+
+					float shadingmultiplier = 1.0f;
+					float triangleviewangle = vectorangle(camray, trinorm);
+					if (triangleviewangle<M_PI_2_F) {triangleviewangle=M_PI_F-triangleviewangle;}
+					triangleviewangle -= M_PI_2_F;
+					if (triangleviewangle<0.0f) {triangleviewangle=0.0f;}
+					shadingmultiplier = triangleviewangle/M_PI_2_F;
+
+					if ((drawdistance>=0.0f)&&(drawdistance<rayz)) {
+						rayz = drawdistance;
+						imh[0] = oid;
+						float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+						float texr = texrgbaf.s2*shadingmultiplier;
+						float texg = texrgbaf.s1*shadingmultiplier;
+						float texb = texrgbaf.s0*shadingmultiplier;
+						float texa = texrgbaf.s3;
+						raycolor.s0 = texr;
+						raycolor.s1 = texg;
+						raycolor.s2 = texb;
+						raycolor.s3 = texa;
+					}
+				}
+			}
+		}
+	}
+	return raycolor;
+}
+
 kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
@@ -336,8 +433,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 16, os = 13, vs = 10;
-	const int texturesize = 1024;
+	const int ts = 16, os = 13, vs = 10, texturesize = 1024;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
@@ -534,4 +630,39 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 			}
 		}
 	}
+}
+
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc) {
+	unsigned int xid = get_global_id(0);
+	unsigned int yid = get_global_id(1);
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float2 camfov = radians((float2)(cam[3],cam[4]));
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
+	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
+
+	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
+	const int ts = 16, os = 13;
+	const int texturesize = 1024;
+	static global atomic_int isdrawing[7680*4320];
+
+	float2 camhalffov = camfov/2.0f;
+	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
+	int2 camhalfres = camres/2;
+	float camraylenx = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
+	float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*yid;
+	float4 raydir = (float4)(1.0f,camraylenx,camrayleny,0.0f);
+	float4 raydirrot = matrixposmult(raydir, cammat);
+
+	float8 camray = (float8)(NAN);
+	camray.s0123 = campos;
+	camray.s4567 = raydirrot;
+	int hitid = -1;
+	float4 raycolor = renderray(camray, &hitid, tri, trc, tex, obj, obc);
+
+	int pixelind = (camres.y-yid-1)*camres.x+xid;
+	if ((xid==camhalfres.x)&&(yid==camhalfres.y)) {imh[0] = hitid;}
+	img[pixelind*4+0] = raycolor.s0;
+	img[pixelind*4+1] = raycolor.s1;
+	img[pixelind*4+2] = raycolor.s2;
+	img[pixelind*4+3] = raycolor.s3;
 }
