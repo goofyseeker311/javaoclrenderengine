@@ -1,3 +1,5 @@
+const int ts = 16, os = 13, vs = 10, texturesize = 1800, bounces = 1;
+
 float4 matrixposmult(const float4 pos, const float16 mat);
 float16 matrixmatmult(const float16 vmat1, const float16 vmat2);
 float16 scalingmatrix(float3 sca);
@@ -327,7 +329,6 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
 
-	const int ts = 16, os = 13, texturesize = 1800;
 	float rayz = INFINITY;
 
 	int objc = obc[0];
@@ -464,12 +465,16 @@ kernel void movecamera(global float *img, global float *imz, global int *imh, gl
 }
 
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const float *obj, global const int *obc) {
-	unsigned int xid=get_global_id(0);
+	unsigned int xid = get_global_id(0);
+	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
-	imh[0] = -1;
-	for (int y=0;y<camres.y;y++) {
+	int camresystep = camres.y / vs;
+	int campresystart = camresystep*vid;
+	int campresyend = camresystep*vid + camresystep-1;
+
+	for (int y=campresystart;y<=campresyend;y++) {
 		int pixelind = y*camres.x+xid;
-		img[pixelind*4+0] = 0.0f;
+		img[pixelind*4+0] = (float)xid/(float)camres.x;
 		img[pixelind*4+1] = 0.0f;
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 0.0f;
@@ -508,7 +513,6 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 16, os = 13, vs = 10, texturesize = 1800, bounces = 1;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;

@@ -41,7 +41,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.5.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.5.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -344,18 +344,23 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
+		for (int i=0;i<1000;i++) {
+			computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
+		}
+		/*
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], cameramov3rot3);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[8], objectlistpos3sca3rot3relsph4);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[9], objectlistlength);
 		computelib.runProgram(device, queue, program, "movecamera", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
+		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
 		computelib.readBufferi(device, queue, graphicspointerbuffer[2], graphicshbuffer);
+		*/
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
 			computelib.readBufferf(device, queue, graphicspointerbuffer[0], newgraphicsbuffer);
