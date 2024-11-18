@@ -327,7 +327,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
 
-	const int ts = 16, os = 13, texturesize = 1024;
+	const int ts = 16, os = 13, texturesize = 1800;
 	float rayz = INFINITY;
 
 	int objc = obc[0];
@@ -693,15 +693,13 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									float4 drawcolor = texcolor;
 
 									if (bounces>0) {
-										if (oid==0) {
-											float8 camposray = (float8)(campos,camray);
-											float8 reflectionray = surfacereflectionray(camposray, triplane);
-											if (!isnan(reflectionray.s0)) {
-												int hitid = -1;
-												float4 reflectionraycolor = renderray(reflectionray, &hitid, tri, trc, tex, obj, obc);
-												if (!isnan(reflectionraycolor.s0)) {
-													drawcolor = sourceoverblend(drawcolor, reflectionraycolor, 0.5f);
-												}
+										float8 camposray = (float8)(campos,camray);
+										float8 reflectionray = surfacereflectionray(camposray, triplane);
+										if (!isnan(reflectionray.s0)) {
+											int hitid = -1;
+											float4 reflectionraycolor = renderray(reflectionray, &hitid, tri, trc, tex, obj, obc);
+											if (!isnan(reflectionraycolor.s0)) {
+												drawcolor = sourceoverblend(drawcolor, reflectionraycolor, 0.5f);
 											}
 										}
 									}
