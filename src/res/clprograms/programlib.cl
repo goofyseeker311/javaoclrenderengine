@@ -336,7 +336,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 
 		float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
 		float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-		float3 objrot = (float3)(radians(obj[oid*os+6]),radians(obj[oid*os+7]),radians(obj[oid*os+8]));
+		float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
 		float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
 
 		float16 objscamat = scalingmatrix(objsca);
@@ -472,6 +472,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
 
+	imh[0] = -1;
 	for (int y=campresystart;y<=campresyend;y++) {
 		int pixelind = y*camres.x+xid;
 		img[pixelind*4+0] = 0.0f;
@@ -546,7 +547,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 
 		float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
 		float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-		float3 objrot = (float3)(radians(obj[oid*os+6]),radians(obj[oid*os+7]),radians(obj[oid*os+8]));
+		float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
 		float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
 
 		float16 objscamat = scalingmatrix(objsca);
