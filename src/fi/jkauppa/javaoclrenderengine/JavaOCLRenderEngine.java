@@ -41,7 +41,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.5.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.5.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -172,7 +172,7 @@ public class JavaOCLRenderEngine {
 		cannonsound = loadSound("res/sounds/firecannon.wav", 50, true);
 		BufferedImage iconimage = loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
-		BufferedImage textureimage = loadImage("res/images/texturetest.png", true);
+		BufferedImage textureimage = loadImage("res/images/surface.jpg", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.objectlistlength[0] = 1000;
@@ -351,8 +351,7 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0}, new int[]{graphicswidth});
 		computelib.insertBarrier(queue);
-		//computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
-		computelib.runProgram(device, queue, program, "renderrayview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
