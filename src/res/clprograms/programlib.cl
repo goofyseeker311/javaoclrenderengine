@@ -677,37 +677,16 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								int lineuvy = convert_int_rte(lineuv.y*(texturesize-1));
 								int texind = lineuvy*texturesize+lineuvx;
 
-								float shadingmultiplier = 1.0f;
-								float triangleviewangle = vectorangle(camray, trinorm);
-								if (triangleviewangle<M_PI_2_F) {triangleviewangle=M_PI_F-triangleviewangle;}
-								triangleviewangle -= M_PI_2_F;
-								if (triangleviewangle<0.0f) {triangleviewangle=0.0f;}
-								shadingmultiplier = triangleviewangle/M_PI_2_F;
-
 								int pixelind = (camres.y-y-1)*camres.x+xid;
 								if (drawdistance<imz[pixelind]) {
 									imz[pixelind] = drawdistance;
 									if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
 									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-									float4 texcolor = (float4)(texrgbaf.s2*shadingmultiplier, texrgbaf.s1*shadingmultiplier, texrgbaf.s0*shadingmultiplier, texrgbaf.s3);
-									float4 drawcolor = texcolor;
-
-									if (bounces>0) {
-										float8 camposray = (float8)(campos,camray);
-										float8 reflectionray = surfacereflectionray(camposray, triplane);
-										if (!isnan(reflectionray.s0)) {
-											int hitid = -1;
-											float4 reflectionraycolor = renderray(reflectionray, &hitid, tri, trc, tex, obj, obc);
-											if (!isnan(reflectionraycolor.s0)) {
-												drawcolor = sourceoverblend(drawcolor, reflectionraycolor, 0.5f);
-											}
-										}
-									}
-
-									img[pixelind*4+0] = drawcolor.s0;
-									img[pixelind*4+1] = drawcolor.s1;
-									img[pixelind*4+2] = drawcolor.s2;
-									img[pixelind*4+3] = drawcolor.s3;
+									float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+									img[pixelind*4+0] = texcolor.s0;
+									img[pixelind*4+1] = texcolor.s1;
+									img[pixelind*4+2] = texcolor.s2;
+									img[pixelind*4+3] = texcolor.s3;
 								}
 							}
 						}
