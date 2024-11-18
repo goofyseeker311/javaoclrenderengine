@@ -273,7 +273,7 @@ float8 surfacereflectionray(float8 vray, float4 vsurf) {
 	float rayintdist = rayplanedistance(raypos, raydir, vsurf);
 	if ((isfinite(rayintdist))&&(rayintdist>0.0f)) {
 		float4 rayint = translatepos(raypos, raydir, rayintdist);
-		float16 rayvsurfrot = rotationmatrixaroundaxis(vsurfnorm, 180.0f);
+		float16 rayvsurfrot = rotationmatrixaroundaxis(vsurfnorm, M_PI_F);
 		float4 mirrorraydir = matrixposmult(raydir, rayvsurfrot);
 		float4 mirrorraydirninv = -normalize(mirrorraydir);
 		reflectray.s0123 = rayint; 
@@ -389,8 +389,9 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 					float drawdistance = length(camray);
 
 					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
-					int2 posuvint = convert_int_rte(posuv*(texturesize-1));
-					int texind = posuvint.y*texturesize+posuvint.x;
+					int posuvintx = convert_int_rte(posuv.x*(texturesize-1));
+					int posuvinty = convert_int_rte(posuv.y*(texturesize-1));
+					int texind = posuvinty*texturesize+posuvintx;
 
 					float shadingmultiplier = 1.0f;
 					float triangleviewangle = vectorangle(camray, trinorm);
@@ -692,13 +693,16 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									float4 drawcolor = texcolor;
 
 									if (bounces>0) {
-										float8 camposray = (float8)(campos,camray);
-										float8 reflectionray = surfacereflectionray(camposray, triplane);
-										if (!isnan(reflectionray.s0)) {
-											int hitid = -1;
-											//float4 reflectionraycolor = renderray(reflectionray, &hitid, tri, trc, tex, obj, obc);
-											float4 reflectionraycolor = (float4)(1.0f,0.0f,1.0f,1.0f);
-											drawcolor = sourceoverblend(drawcolor, reflectionraycolor, 0.5f);
+										if (oid==0) {
+											float8 camposray = (float8)(campos,camray);
+											float8 reflectionray = surfacereflectionray(camposray, triplane);
+											if (!isnan(reflectionray.s0)) {
+												int hitid = -1;
+												float4 reflectionraycolor = renderray(reflectionray, &hitid, tri, trc, tex, obj, obc);
+												if (!isnan(reflectionraycolor.s0)) {
+													drawcolor = sourceoverblend(drawcolor, reflectionraycolor, 0.5f);
+												}
+											}
 										}
 									}
 
