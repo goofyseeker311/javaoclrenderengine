@@ -41,7 +41,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.5.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.5.6";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -344,9 +344,10 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		for (int i=0;i<1000;i++) {
+		for (int i=0;i<100;i++) {
 			computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
 		}
+		computelib.waitForQueue(queue);
 		/*
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], cameramov3rot3);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[8], objectlistpos3sca3rot3relsph4);

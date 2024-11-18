@@ -474,7 +474,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 
 	for (int y=campresystart;y<=campresyend;y++) {
 		int pixelind = y*camres.x+xid;
-		img[pixelind*4+0] = (float)xid/(float)camres.x;
+		img[pixelind*4+0] = 0.0f;
 		img[pixelind*4+1] = 0.0f;
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 0.0f;
