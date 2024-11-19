@@ -41,7 +41,7 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 
 public class JavaOCLRenderEngine {
 	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.5.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.0";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -71,7 +71,7 @@ public class JavaOCLRenderEngine {
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
 	private float[] camerapos3fov2res2rotmat16 = null;
-	private float[] trianglelistpos3iduv3 = null;
+	private float[] trianglelistpos3uv3 = null;
 	private int[] trianglelistlength = {0};
 	private int[] triangletexturelist = null;
 	private int[] triangletexturelength = {0};
@@ -153,27 +153,27 @@ public class JavaOCLRenderEngine {
 		lastmousex = mousex[0]; lastmousey = mousey[0];
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		this.trianglelistpos3iduv3 = new float[]{
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+		this.trianglelistpos3uv3 = new float[]{
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 				
-				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 
-				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  0.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
+				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
+				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
+				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
 		};
-		this.trianglelistlength[0] = this.trianglelistpos3iduv3.length/16;
+		this.trianglelistlength[0] = this.trianglelistpos3uv3.length/15;
 		cannonsound = loadSound("res/sounds/firecannon.wav", 50, true);
 		BufferedImage iconimage = loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
-		BufferedImage textureimage = loadImage("res/images/texturetest2.png", true);
+		BufferedImage textureimage = loadImage("res/images/surface.jpg", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength[0] = textureimage.getWidth();
@@ -232,8 +232,8 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], camerapos3fov2res2rotmat16);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, cameramov3rot3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], cameramov3rot3);
-		this.graphicspointerbuffer[5] = computelib.createBuffer(device, trianglelistpos3iduv3.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], trianglelistpos3iduv3);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, trianglelistpos3uv3.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], trianglelistpos3uv3);
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, 1);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], trianglelistlength);
 		this.graphicspointerbuffer[7] = computelib.createBuffer(device, triangletexturelist.length);
