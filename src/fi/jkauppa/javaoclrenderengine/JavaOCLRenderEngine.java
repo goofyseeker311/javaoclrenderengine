@@ -1,18 +1,11 @@
 package fi.jkauppa.javaoclrenderengine;
 
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-
-import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -37,9 +30,10 @@ import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 import fi.jkauppa.javarenderengine.ModelLib;
 import fi.jkauppa.javarenderengine.ModelLib.Entity;
 import fi.jkauppa.javarenderengine.ModelLib.Triangle;
+import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -69,7 +63,7 @@ public class JavaOCLRenderEngine {
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
 	private float[] camerapos3fov2res2rotmat16 = null;
-	private float[] trianglelistpos3uv3 = null;
+	private float[] trianglelistpos3uv3id = null;
 	private int[] trianglelistlength = {0};
 	private int[] triangletexturelist = null;
 	private int[] triangletexturelength = {0};
@@ -152,32 +146,34 @@ public class JavaOCLRenderEngine {
 			Entity object = loadmodel.childlist[j];
 			for (int i=0;i<object.trianglelist.length;i++) {
 				Triangle modeltri = object.trianglelist[i];
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.x/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.y/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.z/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.x/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.y/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.z/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.x/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.y/1000.0f);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.z/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.x);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.y);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.z);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.x);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.y);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.z);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.x);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.y);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.z);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.v);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.v);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.v);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.materialid);
 			}
 		}
-		Float[] trianglelistpos3uv3floats = trianglelistpos3uv3arraylist.toArray(new Float[trianglelistpos3uv3arraylist.size()]);
-		this.trianglelistpos3uv3 = new float[trianglelistpos3uv3floats.length];
-		for (int i=0;i<trianglelistpos3uv3floats.length;i++) {
-			this.trianglelistpos3uv3[i] = trianglelistpos3uv3floats[i];
+		Float[] trianglelistpos3uv3idfloats = trianglelistpos3uv3arraylist.toArray(new Float[trianglelistpos3uv3arraylist.size()]);
+		this.trianglelistpos3uv3id = new float[trianglelistpos3uv3idfloats.length];
+		for (int i=0;i<trianglelistpos3uv3idfloats.length;i++) {
+			this.trianglelistpos3uv3id[i] = trianglelistpos3uv3idfloats[i];
 		}
-		this.trianglelistlength[0] = this.trianglelistpos3uv3.length/15;
-		BufferedImage iconimage = loadImage("res/images/icon.png", true);
+		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/16;
+		BufferedImage iconimage = UtilLib.loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
-		BufferedImage textureimage = loadImage("res/images/texturetest2.png", true);
+		BufferedImage defaulttextureimage = UtilLib.loadImage("res/images/texturetest.png", true);
+		BufferedImage textureimage = defaulttextureimage;
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength[0] = textureimage.getWidth();
@@ -207,8 +203,8 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[3], camerapos3fov2res2rotmat16);
 		this.graphicspointerbuffer[4] = computelib.createBuffer(device, cameramov3rot3.length);
 		computelib.writeBufferf(device, queue, graphicspointerbuffer[4], cameramov3rot3);
-		this.graphicspointerbuffer[5] = computelib.createBuffer(device, trianglelistpos3uv3.length);
-		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], trianglelistpos3uv3);
+		this.graphicspointerbuffer[5] = computelib.createBuffer(device, trianglelistpos3uv3id.length);
+		computelib.writeBufferf(device, queue, graphicspointerbuffer[5], trianglelistpos3uv3id);
 		this.graphicspointerbuffer[6] = computelib.createBuffer(device, 1);
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[6], trianglelistlength);
 		this.graphicspointerbuffer[7] = computelib.createBuffer(device, triangletexturelist.length);
@@ -281,12 +277,12 @@ public class JavaOCLRenderEngine {
 		cameramov3rot3[3] = 0.0f;
 		cameramov3rot3[4] = 0.0f;
 		cameramov3rot3[5] = 0.0f;
-		if (this.keyfwd) {cameramov3rot3[0] += ds;}
-		if (this.keyback) {cameramov3rot3[0] -= ds;}
-		if (this.keyleft) {cameramov3rot3[1] -= ds;}
-		if (this.keyright) {cameramov3rot3[1] += ds;}
-		if (this.keyup) {cameramov3rot3[2] += ds;}
-		if (this.keydown) {cameramov3rot3[2] -= ds;}
+		if (this.keyfwd) {cameramov3rot3[0] += ds*1000.0f;}
+		if (this.keyback) {cameramov3rot3[0] -= ds*1000.0f;}
+		if (this.keyleft) {cameramov3rot3[1] -= ds*1000.0f;}
+		if (this.keyright) {cameramov3rot3[1] += ds*1000.0f;}
+		if (this.keyup) {cameramov3rot3[2] += ds*1000.0f;}
+		if (this.keydown) {cameramov3rot3[2] -= ds*1000.0f;}
 		if (this.keyrleft) {cameramov3rot3[3] += ds;}
 		if (this.keyrright) {cameramov3rot3[3] -= ds;}
 		cameramov3rot3[5] = (float)(0.001f*(mousex[0]-lastmousex));
@@ -446,32 +442,6 @@ public class JavaOCLRenderEngine {
 		MemoryUtil.memFree(iconimagebytebuffer);
 	}
 
-	public static BufferedImage loadImage(String filename, boolean loadresourcefromjar) {
-		BufferedImage k = null;
-		if (filename!=null) {
-			try {
-				File imagefile = new File(filename);
-				BufferedInputStream imagefilestream = null;
-				if (loadresourcefromjar) {
-					imagefilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(imagefile.getPath().replace(File.separatorChar, '/')));
-				} else {
-					imagefilestream = new BufferedInputStream(new FileInputStream(imagefile));
-				}
-				BufferedImage loadimage = ImageIO.read(imagefilestream);
-				if (loadimage!=null) {
-					BufferedImage argbimage = new BufferedImage(loadimage.getWidth(), loadimage.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
-					Graphics2D argbimagegfx = argbimage.createGraphics();
-					argbimagegfx.setComposite(AlphaComposite.Src);
-					argbimagegfx.drawImage(loadimage, 0, 0, null);
-					argbimagegfx.dispose();
-					k = argbimage;
-				}
-				imagefilestream.close();
-			} catch (Exception ex) {ex.printStackTrace();}
-		}
-		return k;
-	}
-	
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
 			if (action==GLFW.GLFW_PRESS) {

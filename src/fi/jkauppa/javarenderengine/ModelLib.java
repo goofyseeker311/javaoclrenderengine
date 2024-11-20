@@ -20,6 +20,7 @@ import fi.jkauppa.javarenderengine.UtilLib.ImageFileFilters.PNGFileFilter;
 public class ModelLib {
 	public static class Material implements Comparable<Material> {
 		public String materialname = null;
+		public int materialid = -1;
 		public BufferedImage fileimage = null;
 		public BufferedImage ambientfileimage = null;
 		public BufferedImage specularfileimage = null;
@@ -691,6 +692,7 @@ public class ModelLib {
 		public Quad[] quadlist = null;
 		public Line[] linelist = null;
 		public Position[] vertexlist = null;
+		public Material[] materiallist = null;
 		public Sphere sphereboundaryvolume = null;
 		public Cube aabbboundaryvolume = null;
 		public Matrix transform = null;
@@ -1413,6 +1415,9 @@ public class ModelLib {
 					    }
 					}
 					k = modelmaterials.toArray(new Material[modelmaterials.size()]);
+					for (int i=0;i<k.length;i++) {
+						k[i].materialid = i;
+					}
 				}
 				modelmtlfile.close();
 			} catch(Exception ex) {ex.printStackTrace();}
@@ -1643,6 +1648,7 @@ public class ModelLib {
 		Entity loadentity = new Entity();
 		TreeSet<Line> linelisttree = new TreeSet<Line>();
 		Model loadmodel = ModelLib.loadWaveFrontOBJFile(filename, loadresourcefromjar);
+		loadentity.materiallist = loadmodel.materials;
 		ArrayList<Entity> newentitylist = new ArrayList<Entity>();
 		for (int j=0;j<loadmodel.objects.length;j++) {
 			Entity newentity = new Entity();

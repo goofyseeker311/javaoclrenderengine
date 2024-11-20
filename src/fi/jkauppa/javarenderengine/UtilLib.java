@@ -205,17 +205,17 @@ public class UtilLib {
 				BufferedInputStream imagefilestream = null;
 				if (loadresourcefromjar) {
 					imagefilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(imagefile.getPath().replace(File.separatorChar, '/')));
-				}else {
+				} else {
 					imagefilestream = new BufferedInputStream(new FileInputStream(imagefile));
 				}
 				BufferedImage loadimage = ImageIO.read(imagefilestream);
 				if (loadimage!=null) {
-					BufferedImage loadimagevolatile = gc.createCompatibleImage(loadimage.getWidth(), loadimage.getHeight(), Transparency.TRANSLUCENT);
-					Graphics2D loadimagevolatilegfx = loadimagevolatile.createGraphics();
-					loadimagevolatilegfx.setComposite(AlphaComposite.Src);
-					loadimagevolatilegfx.drawImage(loadimage, 0, 0, null);
-					loadimagevolatilegfx.dispose();
-					k = loadimagevolatile;
+					BufferedImage argbimage = new BufferedImage(loadimage.getWidth(), loadimage.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
+					Graphics2D argbimagegfx = argbimage.createGraphics();
+					argbimagegfx.setComposite(AlphaComposite.Src);
+					argbimagegfx.drawImage(loadimage, 0, 0, null);
+					argbimagegfx.dispose();
+					k = argbimage;
 				}
 				imagefilestream.close();
 			} catch (Exception ex) {ex.printStackTrace();}

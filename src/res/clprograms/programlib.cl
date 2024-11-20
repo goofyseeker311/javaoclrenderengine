@@ -328,7 +328,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 	float4 camdir = vray.s4567;
 	int texs = tes[0];
 
-	const int ts = 15, os = 13;
+	const int ts = 16, os = 13;
 	float rayz = INFINITY;
 
 	int objc = obc[0];
@@ -352,7 +352,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 			int tric = trc[0];
 			for (int tid=0;tid<tric;tid++) {
 
-				float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],0.0f);
+				float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
 				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
 				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
 				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
@@ -516,7 +516,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int texs = tes[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 15, os = 13, vs = 10;
+	const int ts = 16, os = 13, vs = 10;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
@@ -566,7 +566,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 			int tric = trc[0];
 			for (int tid=0;tid<tric;tid++) {
 
-				float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],0.0f);
+				float16 vtri = (float16)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
 				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
 				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
 				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
