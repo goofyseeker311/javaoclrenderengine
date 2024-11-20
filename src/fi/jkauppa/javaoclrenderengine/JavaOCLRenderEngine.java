@@ -10,13 +10,9 @@ import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.Random;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -38,10 +34,12 @@ import org.lwjgl.system.Callback;
 import org.lwjgl.system.MemoryUtil;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
+import fi.jkauppa.javarenderengine.ModelLib;
+import fi.jkauppa.javarenderengine.ModelLib.Entity;
+import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 
 public class JavaOCLRenderEngine {
-	private Random rnd = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -78,11 +76,6 @@ public class JavaOCLRenderEngine {
 	private float[] objectlistpos3sca3rot3relsph4 = null;
 	private int[] objectlistlength = {0};
 	private float[] cameramov3rot3 = null;
-	private Clip[] cannonsound = null;
-	private int cannonsoundind = 0;
-	private boolean cannonfiring = false;
-	private float cannonfiringlast = 0;
-	private float cannonfiringdelta = 0.02f;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -153,61 +146,43 @@ public class JavaOCLRenderEngine {
 		lastmousex = mousex[0]; lastmousey = mousey[0];
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		this.trianglelistpos3uv3 = new float[]{
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-				
-				-1.0f,-1.0f,-1.0f,   1.0f,-1.0f,-1.0f,   1.0f,-1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				-1.0f,-1.0f,-1.0f,  -1.0f,-1.0f, 1.0f,   1.0f,-1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,   1.0f, 1.0f,-1.0f,   1.0f, 1.0f, 1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				-1.0f, 1.0f,-1.0f,  -1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-
-				 1.0f,-1.0f, 1.0f,   1.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-				 1.0f,-1.0f, 1.0f,  -1.0f,-1.0f, 1.0f,  -1.0f, 1.0f, 1.0f,  0.0f,1.0f,1.0f,1.0f,1.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,   1.0f, 1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,
-				 1.0f,-1.0f,-1.0f,  -1.0f,-1.0f,-1.0f,  -1.0f, 1.0f,-1.0f,  1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,
-		};
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/testcubemodel9.obj", true);
+		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
+		for (int j=0;j<loadmodel.childlist.length;j++) {
+			Entity object = loadmodel.childlist[j];
+			for (int i=0;i<object.trianglelist.length;i++) {
+				Triangle modeltri = object.trianglelist[i];
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.x/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.y/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.z/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.x/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.y/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.z/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.x/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.y/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.z/1000.0f);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.u);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.v);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.u);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.v);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.u);
+				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.v);
+			}
+		}
+		Float[] trianglelistpos3uv3floats = trianglelistpos3uv3arraylist.toArray(new Float[trianglelistpos3uv3arraylist.size()]);
+		this.trianglelistpos3uv3 = new float[trianglelistpos3uv3floats.length];
+		for (int i=0;i<trianglelistpos3uv3floats.length;i++) {
+			this.trianglelistpos3uv3[i] = trianglelistpos3uv3floats[i];
+		}
 		this.trianglelistlength[0] = this.trianglelistpos3uv3.length/15;
-		cannonsound = loadSound("res/sounds/firecannon.wav", 50, true);
 		BufferedImage iconimage = loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
-		BufferedImage textureimage = loadImage("res/images/surface.jpg", true);
+		BufferedImage textureimage = loadImage("res/images/texturetest2.png", true);
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength[0] = textureimage.getWidth();
-		this.objectlistlength[0] = 1000;
-		float objectradius = 50.0f;
-		this.objectlistpos3sca3rot3relsph4 = new float[objectlistlength[0]*13];
-		this.objectlistpos3sca3rot3relsph4[0] = 5.0f;
-		this.objectlistpos3sca3rot3relsph4[1] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[2] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[3] = 1.0f;
-		this.objectlistpos3sca3rot3relsph4[4] = 1.0f;
-		this.objectlistpos3sca3rot3relsph4[5] = 1.0f;
-		this.objectlistpos3sca3rot3relsph4[6] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[7] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[8] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[9] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[10] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[11] = 0.0f;
-		this.objectlistpos3sca3rot3relsph4[12] = (float)Math.sqrt(3);
-		for (int i=1;i<objectlistlength[0];i++) {
-			this.objectlistpos3sca3rot3relsph4[13*i+0] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3relsph4[13*i+1] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3relsph4[13*i+2] = rnd.nextFloat(-1.0f, 1.0f)*objectradius;
-			this.objectlistpos3sca3rot3relsph4[13*i+3] = 1.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+4] = 1.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+5] = 1.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+6] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+7] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+8] = rnd.nextFloat(0.0f, 1.0f)*360.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+9] = 0.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+10] = 0.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+11] = 0.0f;
-			this.objectlistpos3sca3rot3relsph4[13*i+12] = (float)Math.sqrt(3);
-		}
+		this.objectlistlength[0] = 1;
+		this.objectlistpos3sca3rot3relsph4 = new float[]{0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)loadmodel.sphereboundaryvolume.x,(float)loadmodel.sphereboundaryvolume.y,(float)loadmodel.sphereboundaryvolume.z,(float)loadmodel.sphereboundaryvolume.r};
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -300,32 +275,6 @@ public class JavaOCLRenderEngine {
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
 				);
-		cannonfiringlast += ds;
-		if ((cannonfiring)&&(cannonfiringlast>cannonfiringdelta)) {
-			cannonfiringlast = 0.0f;
-			cannonsound[cannonsoundind].stop();
-			cannonsound[cannonsoundind].setFramePosition(0);
-			cannonsound[cannonsoundind].start();
-			if (++cannonsoundind>=cannonsound.length) {cannonsoundind = 0;}
-			int hitobjind = graphicshbuffer[0];
-			int hitobjindstep = hitobjind * 13;
-			if (hitobjind!=-1) {
-				float[] newobjectlistpos3sca3rot3relsph4 = new float[objectlistpos3sca3rot3relsph4.length-13];
-				for (int i=0;i<hitobjindstep;i++) {
-					newobjectlistpos3sca3rot3relsph4[i] = objectlistpos3sca3rot3relsph4[i];
-				}
-				for (int i=hitobjindstep+13;i<objectlistpos3sca3rot3relsph4.length;i++) {
-					newobjectlistpos3sca3rot3relsph4[i-13] = objectlistpos3sca3rot3relsph4[i];
-				}
-				objectlistlength[0]--;
-				objectlistpos3sca3rot3relsph4 = newobjectlistpos3sca3rot3relsph4;
-			}
-		}
-		for (int i=1;i<objectlistlength[0];i++) {
-			objectlistpos3sca3rot3relsph4[13*i+6] += 15.0f*ds;
-			objectlistpos3sca3rot3relsph4[13*i+7] += 17.0f*ds;
-			objectlistpos3sca3rot3relsph4[13*i+8] += 19.0f*ds;
-		}
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
 		cameramov3rot3[2] = 0.0f;
@@ -522,32 +471,6 @@ public class JavaOCLRenderEngine {
 		}
 		return k;
 	}
-
-	public static Clip[] loadSound(String filename, int copies, boolean loadresourcefromjar) {
-		Clip[] k = null;
-		if (filename!=null) {
-			try {
-				File soundfile = new File(filename);
-				BufferedInputStream soundfilestream = null;
-				if (loadresourcefromjar) {
-					soundfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(soundfile.getPath().replace(File.separatorChar, '/')));
-				} else {
-					soundfilestream = new BufferedInputStream(new FileInputStream(soundfile));
-				}
-				AudioInputStream soundfileaudiostream = AudioSystem.getAudioInputStream(soundfilestream);
-				AudioFormat soundfileaudioformat = soundfileaudiostream.getFormat();
-				byte[] soundbytes = soundfileaudiostream.readAllBytes();
-				Clip[] loadsounds = new Clip[copies];
-				for (int i=0;i<copies;i++) {
-					loadsounds[i] = AudioSystem.getClip();
-					loadsounds[i].open(soundfileaudioformat, soundbytes, 0, soundbytes.length);
-				}
-				k = loadsounds;
-				soundfilestream.close();
-			} catch (Exception ex) {ex.printStackTrace();}
-		}
-		return k;
-	}
 	
 	private class KeyProcessor implements GLFWKeyCallbackI {
 		@Override public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -581,12 +504,7 @@ public class JavaOCLRenderEngine {
 	}
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
 		@Override public void invoke(long window, int button, int action, int mods) {
-			if ((button==0)&&(action==1)) {
-				cannonfiring = true;
-			}
-			if ((button==0)&&(action==0)) {
-				cannonfiring = false;
-			}
+			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
 		}
 	}
 	private class MouseWheelProcessor implements GLFWScrollCallbackI {
