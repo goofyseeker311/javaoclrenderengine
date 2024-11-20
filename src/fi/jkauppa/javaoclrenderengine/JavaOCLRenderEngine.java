@@ -29,11 +29,12 @@ import org.lwjgl.system.MemoryUtil;
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
 import fi.jkauppa.javarenderengine.ModelLib;
 import fi.jkauppa.javarenderengine.ModelLib.Entity;
+import fi.jkauppa.javarenderengine.ModelLib.Sphere;
 import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = MemoryUtil.NULL;
@@ -140,7 +141,7 @@ public class JavaOCLRenderEngine {
 		lastmousex = mousex[0]; lastmousey = mousey[0];
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/testcubemodel9.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid.obj", true);
 		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
 		for (int j=0;j<loadmodel.childlist.length;j++) {
 			Entity object = loadmodel.childlist[j];
@@ -174,11 +175,20 @@ public class JavaOCLRenderEngine {
 		this.setIcon(iconimage);
 		BufferedImage defaulttextureimage = UtilLib.loadImage("res/images/texturetest.png", true);
 		BufferedImage textureimage = defaulttextureimage;
+		if (loadmodel.materiallist[0].fileimage!=null) {
+			textureimage = loadmodel.materiallist[0].fileimage;
+		}
 		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 		this.triangletexturelist = textureimagedataint.getData();
 		this.triangletexturelength[0] = textureimage.getWidth();
-		this.objectlistlength[0] = 1;
-		this.objectlistpos3sca3rot3relsph4 = new float[]{0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)loadmodel.sphereboundaryvolume.x,(float)loadmodel.sphereboundaryvolume.y,(float)loadmodel.sphereboundaryvolume.z,(float)loadmodel.sphereboundaryvolume.r};
+		Sphere sphbv = loadmodel.sphereboundaryvolume;
+		this.objectlistpos3sca3rot3relsph4 = new float[]{
+				 5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				-5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,70.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				 0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 30.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				 0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,45.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				};
+		this.objectlistlength[0] = this.objectlistpos3sca3rot3relsph4.length/13;
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
 		this.device = this.computelib.devicelist[selecteddevice];
@@ -277,12 +287,12 @@ public class JavaOCLRenderEngine {
 		cameramov3rot3[3] = 0.0f;
 		cameramov3rot3[4] = 0.0f;
 		cameramov3rot3[5] = 0.0f;
-		if (this.keyfwd) {cameramov3rot3[0] += ds*1000.0f;}
-		if (this.keyback) {cameramov3rot3[0] -= ds*1000.0f;}
-		if (this.keyleft) {cameramov3rot3[1] -= ds*1000.0f;}
-		if (this.keyright) {cameramov3rot3[1] += ds*1000.0f;}
-		if (this.keyup) {cameramov3rot3[2] += ds*1000.0f;}
-		if (this.keydown) {cameramov3rot3[2] -= ds*1000.0f;}
+		if (this.keyfwd) {cameramov3rot3[0] += ds;}
+		if (this.keyback) {cameramov3rot3[0] -= ds;}
+		if (this.keyleft) {cameramov3rot3[1] -= ds;}
+		if (this.keyright) {cameramov3rot3[1] += ds;}
+		if (this.keyup) {cameramov3rot3[2] += ds;}
+		if (this.keydown) {cameramov3rot3[2] -= ds;}
 		if (this.keyrleft) {cameramov3rot3[3] += ds;}
 		if (this.keyrright) {cameramov3rot3[3] -= ds;}
 		cameramov3rot3[5] = (float)(0.001f*(mousex[0]-lastmousex));
@@ -298,9 +308,9 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferi(device, queue, graphicspointerbuffer[10], objectlistlength);
 		computelib.runProgram(device, queue, program, "movecamera", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
+		computelib.runProgram(device, queue, program, "clearview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,10});
+		computelib.runProgram(device, queue, program, "renderplaneview", graphicspointerbuffer, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(device, queue, program, "rendercross", graphicspointerbuffer, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);

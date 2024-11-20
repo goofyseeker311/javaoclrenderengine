@@ -1132,7 +1132,7 @@ public class ModelLib {
 					    	File loadmtlfile = new File(loadobjfile.getParent(),farg);
 					    	k.mtllib = farg;
 					    	k.materials = loadWaveFrontMTLFile(loadmtlfile.getPath(), loadresourcefromjar);
-					    }else if (fline.toLowerCase().startsWith("o ")) {
+					    }else if ((fline.toLowerCase().startsWith("o "))||(fline.toLowerCase().startsWith("g "))) {
 					    	if (modelobjects.size()>0) {
 					    		modelobjects.get(modelobjects.size()-1).faceindex = modelfaceindex.toArray(new ModelFaceIndex[modelfaceindex.size()]);
 					    		modelobjects.get(modelobjects.size()-1).lineindex = modellineindex.toArray(new ModelLineIndex[modellineindex.size()]);

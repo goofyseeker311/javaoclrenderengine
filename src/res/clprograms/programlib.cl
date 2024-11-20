@@ -468,7 +468,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	
-	const int vs = 10;
+	const int vs = 4;
 	int camresystep = camres.y / vs;
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
@@ -516,7 +516,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int texs = tes[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 16, os = 13, vs = 10;
+	const int ts = 16, os = 13, vs = 4;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
