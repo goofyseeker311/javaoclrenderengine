@@ -22,9 +22,9 @@ float8 surfacerefractionray(float8 vray, float4 vsurf, float refraction1, float 
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
-kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
+kernel void movecamera(global float *cam, global const float *cmv);
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
 kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
 
@@ -420,7 +420,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 	return raycolor;
 }
 
-kernel void movecamera(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+kernel void movecamera(global float *cam, global const float *cmv) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -463,7 +463,7 @@ kernel void movecamera(global float *img, global float *imz, global int *imh, gl
 	cam[22] = cammat.sF;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -484,7 +484,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	}
 }
 
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam, global const float *cmv, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam) {
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
