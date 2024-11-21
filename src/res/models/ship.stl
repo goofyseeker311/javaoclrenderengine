@@ -1,44 +1,44 @@
-solid JREOBJ
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex 0.0000e+00 1.6000e+02 -1.0000e+02
-		vertex 0.0000e+00 1.6000e+02 1.0000e+02
-		vertex 2.6000e+02 3.6000e+02 0.0000e+00
-	endloop
+solid 
+facet normal -0.48906225 -0.8722488 0
+ outer loop
+  vertex 1.4142137 -1.4871573 0
+  vertex -1.4901161e-08 -0.6942202 0.5
+  vertex -1.4901161e-08 -0.6942202 -0.5
+ endloop
 endfacet
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex 0.0000e+00 -3.8000e+02 0.0000e+00
-		vertex 0.0000e+00 1.6000e+02 -1.0000e+02
-		vertex 2.6000e+02 3.6000e+02 0.0000e+00
-	endloop
+facet normal 0.48906225 -0.8722488 0
+ outer loop
+  vertex -1.4901161e-08 -0.6942202 -0.5
+  vertex -1.4901161e-08 -0.6942202 0.5
+  vertex -1.4142137 -1.4871573 0
+ endloop
 endfacet
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex -2.6000e+02 3.6000e+02 0.0000e+00
-		vertex 0.0000e+00 1.6000e+02 -1.0000e+02
-		vertex 0.0000e+00 1.6000e+02 1.0000e+02
-	endloop
+facet normal 0.42493495 0.20137592 -0.88254064
+ outer loop
+  vertex 1.4142137 -1.4871573 0
+  vertex -1.4901161e-08 -0.6942202 -0.5
+  vertex 4.4703484e-08 1.4970562 0
+ endloop
 endfacet
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex -2.6000e+02 3.6000e+02 0.0000e+00
-		vertex 0.0000e+00 -3.8000e+02 0.0000e+00
-		vertex 0.0000e+00 1.6000e+02 -1.0000e+02
-	endloop
+facet normal -0.42493495 0.20137595 -0.88254064
+ outer loop
+  vertex -1.4901161e-08 -0.6942202 -0.5
+  vertex -1.4142137 -1.4871573 0
+  vertex 4.4703484e-08 1.4970562 0
+ endloop
 endfacet
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex -2.6000e+02 3.6000e+02 0.0000e+00
-		vertex 0.0000e+00 -3.8000e+02 0.0000e+00
-		vertex 0.0000e+00 1.6000e+02 1.0000e+02
-	endloop
+facet normal 0.42493495 0.20137595 0.88254064
+ outer loop
+  vertex -1.4901161e-08 -0.6942202 0.5
+  vertex 1.4142137 -1.4871573 0
+  vertex 4.4703484e-08 1.4970562 0
+ endloop
 endfacet
-facet normal 0.0000e+00 0.0000e+00 0.0000e+00
-	outer loop
-		vertex 0.0000e+00 -3.8000e+02 0.0000e+00
-		vertex 0.0000e+00 1.6000e+02 1.0000e+02
-		vertex 2.6000e+02 3.6000e+02 0.0000e+00
-	endloop
+facet normal -0.42493492 0.20137593 0.88254064
+ outer loop
+  vertex -1.4901161e-08 -0.6942202 0.5
+  vertex 4.4703484e-08 1.4970562 0
+  vertex -1.4142137 -1.4871573 0
+ endloop
 endfacet
-endsolid JREOBJ
+endsolid 
