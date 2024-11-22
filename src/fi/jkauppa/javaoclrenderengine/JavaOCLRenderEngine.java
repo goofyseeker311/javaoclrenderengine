@@ -36,7 +36,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -63,8 +63,6 @@ public class JavaOCLRenderEngine {
 	private long graphicsbufferptr = NULL, graphicszbufferptr = NULL, graphicshbufferptr = NULL, camposbufferptr = NULL, cammovbufferptr = NULL;
 	private long tri1ptr = NULL, tri1lenptr = NULL, tex1ptr = NULL, tex1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
 	private long tri2ptr = NULL, tri2lenptr = NULL, tex2ptr = NULL, tex2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
-	@SuppressWarnings("unused")
-	private long trianglelistptr = NULL, trianglelistlenptr = NULL;
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
@@ -83,7 +81,6 @@ public class JavaOCLRenderEngine {
 	private float[] objectlist2pos3sca3rot3relsph4 = null;
 	private int[] objectlistlength = {0};
 	private int[] objectlist2length = {0};
-	private int[] triangleslength = {0};
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -165,7 +162,7 @@ public class JavaOCLRenderEngine {
 		}
 		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
 		this.queue = devicedata.queue;
-		
+
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[7+16+6+this.graphicswidth*16];
 		this.camerapos3fov2res2rotmat16[0] = 0.0f; this.camerapos3fov2res2rotmat16[1] = 0.0f; this.camerapos3fov2res2rotmat16[2] = 0.0f;
@@ -178,7 +175,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3fov2res2rotmat16[23] = 0.0f; this.camerapos3fov2res2rotmat16[24] = 0.0f;
 		this.camerapos3fov2res2rotmat16[25] = 0.0f; this.camerapos3fov2res2rotmat16[26] = 0.0f;
 		this.camerapos3fov2res2rotmat16[27] = 0.0f; this.camerapos3fov2res2rotmat16[28] = 0.0f;
-		
+
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
 		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
@@ -227,7 +224,7 @@ public class JavaOCLRenderEngine {
 				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.materialid);
 			}
 		}
-		
+
 		Float[] trianglelistpos3uv3idfloats = trianglelistpos3uv3arraylist.toArray(new Float[trianglelistpos3uv3arraylist.size()]);
 		this.trianglelistpos3uv3id = new float[trianglelistpos3uv3idfloats.length];
 		for (int i=0;i<trianglelistpos3uv3idfloats.length;i++) {
@@ -240,7 +237,7 @@ public class JavaOCLRenderEngine {
 			this.trianglelist2pos3uv3id[i] = trianglelist2pos3uv3idfloats[i];
 		}
 		this.trianglelist2length[0] = this.trianglelist2pos3uv3id.length/16;
-		
+
 		BufferedImage defaulttextureimage = UtilLib.loadImage("res/images/texturetest.png", true);
 		BufferedImage textureimage = defaulttextureimage;
 		if (loadmodel.materiallist[0].fileimage!=null) {
@@ -256,24 +253,21 @@ public class JavaOCLRenderEngine {
 		DataBufferInt textureimage2dataint = (DataBufferInt)textureimage2.getRaster().getDataBuffer();
 		this.triangletexture2list = textureimage2dataint.getData();
 		this.triangletexture2length[0] = textureimage2.getWidth();
-		
+
 		Sphere sphbv = loadmodel.sphereboundaryvolume;
 		this.objectlistpos3sca3rot3relsph4 = new float[]{
-				 5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
 				-5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,70.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				 0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 30.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				 0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,45.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				};
+				0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 30.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,45.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+		};
 		this.objectlistlength[0] = this.objectlistpos3sca3rot3relsph4.length/13;
 		Sphere sphbv2 = loadmodel2.sphereboundaryvolume;
 		this.objectlist2pos3sca3rot3relsph4 = new float[]{
-				 0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
-				};
+				0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r, trianglelistlength[0]*4,
+		};
 		this.objectlist2length[0] = this.objectlist2pos3sca3rot3relsph4.length/13;
-		
-		this.triangleslength[0] = this.objectlistlength[0]*this.trianglelistlength[0] + this.objectlist2length[0]*this.trianglelist2length[0];
-		this.trianglelistptr = computelib.createBuffer(device, triangleslength[0]*16);
-		
+
 		if (this.glinterop) {
 			this.graphicsbufferptr = computelib.createSharedGLBuffer(device, buf);
 		} else {
@@ -288,7 +282,7 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(device, queue, camposbufferptr, camerapos3fov2res2rotmat16);
 		this.cammovbufferptr = computelib.createBuffer(device, cameramov3rot3.length);
 		computelib.writeBufferf(device, queue, cammovbufferptr, cameramov3rot3);
-		
+
 		this.tri1ptr = computelib.createBuffer(device, trianglelistpos3uv3id.length);
 		computelib.writeBufferf(device, queue, tri1ptr, trianglelistpos3uv3id);
 		this.tri1lenptr = computelib.createBuffer(device, 1);
@@ -496,12 +490,12 @@ public class JavaOCLRenderEngine {
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-    private void transferBuffer(int id, float[] texturebuffer) {
-    	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
-    	GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
-    	GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
-    }
-	
+	private void transferBuffer(int id, float[] texturebuffer) {
+		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
+		GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
+		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
+	}
+
 	private int createShader(String sourceShader, int type) {
 		int shader = GL31.glCreateShader(type);
 		ByteBuffer source = BufferUtils.createByteBuffer(8192);
@@ -518,7 +512,7 @@ public class JavaOCLRenderEngine {
 		if (compiled == 0) {throw new AssertionError("Could not compile shader");}
 		return shader;
 	}
-	
+
 	private void setIcon(BufferedImage iconimage) {
 		DataBufferInt iconimagedataint = (DataBufferInt)iconimage.getRaster().getDataBuffer();
 		int[] iconimageints = iconimagedataint.getData();

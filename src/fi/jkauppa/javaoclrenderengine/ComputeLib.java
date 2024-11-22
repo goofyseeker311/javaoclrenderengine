@@ -229,7 +229,7 @@ public class ComputeLib {
 						if (CL30.clGetDeviceIDs(platform, CL30.CL_DEVICE_TYPE_ALL, clDevices, (IntBuffer)null)==CL30.CL_SUCCESS) {
 							for (int d = 0; d < clDevices.capacity(); d++) {
 								long device = clDevices.get(d);
-								
+
 								IntBuffer errcode_ret = clStack.callocInt(1);
 								int errcode_ret_int = 1;
 								boolean contextsharing = false;
@@ -249,13 +249,13 @@ public class ComputeLib {
 										contextsharing = true;
 									}
 								}
-								
+
 								if (errcode_ret_int!=CL30.CL_SUCCESS) {
 									PointerBuffer clCtxProps = clStack.mallocPointer(3);
 									clCtxProps.put(0, CL30.CL_CONTEXT_PLATFORM).put(1, platform).put(2, 0);
 									context = CL30.clCreateContext(clCtxProps, device, (CLContextCallback)null, MemoryUtil.NULL, errcode_ret);
 								}
-								
+
 								errcode_ret_int = errcode_ret.get(errcode_ret.position());
 								if (errcode_ret_int==CL30.CL_SUCCESS) {
 									Device devicedesc = new Device();
