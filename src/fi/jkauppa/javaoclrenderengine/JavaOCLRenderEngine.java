@@ -36,7 +36,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -60,10 +60,11 @@ public class JavaOCLRenderEngine {
 	private long device = NULL, queue = NULL, program = NULL;
 	private Device devicedata = null;
 	private String usingdevice = null;
-	@SuppressWarnings("unused")
-	private long graphicsbufferptr = NULL, graphicszbufferptr = NULL, graphicshbufferptr = NULL, camposbufferptr = NULL, cammovbufferptr = NULL, camraybufferptr = NULL;
+	private long graphicsbufferptr = NULL, graphicszbufferptr = NULL, graphicshbufferptr = NULL, camposbufferptr = NULL, cammovbufferptr = NULL;
 	private long tri1ptr = NULL, tri1lenptr = NULL, tex1ptr = NULL, tex1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
 	private long tri2ptr = NULL, tri2lenptr = NULL, tex2ptr = NULL, tex2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
+	@SuppressWarnings("unused")
+	private long trianglelistptr = NULL, trianglelistlenptr = NULL;
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
@@ -83,8 +84,6 @@ public class JavaOCLRenderEngine {
 	private int[] objectlistlength = {0};
 	private int[] objectlist2length = {0};
 	private int[] triangleslength = {0};
-	@SuppressWarnings("unused")
-	private long[] trianglesbuffer = new long[1];
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -155,9 +154,31 @@ public class JavaOCLRenderEngine {
 		lastmousex = mousex[0]; lastmousey = mousey[0];
 		BufferedImage iconimage = UtilLib.loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
+
+		this.selecteddevice = vselecteddevice;
+		this.computelib = new ComputeLib(window);
+		this.device = this.computelib.devicelist[selecteddevice];
+		this.devicedata = this.computelib.devicemap.get(device);
+		this.usingdevice = devicedata.devicename;
+		if (!devicedata.platformcontextsharing) {
+			this.glinterop = false;
+		}
+		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
+		this.queue = devicedata.queue;
 		
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
-		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.camerapos3fov2res2rotmat16 = new float[7+16+6+this.graphicswidth*16];
+		this.camerapos3fov2res2rotmat16[0] = 0.0f; this.camerapos3fov2res2rotmat16[1] = 0.0f; this.camerapos3fov2res2rotmat16[2] = 0.0f;
+		this.camerapos3fov2res2rotmat16[3] = graphicshfov; this.camerapos3fov2res2rotmat16[4] = graphicsvfov;
+		this.camerapos3fov2res2rotmat16[5] = graphicswidth; this.camerapos3fov2res2rotmat16[6] = graphicsheight;
+		this.camerapos3fov2res2rotmat16[7] = 1.0f; this.camerapos3fov2res2rotmat16[8] = 0.0f; this.camerapos3fov2res2rotmat16[9] = 0.0f; this.camerapos3fov2res2rotmat16[10] = 0.0f;
+		this.camerapos3fov2res2rotmat16[11] = 0.0f; this.camerapos3fov2res2rotmat16[12] = 1.0f; this.camerapos3fov2res2rotmat16[13] = 0.0f; this.camerapos3fov2res2rotmat16[14] = 0.0f;
+		this.camerapos3fov2res2rotmat16[15] = 0.0f; this.camerapos3fov2res2rotmat16[16] = 0.0f; this.camerapos3fov2res2rotmat16[17] = 1.0f; this.camerapos3fov2res2rotmat16[18] = 0.0f;
+		this.camerapos3fov2res2rotmat16[19] = 0.0f; this.camerapos3fov2res2rotmat16[20] = 0.0f; this.camerapos3fov2res2rotmat16[21] = 0.0f; this.camerapos3fov2res2rotmat16[22] = 1.0f;
+		this.camerapos3fov2res2rotmat16[23] = 0.0f; this.camerapos3fov2res2rotmat16[24] = 0.0f;
+		this.camerapos3fov2res2rotmat16[25] = 0.0f; this.camerapos3fov2res2rotmat16[26] = 0.0f;
+		this.camerapos3fov2res2rotmat16[27] = 0.0f; this.camerapos3fov2res2rotmat16[28] = 0.0f;
+		
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
 		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
@@ -249,18 +270,10 @@ public class JavaOCLRenderEngine {
 				 0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
 				};
 		this.objectlist2length[0] = this.objectlist2pos3sca3rot3relsph4.length/13;
-		this.triangleslength[0] = this.objectlistlength[0]*this.trianglelistlength[0] + this.objectlist2length[0]*this.trianglelist2length[0];
 		
-		this.selecteddevice = vselecteddevice;
-		this.computelib = new ComputeLib(window);
-		this.device = this.computelib.devicelist[selecteddevice];
-		this.devicedata = this.computelib.devicemap.get(device);
-		this.usingdevice = devicedata.devicename;
-		if (!devicedata.platformcontextsharing) {
-			this.glinterop = false;
-		}
-		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
-		this.queue = devicedata.queue;
+		this.triangleslength[0] = this.objectlistlength[0]*this.trianglelistlength[0] + this.objectlist2length[0]*this.trianglelist2length[0];
+		this.trianglelistptr = computelib.createBuffer(device, triangleslength[0]*16);
+		
 		if (this.glinterop) {
 			this.graphicsbufferptr = computelib.createSharedGLBuffer(device, buf);
 		} else {
