@@ -19,6 +19,13 @@ import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 import org.lwjgl.glfw.GLFWScrollCallbackI;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.openal.AL;
+import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.ALC;
+import org.lwjgl.openal.ALC11;
+import org.lwjgl.openal.ALCCapabilities;
+import org.lwjgl.openal.ALCapabilities;
+import org.lwjgl.openal.EXTThreadLocalContext;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GLCapabilities;
@@ -36,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.6.8";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.6.9";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -50,6 +57,8 @@ public class JavaOCLRenderEngine {
 	private int quadProgram = 0;
 	private int quadProgram_inputPosition = 0;
 	private int quadProgram_inputTextureCoords = 0;
+	private int soundbuf = 0;
+	private int sourcebuf = 0;
 	private float frametime = 0.0f;
 	private float frametimeavg = 0.0f;
 	private ComputeLib computelib = null;
@@ -57,9 +66,10 @@ public class JavaOCLRenderEngine {
 	@SuppressWarnings("unused")
 	private boolean isfullscreen = false;
 	private boolean glinterop = true;
-	private long device = NULL, queue = NULL, program = NULL;
-	private Device devicedata = null;
-	private String usingdevice = null;
+	private long opencldevice = NULL, queue = NULL, program = NULL;
+	private Device opencldevicedata = null;
+	private String usingopencldevice = null;
+	private long audiodevice = NULL;
 	private long graphicsbufferptr = NULL, graphicszbufferptr = NULL, graphicshbufferptr = NULL, camposbufferptr = NULL, cammovbufferptr = NULL;
 	private long tri1ptr = NULL, tri1lenptr = NULL, tex1ptr = NULL, tex1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
 	private long tri2ptr = NULL, tri2lenptr = NULL, tex2ptr = NULL, tex2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
@@ -154,27 +164,43 @@ public class JavaOCLRenderEngine {
 
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
-		this.device = this.computelib.devicelist[selecteddevice];
-		this.devicedata = this.computelib.devicemap.get(device);
-		this.usingdevice = devicedata.devicename;
-		if (!devicedata.platformcontextsharing) {
+		this.opencldevice = this.computelib.devicelist[selecteddevice];
+		this.opencldevicedata = this.computelib.devicemap.get(opencldevice);
+		this.usingopencldevice = opencldevicedata.devicename;
+		if (!opencldevicedata.platformcontextsharing) {
 			this.glinterop = false;
 		}
-		System.out.println("Using device["+selecteddevice+"]: "+devicedata.devicename);
-		this.queue = devicedata.queue;
+		System.out.println("Using device["+selecteddevice+"]: "+opencldevicedata.devicename);
+		this.queue = opencldevicedata.queue;
 
+        this.audiodevice = ALC11.alcOpenDevice((String)null);
+        if (this.audiodevice == NULL) {
+            throw new IllegalStateException("Failed to open default OpenAL device.");
+        }
+        ALCCapabilities audiodeviceCaps = ALC.createCapabilities(this.audiodevice);
+        if (!audiodeviceCaps.OpenALC10) {
+            throw new IllegalStateException();
+        }
+        long audiocontext = ALC11.alcCreateContext(this.audiodevice, (IntBuffer)null);
+        boolean useTLC = audiodeviceCaps.ALC_EXT_thread_local_context && EXTThreadLocalContext.alcSetThreadContext(audiocontext);
+        if (!useTLC) {
+            if (!ALC11.alcMakeContextCurrent(audiocontext)) {
+                throw new IllegalStateException();
+            }
+        }
+        @SuppressWarnings("unused")
+		ALCapabilities caps = AL.createCapabilities(audiodeviceCaps, MemoryUtil::memCallocPointer);
+        this.soundbuf = AL10.alGenBuffers();
+        this.sourcebuf = AL10.alGenSources();
+        
+        byte[] soundbytes = UtilLib.loadSound("res/sounds/firecannon.wav", 1, true);
+		ByteBuffer soundbytesbuffer = MemoryUtil.memAlloc(soundbytes.length);
+		soundbytesbuffer.put(soundbytes).rewind();
+        AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
+        AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
+        
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
-		this.camerapos3fov2res2rotmat16 = new float[7+16+6+this.graphicswidth*16];
-		this.camerapos3fov2res2rotmat16[0] = 0.0f; this.camerapos3fov2res2rotmat16[1] = 0.0f; this.camerapos3fov2res2rotmat16[2] = 0.0f;
-		this.camerapos3fov2res2rotmat16[3] = graphicshfov; this.camerapos3fov2res2rotmat16[4] = graphicsvfov;
-		this.camerapos3fov2res2rotmat16[5] = graphicswidth; this.camerapos3fov2res2rotmat16[6] = graphicsheight;
-		this.camerapos3fov2res2rotmat16[7] = 1.0f; this.camerapos3fov2res2rotmat16[8] = 0.0f; this.camerapos3fov2res2rotmat16[9] = 0.0f; this.camerapos3fov2res2rotmat16[10] = 0.0f;
-		this.camerapos3fov2res2rotmat16[11] = 0.0f; this.camerapos3fov2res2rotmat16[12] = 1.0f; this.camerapos3fov2res2rotmat16[13] = 0.0f; this.camerapos3fov2res2rotmat16[14] = 0.0f;
-		this.camerapos3fov2res2rotmat16[15] = 0.0f; this.camerapos3fov2res2rotmat16[16] = 0.0f; this.camerapos3fov2res2rotmat16[17] = 1.0f; this.camerapos3fov2res2rotmat16[18] = 0.0f;
-		this.camerapos3fov2res2rotmat16[19] = 0.0f; this.camerapos3fov2res2rotmat16[20] = 0.0f; this.camerapos3fov2res2rotmat16[21] = 0.0f; this.camerapos3fov2res2rotmat16[22] = 1.0f;
-		this.camerapos3fov2res2rotmat16[23] = 0.0f; this.camerapos3fov2res2rotmat16[24] = 0.0f;
-		this.camerapos3fov2res2rotmat16[25] = 0.0f; this.camerapos3fov2res2rotmat16[26] = 0.0f;
-		this.camerapos3fov2res2rotmat16[27] = 0.0f; this.camerapos3fov2res2rotmat16[28] = 0.0f;
+		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
@@ -269,48 +295,48 @@ public class JavaOCLRenderEngine {
 		this.objectlist2length[0] = this.objectlist2pos3sca3rot3relsph4.length/13;
 
 		if (this.glinterop) {
-			this.graphicsbufferptr = computelib.createSharedGLBuffer(device, buf);
+			this.graphicsbufferptr = computelib.createSharedGLBuffer(opencldevice, buf);
 		} else {
 			this.graphicsbuffer = new float[graphicslength*4];
-			this.graphicsbufferptr = computelib.createBuffer(device, graphicslength*4);
+			this.graphicsbufferptr = computelib.createBuffer(opencldevice, graphicslength*4);
 		}
-		this.graphicszbufferptr = computelib.createBuffer(device, graphicslength);
+		this.graphicszbufferptr = computelib.createBuffer(opencldevice, graphicslength);
 		this.graphicszbuffer = new float[graphicslength];
-		this.graphicshbufferptr = computelib.createBuffer(device, 1);
+		this.graphicshbufferptr = computelib.createBuffer(opencldevice, 1);
 		this.graphicshbuffer = new int[1];
-		this.camposbufferptr = computelib.createBuffer(device, camerapos3fov2res2rotmat16.length);
-		computelib.writeBufferf(device, queue, camposbufferptr, camerapos3fov2res2rotmat16);
-		this.cammovbufferptr = computelib.createBuffer(device, cameramov3rot3.length);
-		computelib.writeBufferf(device, queue, cammovbufferptr, cameramov3rot3);
+		this.camposbufferptr = computelib.createBuffer(opencldevice, camerapos3fov2res2rotmat16.length);
+		computelib.writeBufferf(opencldevice, queue, camposbufferptr, camerapos3fov2res2rotmat16);
+		this.cammovbufferptr = computelib.createBuffer(opencldevice, cameramov3rot3.length);
+		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 
-		this.tri1ptr = computelib.createBuffer(device, trianglelistpos3uv3id.length);
-		computelib.writeBufferf(device, queue, tri1ptr, trianglelistpos3uv3id);
-		this.tri1lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, tri1lenptr, trianglelistlength);
-		this.tex1ptr = computelib.createBuffer(device, triangletexturelist.length);
-		computelib.writeBufferi(device, queue, tex1ptr, triangletexturelist);
-		this.tex1lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, tex1lenptr, triangletexturelength);
-		this.obj1ptr = computelib.createBuffer(device, objectlistpos3sca3rot3relsph4.length);
-		computelib.writeBufferf(device, queue, obj1ptr, objectlistpos3sca3rot3relsph4);
-		this.obj1lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, obj1lenptr, objectlistlength);
+		this.tri1ptr = computelib.createBuffer(opencldevice, trianglelistpos3uv3id.length);
+		computelib.writeBufferf(opencldevice, queue, tri1ptr, trianglelistpos3uv3id);
+		this.tri1lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, tri1lenptr, trianglelistlength);
+		this.tex1ptr = computelib.createBuffer(opencldevice, triangletexturelist.length);
+		computelib.writeBufferi(opencldevice, queue, tex1ptr, triangletexturelist);
+		this.tex1lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, tex1lenptr, triangletexturelength);
+		this.obj1ptr = computelib.createBuffer(opencldevice, objectlistpos3sca3rot3relsph4.length);
+		computelib.writeBufferf(opencldevice, queue, obj1ptr, objectlistpos3sca3rot3relsph4);
+		this.obj1lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, obj1lenptr, objectlistlength);
 
-		this.tri2ptr = computelib.createBuffer(device, trianglelist2pos3uv3id.length);
-		computelib.writeBufferf(device, queue, tri2ptr, trianglelist2pos3uv3id);
-		this.tri2lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, tri2lenptr, trianglelist2length);
-		this.tex2ptr = computelib.createBuffer(device, triangletexture2list.length);
-		computelib.writeBufferi(device, queue, tex2ptr, triangletexture2list);
-		this.tex2lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, tex2lenptr, triangletexture2length);
-		this.obj2ptr = computelib.createBuffer(device, objectlist2pos3sca3rot3relsph4.length);
-		computelib.writeBufferf(device, queue, obj2ptr, objectlist2pos3sca3rot3relsph4);
-		this.obj2lenptr = computelib.createBuffer(device, 1);
-		computelib.writeBufferi(device, queue, obj2lenptr, objectlist2length);
+		this.tri2ptr = computelib.createBuffer(opencldevice, trianglelist2pos3uv3id.length);
+		computelib.writeBufferf(opencldevice, queue, tri2ptr, trianglelist2pos3uv3id);
+		this.tri2lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, tri2lenptr, trianglelist2length);
+		this.tex2ptr = computelib.createBuffer(opencldevice, triangletexture2list.length);
+		computelib.writeBufferi(opencldevice, queue, tex2ptr, triangletexture2list);
+		this.tex2lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, tex2lenptr, triangletexture2length);
+		this.obj2ptr = computelib.createBuffer(opencldevice, objectlist2pos3sca3rot3relsph4.length);
+		computelib.writeBufferf(opencldevice, queue, obj2ptr, objectlist2pos3sca3rot3relsph4);
+		this.obj2lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, obj2lenptr, objectlist2length);
 
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
-		this.program = this.computelib.compileProgram(device, programSource);
+		this.program = this.computelib.compileProgram(opencldevice, programSource);
 	}
 
 	public void run() {
@@ -361,7 +387,7 @@ public class JavaOCLRenderEngine {
 	private void tick(float deltatimeseconds) {
 		float ds = deltatimeseconds;
 		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
-				"fps, computetime: "+String.format("%.3f",frametimeavg).replace(',', '.')+"ms ["+usingdevice+"] ("
+				"fps, computetime: "+String.format("%.3f",frametimeavg).replace(',', '.')+"ms ["+usingopencldevice+"] ("
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
 				);
@@ -387,21 +413,21 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferf(device, queue, cammovbufferptr, cameramov3rot3);
-		computelib.runProgram(device, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
+		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
+		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,cammovbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,cammovbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,cammovbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,cammovbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(device, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
+		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
-		computelib.readBufferi(device, queue, graphicshbufferptr, graphicshbuffer);
+		computelib.readBufferi(opencldevice, queue, graphicshbufferptr, graphicshbuffer);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
-			computelib.readBufferf(device, queue, graphicsbufferptr, newgraphicsbuffer);
+			computelib.readBufferf(opencldevice, queue, graphicsbufferptr, newgraphicsbuffer);
 			graphicsbuffer = newgraphicsbuffer;
 		}
 		long frameendtime = System.nanoTime();
@@ -568,7 +594,9 @@ public class JavaOCLRenderEngine {
 	}
 	private class MouseButtonProcessor implements GLFWMouseButtonCallbackI {
 		@Override public void invoke(long window, int button, int action, int mods) {
-			System.out.println("button: "+button+" action: "+action+" mods: "+mods);
+			if ((button==0)&&(action==1)) {
+				AL10.alSourcePlay(sourcebuf);
+			}
 		}
 	}
 	private class MouseWheelProcessor implements GLFWScrollCallbackI {

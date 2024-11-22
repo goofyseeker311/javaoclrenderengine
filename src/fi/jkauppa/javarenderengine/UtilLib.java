@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
@@ -246,6 +248,26 @@ public class UtilLib {
 		return k;
 	}
 
+	public static byte[] loadSound(String filename, int copies, boolean loadresourcefromjar) {
+		byte[] k = null;
+		if (filename!=null) {
+			try {
+				File soundfile = new File(filename);
+				BufferedInputStream soundfilestream = null;
+				if (loadresourcefromjar) {
+					soundfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(soundfile.getPath().replace(File.separatorChar, '/')));
+				} else {
+					soundfilestream = new BufferedInputStream(new FileInputStream(soundfile));
+				}
+				AudioInputStream soundfileaudiostream = AudioSystem.getAudioInputStream(soundfilestream);
+				byte[] soundbytes = soundfileaudiostream.readAllBytes();
+				k = soundbytes;
+				soundfilestream.close();
+			} catch (Exception ex) {ex.printStackTrace();}
+		}
+		return k;
+	}
+	
 	public static class DoubleSort implements Comparable<DoubleSort> {
 		public Double value;
 		public int ind;
