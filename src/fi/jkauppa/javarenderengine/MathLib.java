@@ -37,7 +37,7 @@ public class MathLib {
 	public static double acosd(double value) {return (180.0f/Math.PI)*Math.acos(value);}
 	public static double tand(double value) {return Math.tan((Math.PI/180.0f)*value);}
 	public static double atand(double value) {return (180.0f/Math.PI)*Math.atan(value);}
-	
+
 	public static double[] vectorDot(Direction[] vdir, Position vpoint){double[] k=null; if((vdir!=null)&&(vpoint!=null)){k=new double[vdir.length];for(int n=0;n<vdir.length;n++){k[n] = vdir[n].dx*vpoint.x+vdir[n].dy*vpoint.y+vdir[n].dz*vpoint.z;}}return k;}
 	public static double[] vectorDot(Direction[] vdir, Position[] vpoint){double[] k=null; if((vdir!=null)&&(vpoint!=null)&&(vdir.length==vpoint.length)){k=new double[vdir.length];for(int n=0;n<vdir.length;n++){k[n] = vdir[n].dx*vpoint[n].x+vdir[n].dy*vpoint[n].y+vdir[n].dz*vpoint[n].z;}}return k;}
 	public static double[] vectorDot(Direction vdir1, Direction[] vdir2){double[] k=null; if((vdir1!=null)&&(vdir2!=null)){k=new double[vdir2.length];for(int n=0;n<vdir2.length;n++){k[n] = vdir1.dx*vdir2[n].dx+vdir1.dy*vdir2[n].dy+vdir1.dz*vdir2[n].dz;}}return k;}
@@ -432,7 +432,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static double[][] planePointDistance(Position[] vpoint, Plane[] vplane) {
 		double[][] k = null;
 		if ((vpoint!=null)&&(vplane!=null)) {
@@ -547,7 +547,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Position[][] rayTriangleIntersection(Position vpos, Direction[] vdir, Triangle[] vtri) {
 		Position[][] k = null;
 		if ((vpos!=null)&&(vdir!=null)&&(vtri!=null)) {
@@ -824,7 +824,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static boolean[][] sphereSphereIntersection(Sphere[] vsphere1, Sphere[] vsphere2) {
 		boolean[][] k = null;
 		if ((vsphere1.length>0)&&(vsphere2.length>0)) {
@@ -837,7 +837,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Integer[][] mutualSphereIntersection(Sphere[] vsphere) {
 		Integer[][] k = new Integer[vsphere.length][0];
 		double[] xlist = new double[2*vsphere.length];
@@ -904,7 +904,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static boolean[] vertexCubeIntersection(Cube vaabb, Position[] vpoint) {
 		boolean[] k = null;
 		if ((vaabb!=null)&&(vpoint!=null)) {
@@ -969,7 +969,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Matrix matrixMultiply(Matrix vmat1, Matrix vmat2) {
 		Matrix k = null;
 		if ((vmat1!=null)&&(vmat2!=null)) {
@@ -1672,7 +1672,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Position[] rotateAroundAxisPos(Position[] vpos, Position pos, Direction axis, double axisr) {
 		Position[] k = null;
 		if (vpos!=null) {
@@ -2166,7 +2166,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Matrix rotationMatrix(double xaxisr, double yaxisr, double zaxisr) {
 		Matrix xrot = new Matrix(1,0,0,0,cosd(xaxisr),-sind(xaxisr),0,sind(xaxisr),cosd(xaxisr));
 		Matrix yrot = new Matrix(cosd(yaxisr),0,sind(yaxisr),0,1,0,-sind(yaxisr),0,cosd(yaxisr));
@@ -2215,7 +2215,7 @@ public class MathLib {
 		camrotmat = matrixMultiply(camrotmat, camrotmatx);
 		return camrotmat;
 	}
-	
+
 	public static Sphere[] entitySphereList(Entity[] entitylist) {
 		Sphere[] k = null;
 		if ((entitylist!=null)&&(entitylist.length>0)) {
@@ -2226,7 +2226,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Position[] sphereVertexList(Sphere[] spherelist) {
 		Position[] k = null;
 		if (spherelist!=null) {
@@ -2237,7 +2237,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Position[] generateVertexList(Line[] linelist) {
 		TreeSet<Position> vertexlist = new TreeSet<Position>();
 		for (int i=0;i<linelist.length;i++) {
@@ -2321,7 +2321,7 @@ public class MathLib {
 		//TODO generate quad list
 		return null;
 	}
-	
+
 	public static Tetrahedron[] generateTetrahedronList(Line[] linelist) {
 		Triangle[] uniquetrianglelist = generateTriangleList(linelist);
 		TreeSet<Tetrahedron> tetrahedronlist = new TreeSet<Tetrahedron>();
@@ -2357,7 +2357,7 @@ public class MathLib {
 		//TODO generate cuboid volume list
 		return null;
 	}
-	
+
 	public static Triangle[] generateSurfaceList(Line[] linelist) {
 		TreeSet<Triangle> surfacelistarray = new TreeSet<Triangle>(); 
 		Tetrahedron[] newtetrahedronlist = generateTetrahedronList(linelist);
@@ -2387,7 +2387,7 @@ public class MathLib {
 		}
 		return surfacelistarray.toArray(new Triangle[surfacelistarray.size()]);
 	}
-	
+
 	public static Entity[] generateEntityList(Line[] linelist) {
 		ArrayList<Entity> newentitylistarray = new ArrayList<Entity>();
 		for (int j=0;j<linelist.length;j++) {
@@ -2435,7 +2435,7 @@ public class MathLib {
 		Entity[] entitylist = newentitylistarray.toArray(new Entity[newentitylistarray.size()]); 
 		return entitylist;
 	}
-	
+
 	public static void generateEntityListOctree(Entity[] entitylist) {
 		if (entitylist!=null) {
 			for (int j=0;j<entitylist.length;j++) {
@@ -2497,7 +2497,7 @@ public class MathLib {
 			}
 		}
 	}
-	
+
 	public static Triangle[] subDivideTriangle(Triangle[] vtri) {
 		Triangle[] k = null;
 		if (vtri!=null) {
@@ -2534,7 +2534,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static double[] spheremapAngles(int vres, double vfov) {
 		double[] k = new double[vres];
 		double halfvfov = vfov/2.0f;
@@ -2582,10 +2582,10 @@ public class MathLib {
 				k[j][i] = hvvecs[j];
 			}
 		}
-		
+
 		return k;
 	}
-	
+
 	public static double[] projectedStep(int res, double fov) {
 		double[] k = new double[res];
 		double halfvfov = fov/2.0f;
@@ -2609,7 +2609,7 @@ public class MathLib {
 		rightdirupvectors[0] = dirvector;
 		rightdirupvectors[1] = rightvector;
 		rightdirupvectors[2] = upvector;
-	    return matrixMultiply(rightdirupvectors, vmat);
+		return matrixMultiply(rightdirupvectors, vmat);
 	}
 	public static Direction[] projectedPlaneRayDirections(Matrix vmat) {
 		Direction[] rightdirupvectors = new Direction[3];
@@ -2619,40 +2619,40 @@ public class MathLib {
 		rightdirupvectors[0] = dirvector;
 		rightdirupvectors[1] = rightvector;
 		rightdirupvectors[2] = upvector;
-	    return matrixMultiply(rightdirupvectors, vmat);
+		return matrixMultiply(rightdirupvectors, vmat);
 	}
 	public static Direction[] projectedPlaneRayVectors(int hres, double hfov, Matrix vmat, boolean norm) {
-	    double[] steps = projectedStep(hres,hfov);
+		double[] steps = projectedStep(hres,hfov);
 		Direction[] fwdvectors = new Direction[hres];
-	    for (int i=0;i<hres;i++) {
-	    	fwdvectors[i] = new Direction(steps[i], 0, -1);
-	    }
+		for (int i=0;i<hres;i++) {
+			fwdvectors[i] = new Direction(steps[i], 0, -1);
+		}
 		if (norm) {
 			fwdvectors = normalizeVector(fwdvectors);
 		}
-	    return matrixMultiply(fwdvectors, vmat);
+		return matrixMultiply(fwdvectors, vmat);
 	}
 	public static PlaneRay[] projectedPlaneRays(Position vpos, int hres, int vres, double hfov, double vfov, Matrix vmat) {
 		PlaneRay[] k = new PlaneRay[hres];
 		Direction[] dirrightupvectors = projectedPlaneRayDirections(vmat);
 		Direction rightvector = dirrightupvectors[1];
-	    double[] hsteps = projectedStep(hres,hfov);
-	    double[] vsteps = projectedStep(vres,vfov);
-	    double vstepmin = vsteps[0];
+		double[] hsteps = projectedStep(hres,hfov);
+		double[] vsteps = projectedStep(vres,vfov);
+		double vstepmin = vsteps[0];
 		Direction[] fwdvectors = new Direction[hres];
-	    for (int i=0;i<hres;i++) {
-	    	fwdvectors[i] = new Direction(hsteps[i], 0, -1);
-	    }
-	    Direction[] fwdvectorsn = normalizeVector(fwdvectors);
-	    Direction[] fwdvectorsnrot =  matrixMultiply(fwdvectorsn, vmat);
+		for (int i=0;i<hres;i++) {
+			fwdvectors[i] = new Direction(hsteps[i], 0, -1);
+		}
+		Direction[] fwdvectorsn = normalizeVector(fwdvectors);
+		Direction[] fwdvectorsnrot =  matrixMultiply(fwdvectorsn, vmat);
 		Direction[] planenormalvectors = vectorCross(fwdvectorsnrot, rightvector);
 		planenormalvectors = normalizeVector(planenormalvectors);
-	    Plane[] prjplanes = planeFromNormalAtPoint(vpos, planenormalvectors);
-	    for (int i=0;i<hres;i++) {
-	    	Direction[] fwdupvector = {new Direction(fwdvectors[i].dx,vstepmin,fwdvectors[i].dz)};
-	    	double[] fwdupangle = vectorAngle(fwdvectors[i], fwdupvector);
-	    	k[i] = new PlaneRay(vpos,fwdvectorsnrot[i],prjplanes[i],2.0f*fwdupangle[0]);
-	    }
+		Plane[] prjplanes = planeFromNormalAtPoint(vpos, planenormalvectors);
+		for (int i=0;i<hres;i++) {
+			Direction[] fwdupvector = {new Direction(fwdvectors[i].dx,vstepmin,fwdvectors[i].dz)};
+			double[] fwdupangle = vectorAngle(fwdvectors[i], fwdupvector);
+			k[i] = new PlaneRay(vpos,fwdvectorsnrot[i],prjplanes[i],2.0f*fwdupangle[0]);
+		}
 		return k;
 	}
 	public static Direction[][] projectedRays(int vhres, int vvres, double vhfov, double vvfov, Matrix vmat, boolean norm) {
@@ -2990,7 +2990,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Rectangle[] projectedSphereIntersection(Position vpos, Sphere[] vsphere, int hres, int vres, double hfov, double vfov, Matrix vmat, Plane nclipplane) {
 		Rectangle[] k = null;
 		if ((vpos!=null)&&(vsphere!=null)&&(vmat!=null)) {
@@ -3089,7 +3089,7 @@ public class MathLib {
 		Position[] vdirpos = vectorPosition(vdir);
 		return axisPointRotation(vdirpos, axis);
 	}
-	
+
 	public static Coordinate[] spheremapPoint(Position vpos, Position[] vpoint, int hres, int vres, Matrix vmat, Plane nclipplane) {
 		Coordinate[] k = null;
 		if ((vpos!=null)&&(vpoint!=null)&&(vmat!=null)) {
@@ -3266,7 +3266,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Cube axisAlignedBoundingBox(Position[] vertexlist) {
 		double xmin=Double.POSITIVE_INFINITY, ymin=Double.POSITIVE_INFINITY, zmin=Double.POSITIVE_INFINITY;
 		double xmax=Double.NEGATIVE_INFINITY, ymax=Double.NEGATIVE_INFINITY, zmax=Double.NEGATIVE_INFINITY;
@@ -3363,7 +3363,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static double[][] linearAngleLengthInterpolation(Position vpos, Line[] vline, double[] vangle) {
 		double[][] k = null;
 		if ((vpos!=null)&&(vline!=null)&&(vangle!=null)) {
@@ -3422,7 +3422,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Plane[] axisPlanes(Axis axis) {
 		Direction[] vaabbdirs = axisVectors(axis);
 		return planeFromNormalAtPoint(axis.pos, vaabbdirs); 
@@ -3432,12 +3432,12 @@ public class MathLib {
 		Direction[] axisvectors = axisVectors(axis);
 		return vectorLength(axisvectors); 
 	}
-	
+
 	public static Direction[] axisVectors(Axis axis) {
 		Direction[] vaabbdirs = {axis.fwd, axis.rgt, axis.up};
 		return vaabbdirs; 
 	}
-	
+
 	public static Cube[] lineCube(Line[] vline, double radiusrgt, double radiusup) {
 		Cube[] k = null;
 		if (vline!=null) {
@@ -3476,7 +3476,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Triangle[] cubeTriangles(Cube vcube) {
 		Triangle[] k = null;
 		if (vcube!=null) {
@@ -3505,7 +3505,7 @@ public class MathLib {
 					new Triangle(tripos2[0],tripos3[0],tripos2[1]), new Triangle(tripos3[1],tripos3[0],tripos2[1]),
 					new Triangle(tripos3[0],tripos4[0],tripos3[1]), new Triangle(tripos4[1],tripos4[0],tripos3[1]),
 					new Triangle(tripos4[0],tripos1[0],tripos4[1]), new Triangle(tripos1[1],tripos1[0],tripos4[1]),
-					};
+			};
 			Direction[] trinorm = {cubefwdn[0], cubefwdn[0].invert(), cubeupn[0], cubergtn[0], cubeupn[0].invert(), cubergtn[0].invert()};
 			tri[0].norm = trinorm[0];
 			tri[1].norm = trinorm[0];
@@ -3523,7 +3523,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Position cameraPlanePosition(Position drawpos, int coordx, int coordy, int renderwidth, int renderheight, boolean snaplinemode, int gridstep, Matrix vmat) {
 		Direction[] camdirs = projectedCameraDirections(vmat);
 		int origindeltax = (int)Math.floor(((double)(renderwidth-1))/2.0f);
@@ -3531,23 +3531,23 @@ public class MathLib {
 		int mouserelativelocationx = coordx-origindeltax;
 		int mouserelativelocationy = coordy-origindeltay;
 		if (snaplinemode) {
-    		mouserelativelocationx = snapToGrid(mouserelativelocationx, gridstep);
-    		mouserelativelocationy = snapToGrid(mouserelativelocationy, gridstep);
+			mouserelativelocationx = snapToGrid(mouserelativelocationx, gridstep);
+			mouserelativelocationy = snapToGrid(mouserelativelocationy, gridstep);
 		}
 		Position[] drawposa = {drawpos};
 		drawposa = translate(drawposa, camdirs[1], mouserelativelocationx);
 		drawposa = translate(drawposa, camdirs[2], mouserelativelocationy);
 		return drawposa[0];
 	}
-	
+
 	public static int snapToGrid(int coordinate, int gridstep) {
 		return gridstep*(int)Math.round(((double)coordinate)/((double)gridstep));
 	}
-	
+
 	public static double calculateVfov(int renderwidth, int renderheight, double hfov) {
 		return 2.0f*atand((((double)renderheight)/((double)renderwidth))*tand(hfov/2.0f));
 	}
-	
+
 	public static Color sourceBlend(Color source, float alpha) {
 		Color k = source;
 		if (source!=null) {
@@ -3575,11 +3575,11 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static double refractionOutAngle(double anglein, float refraction1, float refraction2) {
 		return asind((refraction1/refraction2)*sind(anglein));
 	}
-	
+
 	public static double mod(double val, double modulo) {
 		return val-Math.floor(val/modulo)*modulo;
 	}
@@ -3593,7 +3593,7 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 	public static Ray[][] surfaceMirrorRay(Ray[] vray, Plane[] vsurf) {
 		Ray[][] k = null;
 		if ((vsurf!=null)&&(vray!=null)) {
@@ -3816,7 +3816,7 @@ public class MathLib {
 					double fwdoutvangle2 = refractionOutAngle(fwdvendangle2, refraction1, refraction2);
 					double fwdouthangle1 = refractionOutAngle(fwdhendangle1, refraction1, refraction2);
 					double fwdouthangle2 = refractionOutAngle(fwdhendangle2, refraction1, refraction2);
-						if ((Double.isFinite(fwdoutvangle1))&&(Double.isFinite(fwdoutvangle2))&&(Double.isFinite(fwdouthangle1))&&(Double.isFinite(fwdouthangle2))) {
+					if ((Double.isFinite(fwdoutvangle1))&&(Double.isFinite(fwdoutvangle2))&&(Double.isFinite(fwdouthangle1))&&(Double.isFinite(fwdouthangle2))) {
 						double reffwdvanglemult1 = camvplane1dist[0][0]>0.0f?1.0f:-1.0f;
 						double reffwdvanglemult2 = camvplane2dist[0][0]>0.0f?1.0f:-1.0f;
 						double reffwdhanglemult1 = camhplane1dist[0][0]>0.0f?1.0f:-1.0f;
@@ -3879,5 +3879,5 @@ public class MathLib {
 		}
 		return k;
 	}
-	
+
 }

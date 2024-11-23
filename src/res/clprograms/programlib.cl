@@ -392,25 +392,16 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 					int posuvinty = convert_int_rte(posuv.y*(texs-1));
 					int texind = posuvinty*texs+posuvintx  + triid*texs*texs;
 
-					float shadingmultiplier = 1.0f;
-					float triangleviewangle = vectorangle(camray, trinorm);
-					if (triangleviewangle<M_PI_2_F) {triangleviewangle=M_PI_F-triangleviewangle;}
-					triangleviewangle -= M_PI_2_F;
-					if (triangleviewangle<0.0f) {triangleviewangle=0.0f;}
-					shadingmultiplier = triangleviewangle/M_PI_2_F;
-
 					if ((drawdistance>=0.0f)&&(drawdistance<rayz)) {
 						rayz = drawdistance;
 						imh[0] = oid;
 						float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-						float texr = texrgbaf.s2*shadingmultiplier;
-						float texg = texrgbaf.s1*shadingmultiplier;
-						float texb = texrgbaf.s0*shadingmultiplier;
-						float texa = texrgbaf.s3;
-						raycolor.s0 = texr;
-						raycolor.s1 = texg;
-						raycolor.s2 = texb;
-						raycolor.s3 = texa;
+						float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+						float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
+						raycolor.s0 = pixelcolor.s0;
+						raycolor.s1 = pixelcolor.s1;
+						raycolor.s2 = pixelcolor.s2;
+						raycolor.s3 = pixelcolor.s3;
 					}
 				}
 			}
@@ -676,7 +667,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
 									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 									float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-									float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor;
+									float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
 									img[pixelind*4+0] = pixelcolor.s0;
 									img[pixelind*4+1] = pixelcolor.s1;
 									img[pixelind*4+2] = pixelcolor.s2;

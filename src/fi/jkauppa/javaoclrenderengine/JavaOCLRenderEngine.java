@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.7.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -173,32 +173,32 @@ public class JavaOCLRenderEngine {
 		System.out.println("Using device["+selecteddevice+"]: "+opencldevicedata.devicename);
 		this.queue = opencldevicedata.queue;
 
-        this.audiodevice = ALC11.alcOpenDevice((String)null);
-        if (this.audiodevice == NULL) {
-            throw new IllegalStateException("Failed to open default OpenAL device.");
-        }
-        ALCCapabilities audiodeviceCaps = ALC.createCapabilities(this.audiodevice);
-        if (!audiodeviceCaps.OpenALC10) {
-            throw new IllegalStateException();
-        }
-        long audiocontext = ALC11.alcCreateContext(this.audiodevice, (IntBuffer)null);
-        boolean useTLC = audiodeviceCaps.ALC_EXT_thread_local_context && EXTThreadLocalContext.alcSetThreadContext(audiocontext);
-        if (!useTLC) {
-            if (!ALC11.alcMakeContextCurrent(audiocontext)) {
-                throw new IllegalStateException();
-            }
-        }
-        @SuppressWarnings("unused")
+		this.audiodevice = ALC11.alcOpenDevice((String)null);
+		if (this.audiodevice == NULL) {
+			throw new IllegalStateException("Failed to open default OpenAL device.");
+		}
+		ALCCapabilities audiodeviceCaps = ALC.createCapabilities(this.audiodevice);
+		if (!audiodeviceCaps.OpenALC10) {
+			throw new IllegalStateException();
+		}
+		long audiocontext = ALC11.alcCreateContext(this.audiodevice, (IntBuffer)null);
+		boolean useTLC = audiodeviceCaps.ALC_EXT_thread_local_context && EXTThreadLocalContext.alcSetThreadContext(audiocontext);
+		if (!useTLC) {
+			if (!ALC11.alcMakeContextCurrent(audiocontext)) {
+				throw new IllegalStateException();
+			}
+		}
+		@SuppressWarnings("unused")
 		ALCapabilities caps = AL.createCapabilities(audiodeviceCaps, MemoryUtil::memCallocPointer);
-        this.soundbuf = AL10.alGenBuffers();
-        this.sourcebuf = AL10.alGenSources();
-        
-        byte[] soundbytes = UtilLib.loadSound("res/sounds/firecannon.wav", 1, true);
+		this.soundbuf = AL10.alGenBuffers();
+		this.sourcebuf = AL10.alGenSources();
+
+		byte[] soundbytes = UtilLib.loadSound("res/sounds/firecannon.wav", 1, true);
 		ByteBuffer soundbytesbuffer = MemoryUtil.memAlloc(soundbytes.length);
 		soundbytesbuffer.put(soundbytes).rewind();
-        AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
-        AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
-        
+		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
+		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
+
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 

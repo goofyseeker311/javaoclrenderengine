@@ -279,7 +279,7 @@ public class RenderLib {
 		renderview.mouseovertriangle = mouseoverhittriangle.toArray(new Triangle[mouseoverhittriangle.size()]);
 		return renderview;
 	}
-	
+
 	public static RenderView renderPlaneViewSoftware(Position campos, Entity[] entitylist, int renderwidth, double hfov, int renderheight, double vfov, Matrix viewrot, boolean spherical, boolean unlit, int bounces, Plane nclipplane, Triangle nodrawtriangle, Rectangle drawrange, int mouselocationx, int mouselocationy) {
 		RenderView renderview = new RenderView();
 		renderview.pos = campos.copy();
@@ -581,7 +581,7 @@ public class RenderLib {
 			}
 			for (int k=sortedentityspherelistind.length-1;k>=0;k--) {
 				int et = sortedentityspherelistind[k];
-					if ((entityspherelistint[et]!=null)&&((drawrange==null)||(drawrange.intersects(entityspherelistint[et])))) {
+				if ((entityspherelistint[et]!=null)&&((drawrange==null)||(drawrange.intersects(entityspherelistint[et])))) {
 					Triangle[] copytrianglelist = entitylist[et].trianglelist;
 					if (copytrianglelist.length>0) {
 						Direction[] copytrianglenormallist = MathLib.triangleNormal(copytrianglelist);
@@ -1013,7 +1013,7 @@ public class RenderLib {
 		}
 		return rendercolumn;
 	}
-	
+
 	public static Color[] renderRay(Ray[] vray, Entity[] entitylist, boolean unlit, int bounces, Triangle nodrawtriangle) {
 		Color[] rendercolor = null;
 		if ((vray!=null)&&(entitylist!=null)&&(entitylist.length>0)) {
@@ -1110,7 +1110,7 @@ public class RenderLib {
 		}
 		return rendercolor;
 	}
-	
+
 	public static Color trianglePixelShader(Triangle triangle, Direction trianglenormal, Coordinate texuv, Direction camray, boolean unlit) {
 		Triangle[] copytriangle = {triangle};
 		Material copymaterial = copytriangle[0].mat;
@@ -1198,7 +1198,7 @@ public class RenderLib {
 		}
 		return trianglecolor;
 	}
-	
+
 	public static void renderSurfaceFaceLightmapCubemapView(Entity[] entitylist, int rendersize, int bounces, int mode) {
 		float multiplier = 1000.0f;
 		Direction[][] cubemaprays = MathLib.projectedRays(rendersize, rendersize, 90.0f, 90.0f, MathLib.rotationMatrix(0.0f, 0.0f, 0.0f), false);
@@ -1283,7 +1283,7 @@ public class RenderLib {
 			}
 		}
 	}
-	
+
 	public static void renderSurfaceTextureLightmapCubemapView(Entity[] entitylist, int rendersize, int texturesize, int bounces, int mode) {
 		//TODO pixel lightmap texture output
 		float multiplier = 1000.0f;
@@ -1380,5 +1380,5 @@ public class RenderLib {
 			}
 		}
 	}
-	
+
 }
