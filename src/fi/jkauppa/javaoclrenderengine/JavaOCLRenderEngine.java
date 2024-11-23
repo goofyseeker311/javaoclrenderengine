@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.7.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -225,6 +225,25 @@ public class JavaOCLRenderEngine {
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.v);
 				trianglelistpos3uv3arraylist.add((float)modeltri.mat.materialid);
+				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
+				trianglelistpos3uv3arraylist.add((float)matfacecolor[0]);
+				trianglelistpos3uv3arraylist.add((float)matfacecolor[1]);
+				trianglelistpos3uv3arraylist.add((float)matfacecolor[2]);
+				trianglelistpos3uv3arraylist.add((float)matfacecolor[3]);
+				float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
+				trianglelistpos3uv3arraylist.add((float)matemissivecolor[0]);
+				trianglelistpos3uv3arraylist.add((float)matemissivecolor[1]);
+				trianglelistpos3uv3arraylist.add((float)matemissivecolor[2]);
+				trianglelistpos3uv3arraylist.add((float)matemissivecolor[3]);
+				float[] lightmapcolor = new float[]{0.0f,0.0f,0.0f,0.0f};
+				trianglelistpos3uv3arraylist.add((float)lightmapcolor[0]);
+				trianglelistpos3uv3arraylist.add((float)lightmapcolor[1]);
+				trianglelistpos3uv3arraylist.add((float)lightmapcolor[2]);
+				trianglelistpos3uv3arraylist.add((float)lightmapcolor[3]);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.roughness);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.metallic);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.refraction);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.transparency);
 			}
 		}
 		ArrayList<Float> trianglelist2pos3uv3arraylist = new ArrayList<Float>();
@@ -248,6 +267,25 @@ public class JavaOCLRenderEngine {
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos3.tex.u);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos3.tex.v);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.materialid);
+				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
+				trianglelist2pos3uv3arraylist.add((float)matfacecolor[0]);
+				trianglelist2pos3uv3arraylist.add((float)matfacecolor[1]);
+				trianglelist2pos3uv3arraylist.add((float)matfacecolor[2]);
+				trianglelist2pos3uv3arraylist.add((float)matfacecolor[3]);
+				float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
+				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[0]);
+				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[1]);
+				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[2]);
+				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[3]);
+				float[] lightmapcolor = new float[]{0.0f,0.0f,0.0f,0.0f};
+				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[0]);
+				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[1]);
+				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[2]);
+				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[3]);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.roughness);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.metallic);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.refraction);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.mat.transparency);
 			}
 		}
 
@@ -256,29 +294,42 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<trianglelistpos3uv3idfloats.length;i++) {
 			this.trianglelistpos3uv3id[i] = trianglelistpos3uv3idfloats[i];
 		}
-		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/16;
+		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/32;
 		Float[] trianglelist2pos3uv3idfloats = trianglelist2pos3uv3arraylist.toArray(new Float[trianglelist2pos3uv3arraylist.size()]);
 		this.trianglelist2pos3uv3id = new float[trianglelist2pos3uv3idfloats.length];
 		for (int i=0;i<trianglelist2pos3uv3idfloats.length;i++) {
 			this.trianglelist2pos3uv3id[i] = trianglelist2pos3uv3idfloats[i];
 		}
-		this.trianglelist2length[0] = this.trianglelist2pos3uv3id.length/16;
+		this.trianglelist2length[0] = this.trianglelist2pos3uv3id.length/32;
 
-		BufferedImage defaulttextureimage = UtilLib.loadImage("res/images/texturetest.png", true);
-		BufferedImage textureimage = defaulttextureimage;
 		if (loadmodel.materiallist[0].fileimage!=null) {
-			textureimage = loadmodel.materiallist[0].fileimage;
+			BufferedImage textureimage = loadmodel.materiallist[0].fileimage;
+			this.triangletexturelength[0] = textureimage.getWidth();
+			int texturesize = this.triangletexturelength[0]*this.triangletexturelength[0];
+			this.triangletexturelist = new int[loadmodel.materiallist.length*texturesize];
+			for (int j=0;j<loadmodel.materiallist.length;j++) {
+				textureimage = loadmodel.materiallist[j].fileimage;
+				DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
+				int[] texturedata = textureimagedataint.getData();
+				for (int i=0;i<texturesize;i++) {
+					this.triangletexturelist[j*texturesize+i] = texturedata[i];
+				}
+			}
 		}
-		DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
-		this.triangletexturelist = textureimagedataint.getData();
-		this.triangletexturelength[0] = textureimage.getWidth();
-		BufferedImage textureimage2 = defaulttextureimage;
 		if (loadmodel2.materiallist[0].fileimage!=null) {
-			textureimage2 = loadmodel2.materiallist[0].fileimage;
+			BufferedImage textureimage = loadmodel2.materiallist[0].fileimage;
+			this.triangletexture2length[0] = textureimage.getWidth();
+			int texturesize = this.triangletexture2length[0]*this.triangletexture2length[0];
+			this.triangletexture2list = new int[loadmodel2.materiallist.length*texturesize];
+			for (int j=0;j<loadmodel2.materiallist.length;j++) {
+				textureimage = loadmodel2.materiallist[j].fileimage;
+				DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
+				int[] texturedata = textureimagedataint.getData();
+				for (int i=0;i<texturesize;i++) {
+					this.triangletexture2list[j*texturesize+i] = texturedata[i];
+				}
+			}
 		}
-		DataBufferInt textureimage2dataint = (DataBufferInt)textureimage2.getRaster().getDataBuffer();
-		this.triangletexture2list = textureimage2dataint.getData();
-		this.triangletexture2length[0] = textureimage2.getWidth();
 
 		Sphere sphbv = loadmodel.sphereboundaryvolume;
 		this.objectlistpos3sca3rot3relsph4 = new float[]{

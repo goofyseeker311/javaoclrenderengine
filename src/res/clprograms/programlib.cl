@@ -328,7 +328,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 	float4 camdir = vray.s4567;
 	int texs = tes[0];
 
-	const int ts = 16, os = 13;
+	const int ts = 32, os = 13;
 	float rayz = INFINITY;
 
 	int objc = obc[0];
@@ -383,7 +383,7 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
 					int posuvintx = convert_int_rte(posuv.x*(texs-1));
 					int posuvinty = convert_int_rte(posuv.y*(texs-1));
-					int texind = posuvinty*texs+posuvintx;
+					int texind = posuvinty*texs+posuvintx  + triid*texs*texs;
 
 					float shadingmultiplier = 1.0f;
 					float triangleviewangle = vectorangle(camray, trinorm);
@@ -496,7 +496,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int texs = tes[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 16, os = 13, vs = 4;
+	const int ts = 32, os = 13, vs = 4;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
@@ -654,7 +654,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
 								int lineuvx = convert_int_rte(lineuv.x*(texs-1));
 								int lineuvy = convert_int_rte(lineuv.y*(texs-1));
-								int texind = lineuvy*texs+lineuvx;
+								int texind = lineuvy*texs+lineuvx + triid*texs*texs;
 
 								int pixelind = (camres.y-y-1)*camres.x+xid;
 								if (drawdistance<imz[pixelind]) {
