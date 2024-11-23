@@ -359,6 +359,13 @@ float4 renderray(float8 vray, int *imh, global const float *tri, global const in
 				float4 tripos2uv = (float4)(tri[tid*ts+11],tri[tid*ts+12],0.0f,0.0f);
 				float4 tripos3uv = (float4)(tri[tid*ts+13],tri[tid*ts+14],0.0f,0.0f);
 				int triid = (int)tri[tid*ts+15];
+				float4 trifacecolor = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+				float4 triemissivecolor = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+				int triroughness = (int)tri[tid*ts+28];
+				int trimetallic = (int)tri[tid*ts+29];
+				int trirefractopm = (int)tri[tid*ts+30];
+				int tritransparency = (int)tri[tid*ts+31];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -553,6 +560,13 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				float4 tripos2uv = (float4)(tri[tid*ts+11],tri[tid*ts+12],0.0f,0.0f);
 				float4 tripos3uv = (float4)(tri[tid*ts+13],tri[tid*ts+14],0.0f,0.0f);
 				int triid = (int)tri[tid*ts+15];
+				float4 trifacecolor = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+				float4 triemissivecolor = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+				int triroughness = (int)tri[tid*ts+28];
+				int trimetallic = (int)tri[tid*ts+29];
+				int trirefractopm = (int)tri[tid*ts+30];
+				int tritransparency = (int)tri[tid*ts+31];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -662,10 +676,11 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
 									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 									float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-									img[pixelind*4+0] = texcolor.s0;
-									img[pixelind*4+1] = texcolor.s1;
-									img[pixelind*4+2] = texcolor.s2;
-									img[pixelind*4+3] = texcolor.s3;
+									float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor;
+									img[pixelind*4+0] = pixelcolor.s0;
+									img[pixelind*4+1] = pixelcolor.s1;
+									img[pixelind*4+2] = pixelcolor.s2;
+									img[pixelind*4+3] = pixelcolor.s3;
 								}
 							}
 						}

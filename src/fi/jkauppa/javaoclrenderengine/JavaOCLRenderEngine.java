@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.7.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -202,7 +202,7 @@ public class JavaOCLRenderEngine {
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid7.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid8.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
 		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
 		for (int j=0;j<loadmodel.childlist.length;j++) {
@@ -235,7 +235,7 @@ public class JavaOCLRenderEngine {
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[1]);
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[2]);
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = new float[]{0.0f,0.0f,0.0f,0.0f};
+				float[] lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);
 				trianglelistpos3uv3arraylist.add((float)lightmapcolor[0]);
 				trianglelistpos3uv3arraylist.add((float)lightmapcolor[1]);
 				trianglelistpos3uv3arraylist.add((float)lightmapcolor[2]);
@@ -277,7 +277,7 @@ public class JavaOCLRenderEngine {
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[1]);
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[2]);
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = new float[]{0.0f,0.0f,0.0f,0.0f};
+				float[] lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);
 				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[0]);
 				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[1]);
 				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[2]);
