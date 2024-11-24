@@ -21,12 +21,12 @@ float8 surfacereflectionray(float8 vray, float4 vsurf);
 float8 surfacerefractionray(float8 vray, float4 vsurf, float refraction1, float refraction2);
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
-float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
+float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit);
 kernel void movecamera(global float *cam, global const float *cmv);
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc);
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit);
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -323,11 +323,12 @@ float4 sourceoverblend(float4 dest, float4 source, float alpha) {
 	return retcolor;
 }
 
-float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
 	int texs = tes[0];
+	int tlit = lit[0];
 
 	const int ts = 32, os = 13;
 	float rayz = INFINITY;
@@ -398,7 +399,12 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 						imh[0] = oid;
 						float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 						float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-						float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
+						float4 pixelcolor = (float4)(0.0f);
+						if (tlit) {
+							pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
+						} else {
+							pixelcolor = triemissivecolor + texcolor*trifacecolor;
+						}
 						raycolordist.s0 = pixelcolor.s0;
 						raycolordist.s1 = pixelcolor.s1;
 						raycolordist.s2 = pixelcolor.s2;
@@ -486,7 +492,7 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 	}
 }
 
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit) {
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
@@ -506,7 +512,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	camray.s0123 = campos;
 	camray.s4567 = raydirrot;
 	int hitid = -1;
-	float8 rayint = renderray(camray, &hitid, tri, trc, tex, tes, obj, obc);
+	float8 rayint = renderray(camray, &hitid, tri, trc, tex, tes, obj, obc, lit);
 	float4 raycolor = rayint.s0123;
 	float raydist = rayint.s4;
 
@@ -524,7 +530,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	}
 }
 
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc) {
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
@@ -532,6 +538,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
 	int texs = tes[0];
+	int tlit = lit[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 32, os = 13, vs = 4;
@@ -653,27 +660,16 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 						int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
 						int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
 						if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
-							if (py1<0) {py1=0;}
-							if (py1>=camres.y) {py1=camres.y-1;}
-							if (py2<0) {py2=0;}
-							if (py2>=camres.y) {py2=camres.y-1;}
+							if (py1<0) {py1=0;} if (py1>=camres.y) {py1=camres.y-1;}
+							if (py2<0) {py2=0;} if (py2>=camres.y) {py2=camres.y-1;}
 							int py1s = py1;
 							int py2s = py2;
 							if (py1>py2) {
-								py1s = py2;
-								py2s = py1;
-								float4 vpixelpointtemp  = vpixelpointd1;
-								vpixelpointd1 = vpixelpointd2;
-								vpixelpointd2 = vpixelpointtemp;
-								float vpixelyangtemp = vpixelyang1;
-								vpixelyang1 = vpixelyang2;
-								vpixelyang2 = vpixelyangtemp;
-								float4 colpostemp = colpos1;
-								colpos1 = colpos2;
-								colpos2 = colpostemp;
-								float4 colposuvtemp = colpos1uv;
-								colpos1uv = colpos2uv;
-								colpos2uv = colposuvtemp;
+								py1s = py2; py2s = py1;
+								float4 vpixelpointtemp = vpixelpointd1; vpixelpointd1 = vpixelpointd2; vpixelpointd2 = vpixelpointtemp;
+								float vpixelyangtemp = vpixelyang1; vpixelyang1 = vpixelyang2; vpixelyang2 = vpixelyangtemp;
+								float4 colpostemp = colpos1; colpos1 = colpos2; colpos2 = colpostemp;
+								float4 colposuvtemp = colpos1uv; colpos1uv = colpos2uv; colpos2uv = colposuvtemp;
 							}
 
 							int campresystart = camresystep*vid;
@@ -707,7 +703,12 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = oid;}
 									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 									float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-									float4 pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
+									float4 pixelcolor = (float4)(0.0f);
+									if (tlit) {
+										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
+									} else {
+										pixelcolor = triemissivecolor + texcolor*trifacecolor;
+									}
 									img[pixelind*4+0] = pixelcolor.s0;
 									img[pixelind*4+1] = pixelcolor.s1;
 									img[pixelind*4+2] = pixelcolor.s2;

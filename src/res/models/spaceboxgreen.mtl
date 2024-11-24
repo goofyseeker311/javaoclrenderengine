@@ -2,6 +2,7 @@
 # www.blender.org
 
 newmtl MaterialBack
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
@@ -17,6 +18,7 @@ anisor 0.000000
 map_Kd spaceboxgreen_back6.png
 
 newmtl MaterialBottom
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
@@ -32,6 +34,7 @@ anisor 0.000000
 map_Kd spaceboxgreen_bottom4.png
 
 newmtl MaterialFront
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
@@ -47,6 +50,7 @@ anisor 0.000000
 map_Kd spaceboxgreen_front5.png
 
 newmtl MaterialLeft
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
@@ -62,6 +66,7 @@ anisor 0.000000
 map_Kd spaceboxgreen_left2.png
 
 newmtl MaterialRight
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
@@ -77,6 +82,7 @@ anisor 0.000000
 map_Kd spaceboxgreen_right1.png
 
 newmtl MaterialTop
+Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000

@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.7.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -74,6 +74,7 @@ public class JavaOCLRenderEngine {
 	private long tri1ptr = NULL, tri1lenptr = NULL, tex1ptr = NULL, tex1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
 	private long tri2ptr = NULL, tri2lenptr = NULL, tex2ptr = NULL, tex2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
 	private long tri3ptr = NULL, tri3lenptr = NULL, tex3ptr = NULL, tex3lenptr = NULL, obj3ptr = NULL, obj3lenptr = NULL;
+	private long litptr = NULL;
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
@@ -98,6 +99,7 @@ public class JavaOCLRenderEngine {
 	private int[] objectlistlength = {0};
 	private int[] objectlist2length = {0};
 	private int[] objectlist3length = {0};
+	private int[] renderlit = {1};
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -243,7 +245,7 @@ public class JavaOCLRenderEngine {
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[1]);
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[2]);
 				trianglelistpos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = {1.0f, 1.0f ,1.0f, 1.0f};
+				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
 				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
 				trianglelistpos3uv3arraylist.add((float)lightmapcolor[0]);
 				trianglelistpos3uv3arraylist.add((float)lightmapcolor[1]);
@@ -286,7 +288,7 @@ public class JavaOCLRenderEngine {
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[1]);
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[2]);
 				trianglelist2pos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = {1.0f, 1.0f ,1.0f, 1.0f};
+				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
 				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
 				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[0]);
 				trianglelist2pos3uv3arraylist.add((float)lightmapcolor[1]);
@@ -329,7 +331,7 @@ public class JavaOCLRenderEngine {
 				trianglelist3pos3uv3arraylist.add((float)matemissivecolor[1]);
 				trianglelist3pos3uv3arraylist.add((float)matemissivecolor[2]);
 				trianglelist3pos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = {1.0f, 1.0f ,1.0f, 1.0f};
+				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
 				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
 				trianglelist3pos3uv3arraylist.add((float)lightmapcolor[0]);
 				trianglelist3pos3uv3arraylist.add((float)lightmapcolor[1]);
@@ -476,6 +478,9 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(opencldevice, queue, obj3ptr, objectlist3pos3sca3rot3relsph4);
 		this.obj3lenptr = computelib.createBuffer(opencldevice, 1);
 		computelib.writeBufferi(opencldevice, queue, obj3lenptr, objectlist3length);
+
+		this.litptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, litptr, renderlit);
 		
 		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(opencldevice, programSource);
@@ -560,11 +565,11 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri3ptr,tri3lenptr,tex3ptr,tex3lenptr,obj3ptr,obj3lenptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri3ptr,tri3lenptr,tex3ptr,tex3lenptr,obj3ptr,obj3lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
