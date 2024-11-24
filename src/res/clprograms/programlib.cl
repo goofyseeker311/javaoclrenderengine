@@ -394,7 +394,7 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 					int posuvinty = convert_int_rte(posuv.y*(texs-1));
 					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
-					if ((drawdistance>0.0f)&&(drawdistance<rayz)) {
+					if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 						rayz = drawdistance;
 						imh[0] = oid;
 						float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
@@ -630,8 +630,8 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 					float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
 					float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
-					if ((fwdintpointsdist1>=0.0f)||(fwdintpointsdist2>=0.0f)) {
-						if ((fwdintpointsdist1<0.0f)||(fwdintpointsdist2<0.0f)) {
+					if ((fwdintpointsdist1>=0.001f)||(fwdintpointsdist2>=0.001f)) {
+						if ((fwdintpointsdist1<0.001f)||(fwdintpointsdist2<0.001f)) {
 							float4 drawlinedir12 = colpos2-colpos1;
 							float drawlinedir12dist = rayplanedistance(colpos1, drawlinedir12, rendercutplane);
 							float4 drawlinepos3 = translatepos(colpos1, drawlinedir12, drawlinedir12dist);
@@ -639,7 +639,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 							float upintpointsdist3 = planepointdistance(drawlinepos3, camupdirplane);
 							float4 drawlinetexdir12 = colpos2uv - colpos1uv;
 							float4 drawlinepos3uv = translatepos(colpos1uv, drawlinetexdir12, drawlinedir12dist);
-							if (fwdintpointsdist1>=0.0f) {
+							if (fwdintpointsdist1>=0.001f) {
 								fwdintpointsdist2 = fwdintpointsdist3;
 								upintpointsdist2 = upintpointsdist3;
 								colpos2 = drawlinepos3;
