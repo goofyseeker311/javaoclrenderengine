@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.7.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -208,8 +208,8 @@ public class JavaOCLRenderEngine {
 		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
 		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
 
-		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid8.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
@@ -409,14 +409,14 @@ public class JavaOCLRenderEngine {
 		Sphere sphbv = loadmodel.sphereboundaryvolume;
 		this.objectlistpos3sca3rot3relsph4 = new float[]{
 				5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				-5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,70.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 30.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,45.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
 		};
 		this.objectlistlength[0] = this.objectlistpos3sca3rot3relsph4.length/13;
 		Sphere sphbv2 = loadmodel2.sphereboundaryvolume;
 		this.objectlist2pos3sca3rot3relsph4 = new float[]{
 				0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
+				0.0f,0.0f,5.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
+				0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 90.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
+				0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 90.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
 		};
 		this.objectlist2length[0] = this.objectlist2pos3sca3rot3relsph4.length/13;
 		Sphere sphbv3 = loadmodel3.sphereboundaryvolume;
@@ -565,8 +565,10 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
+		/*
 		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
+		*/
 		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri3ptr,tri3lenptr,tex3ptr,tex3lenptr,obj3ptr,obj3lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
@@ -583,7 +585,7 @@ public class JavaOCLRenderEngine {
 		frametime = (frameendtime-framestarttime)/1000000.0f;
 		frametimeavg = frametimeavg*0.9f+frametime*0.1f;
 	}
-
+	
 	private void createQuadProgram() {
 		int program = GL31.glCreateProgram();
 		String quadvertexshader = ComputeLib.loadProgram("res/glshaders/texturedquad.vs", true);

@@ -17,8 +17,8 @@ float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
 float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
 float4 planenormal(float4 vplane);
 float refractionoutangle(float anglein, float refraction1, float refraction2);
-float8 surfacereflectionray(float8 vray, float4 vsurf);
-float8 surfacerefractionray(float8 vray, float4 vsurf, float refraction1, float refraction2);
+float8 planereflectionray(float8 vray, float4 vplane);
+float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float refraction2);
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit);
@@ -266,41 +266,41 @@ float refractionoutangle(float anglein, float refraction1, float refraction2) {
 	return retang;
 }
 
-float8 surfacereflectionray(float8 vray, float4 vsurf) {
+float8 planereflectionray(float8 vray, float4 vplane) {
 	float8 reflectray = (float8)(NAN);
 	float4 raypos = vray.s0123;
 	float4 raydir = vray.s4567;
-	float4 vsurfnorm = planenormal(vsurf);
-	float rayintdist = rayplanedistance(raypos, raydir, vsurf);
+	float4 vplanenorm = planenormal(vplane);
+	float rayintdist = rayplanedistance(raypos, raydir, vplane);
 	if ((isfinite(rayintdist))&&(rayintdist>0.0f)) {
 		float4 rayint = translatepos(raypos, raydir, rayintdist);
-		float16 rayvsurfrot = rotationmatrixaroundaxis(vsurfnorm, M_PI_F);
-		float4 mirrorraydir = matrixposmult(raydir, rayvsurfrot);
+		float16 rayvplanerot = rotationmatrixaroundaxis(vplanenorm, M_PI_F);
+		float4 mirrorraydir = matrixposmult(raydir, rayvplanerot);
 		float4 mirrorraydirninv = -normalize(mirrorraydir);
-		reflectray.s0123 = rayint; 
-		reflectray.s4567 = mirrorraydirninv; 
+		reflectray.s0123 = rayint;
+		reflectray.s4567 = mirrorraydirninv;
 	}
 	return reflectray;
 }
-float8 surfacerefractionray(float8 vray, float4 vsurf, float refraction1, float refraction2) {
+float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float refraction2) {
 	float8 refractray = (float8)(NAN);
 	float4 raypos = vray.s0123;
 	float4 raydir = vray.s4567;
-	float4 vsurfnorm = planenormal(vsurf);
-	float rayintdist = rayplanedistance(raypos, raydir, vsurf);
+	float4 vplanenorm = planenormal(vplane);
+	float rayintdist = rayplanedistance(raypos, raydir, vplane);
 	if ((isfinite(rayintdist))&&(rayintdist>0.0f)) {
 		float4 rayint = translatepos(raypos, raydir, rayintdist);
-		float4 refnormal = cross(vsurfnorm, raydir);
+		float4 refnormal = cross(vplanenorm, raydir);
 		if ((refnormal.x==0.0f)&&(refnormal.y==0.0f)&&(refnormal.z==0.0f)) {
 			refractray.s0123 = rayint;
 			refractray.s4567 = raydir;
 		} else {
-			float rayvsurfangle = vectorangle(vsurfnorm, raydir);
-			float rayvsurfangleout = refractionoutangle(rayvsurfangle, refraction1, refraction2);
-			if (isfinite(rayvsurfangleout)) {
-				float refrayrotangle = rayvsurfangle-rayvsurfangleout;
-				float16 rayvsurfrefrot = rotationmatrixaroundaxis(refnormal, -refrayrotangle);
-				float4 refractionraydir = matrixposmult(raydir, rayvsurfrefrot);
+			float rayvplaneangle = vectorangle(vplanenorm, raydir);
+			float rayvplaneangleout = refractionoutangle(rayvplaneangle, refraction1, refraction2);
+			if (isfinite(rayvplaneangleout)) {
+				float refrayrotangle = rayvplaneangle-rayvplaneangleout;
+				float16 rayvplanerefrot = rotationmatrixaroundaxis(refnormal, -refrayrotangle);
+				float4 refractionraydir = matrixposmult(raydir, rayvplanerefrot);
 				float4 refractionraydirn = normalize(refractionraydir);
 				refractray.s0123 = rayint;
 				refractray.s4567 = refractionraydirn;
@@ -394,7 +394,7 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 					int posuvinty = convert_int_rte(posuv.y*(texs-1));
 					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
-					if ((drawdistance>=0.0f)&&(drawdistance<rayz)) {
+					if ((drawdistance>0.0f)&&(drawdistance<rayz)) {
 						rayz = drawdistance;
 						imh[0] = oid;
 						float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
@@ -708,6 +708,15 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor;
 									} else {
 										pixelcolor = triemissivecolor + texcolor*trifacecolor;
+									}
+									float8 camposray = (float8)(campos,camray);
+									float8 reflectionray = planereflectionray(camposray, triplane);
+									if (!isnan(reflectionray.s0)) {
+										int hitind = -1;
+										float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
+										if (!isnan(raycolor.s0)) {
+											pixelcolor = sourceoverblend(pixelcolor, raycolor.s0123, 0.7f);
+										}
 									}
 									img[pixelind*4+0] = pixelcolor.s0;
 									img[pixelind*4+1] = pixelcolor.s1;
