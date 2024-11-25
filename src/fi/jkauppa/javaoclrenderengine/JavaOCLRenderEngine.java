@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.7.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.8.0";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -75,6 +75,8 @@ public class JavaOCLRenderEngine {
 	private long tri2ptr = NULL, tri2lenptr = NULL, tex2ptr = NULL, tex2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
 	private long tri3ptr = NULL, tri3lenptr = NULL, tex3ptr = NULL, tex3lenptr = NULL, obj3ptr = NULL, obj3lenptr = NULL;
 	private long litptr = NULL;
+	@SuppressWarnings("unused")
+	private long trianglesptr = NULL, triangleslenptr = NULL, texturesptr = NULL, textureslenptr = NULL, objectsptr = NULL, objectslenptr = NULL;
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
@@ -87,6 +89,7 @@ public class JavaOCLRenderEngine {
 	private int[] trianglelistlength = {0};
 	private int[] trianglelist2length = {0};
 	private int[] trianglelist3length = {0};
+	private int[] triangleslength = {0};
 	private int[] triangletexturelist = null;
 	private int[] triangletexture2list = null;
 	private int[] triangletexture3list = null;
@@ -408,7 +411,10 @@ public class JavaOCLRenderEngine {
 
 		Sphere sphbv = loadmodel.sphereboundaryvolume;
 		this.objectlistpos3sca3rot3relsph4 = new float[]{
-				5.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				10.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				-10.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 45.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				0.0f,10.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,70.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
+				0.0f,-10.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,20.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
 		};
 		this.objectlistlength[0] = this.objectlistpos3sca3rot3relsph4.length/13;
 		Sphere sphbv2 = loadmodel2.sphereboundaryvolume;
@@ -424,6 +430,8 @@ public class JavaOCLRenderEngine {
 				0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv3.x,(float)sphbv3.y,(float)sphbv3.z,(float)sphbv3.r,
 		};
 		this.objectlist3length[0] = this.objectlist3pos3sca3rot3relsph4.length/13;
+		
+		triangleslength[0] = 0;
 
 		if (this.glinterop) {
 			this.graphicsbufferptr = computelib.createSharedGLBuffer(opencldevice, buf);
@@ -440,6 +448,8 @@ public class JavaOCLRenderEngine {
 		this.cammovbufferptr = computelib.createBuffer(opencldevice, cameramov3rot3.length);
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 
+		this.trianglesptr = computelib.createBuffer(opencldevice, triangleslength[0]);
+		
 		this.tri1ptr = computelib.createBuffer(opencldevice, trianglelistpos3uv3id.length);
 		computelib.writeBufferf(opencldevice, queue, tri1ptr, trianglelistpos3uv3id);
 		this.tri1lenptr = computelib.createBuffer(opencldevice, 1);
@@ -564,6 +574,8 @@ public class JavaOCLRenderEngine {
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.insertBarrier(queue);
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri1ptr,tri1lenptr,tex1ptr,tex1lenptr,obj1ptr,obj1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,tri2ptr,tri2lenptr,tex2ptr,tex2lenptr,obj2ptr,obj2lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
 		computelib.insertBarrier(queue);
