@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.8.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.8.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -231,6 +231,9 @@ public class JavaOCLRenderEngine {
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.x);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.y);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.z);
+				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dx);
+				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dy);
+				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dz);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.v);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.u);
@@ -274,6 +277,9 @@ public class JavaOCLRenderEngine {
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos3.x);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos3.y);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos3.z);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.norm.dx);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.norm.dy);
+				trianglelist2pos3uv3arraylist.add((float)modeltri.norm.dz);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos1.tex.u);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos1.tex.v);
 				trianglelist2pos3uv3arraylist.add((float)modeltri.pos2.tex.u);
@@ -317,6 +323,9 @@ public class JavaOCLRenderEngine {
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos3.x);
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos3.y);
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos3.z);
+				trianglelist3pos3uv3arraylist.add((float)modeltri.norm.dx);
+				trianglelist3pos3uv3arraylist.add((float)modeltri.norm.dy);
+				trianglelist3pos3uv3arraylist.add((float)modeltri.norm.dz);
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos1.tex.u);
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos1.tex.v);
 				trianglelist3pos3uv3arraylist.add((float)modeltri.pos2.tex.u);
@@ -352,19 +361,19 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<trianglelistpos3uv3idfloats.length;i++) {
 			this.trianglelistpos3uv3id[i] = trianglelistpos3uv3idfloats[i];
 		}
-		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/32;
+		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/35;
 		Float[] trianglelist2pos3uv3idfloats = trianglelist2pos3uv3arraylist.toArray(new Float[trianglelist2pos3uv3arraylist.size()]);
 		this.trianglelist2pos3uv3id = new float[trianglelist2pos3uv3idfloats.length];
 		for (int i=0;i<trianglelist2pos3uv3idfloats.length;i++) {
 			this.trianglelist2pos3uv3id[i] = trianglelist2pos3uv3idfloats[i];
 		}
-		this.trianglelist2length[0] = this.trianglelist2pos3uv3id.length/32;
+		this.trianglelist2length[0] = this.trianglelist2pos3uv3id.length/35;
 		Float[] trianglelist3pos3uv3idfloats = trianglelist3pos3uv3arraylist.toArray(new Float[trianglelist3pos3uv3arraylist.size()]);
 		this.trianglelist3pos3uv3id = new float[trianglelist3pos3uv3idfloats.length];
 		for (int i=0;i<trianglelist3pos3uv3idfloats.length;i++) {
 			this.trianglelist3pos3uv3id[i] = trianglelist3pos3uv3idfloats[i];
 		}
-		this.trianglelist3length[0] = this.trianglelist3pos3uv3id.length/32;
+		this.trianglelist3length[0] = this.trianglelist3pos3uv3id.length/35;
 
 		if (loadmodel.materiallist[0].fileimage!=null) {
 			BufferedImage textureimage = loadmodel.materiallist[0].fileimage;

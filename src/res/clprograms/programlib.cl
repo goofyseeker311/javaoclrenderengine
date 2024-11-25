@@ -11,9 +11,9 @@ float rayplanedistance(float4 pos, float4 dir, float4 plane);
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
 float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
-float4 triangleplane(float16 vtri);
-float16 planetriangleintersection(float4 plane, float16 vtri);
-float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri);
+float4 triangleplane(float *vtri);
+float16 planetriangleintersection(float4 plane, float *vtri);
+float8 raytriangleintersection(float4 vpos, float4 vdir, float *vtri);
 float raypointdistance(float4 vpos, float4 vdir, float4 vpoint);
 float4 planenormal(float4 vplane);
 float refractionoutangle(float anglein, float refraction1, float refraction2);
@@ -130,26 +130,22 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 	return retlenfrac;
 }
 
-float4 triangleplane(float16 vtri) {
+float4 triangleplane(float *vtri) {
 	float4 plane = (float4)(0.0f,0.0f,0.0f,0.0f);
-	float4 p1 = (float4)(vtri.s012,0.0f);
-	float4 p2 = (float4)(vtri.s345,0.0f);
-	float4 p3 = (float4)(vtri.s678,0.0f);
-	float4 v1 = p2 - p1;
-	float4 v2 = p3 - p1;
-	float4 nm = normalize(cross(v1, v2));
+	float4 p1 = (float4)(vtri[0],vtri[1],vtri[2],0.0f);
+	float4 nm = (float4)(vtri[9],vtri[10],vtri[11],0.0f);
 	plane = planefromnormalatpos(p1, nm);
 	return plane;
 }
 
-float16 planetriangleintersection(float4 plane, float16 vtri) {
+float16 planetriangleintersection(float4 plane, float *vtri) {
 	float16 retline = (float16)(NAN);
-	float4 pos1 = (float4)(vtri.s012,0.0f);
-	float4 pos2 = (float4)(vtri.s345,0.0f);
-	float4 pos3 = (float4)(vtri.s678,0.0f);
-	float4 pos1uv = (float4)(vtri.s9A,0.0f,0.0f);
-	float4 pos2uv = (float4)(vtri.sBC,0.0f,0.0f);
-	float4 pos3uv = (float4)(vtri.sDE,0.0f,0.0f);
+	float4 pos1 = (float4)(vtri[0],vtri[1],vtri[2],0.0f);
+	float4 pos2 = (float4)(vtri[3],vtri[4],vtri[5],0.0f);
+	float4 pos3 = (float4)(vtri[6],vtri[7],vtri[8],0.0f);
+	float4 pos1uv = (float4)(vtri[12],vtri[13],0.0f,0.0f);
+	float4 pos2uv = (float4)(vtri[14],vtri[15],0.0f,0.0f);
+	float4 pos3uv = (float4)(vtri[16],vtri[17],0.0f,0.0f);
 	float4 vtri12 = pos2-pos1;
 	float4 vtri13 = pos3-pos1;
 	float4 vtri23 = pos3-pos2;
@@ -189,17 +185,17 @@ float16 planetriangleintersection(float4 plane, float16 vtri) {
 	return retline;
 }
 
-float8 raytriangleintersection(float4 vpos, float4 vdir, float16 vtri) {
+float8 raytriangleintersection(float4 vpos, float4 vdir, float *vtri) {
 	float8 intposuvdist = (float8)(NAN);
 	float4 tplane = triangleplane(vtri);
 	float tpdist = rayplanedistance(vpos, vdir, tplane);
 	float4 p4 = translatepos(vpos, vdir, tpdist);
-	float4 p1 = (float4)(vtri.s012,0.0f);
-	float4 p2 = (float4)(vtri.s345,0.0f);
-	float4 p3 = (float4)(vtri.s678,0.0f);
-	float4 p1uv = (float4)(vtri.s9A,0.0f,0.0f);
-	float4 p2uv = (float4)(vtri.sBC,0.0f,0.0f);
-	float4 p3uv = (float4)(vtri.sDE,0.0f,0.0f);
+	float4 p1 = (float4)(vtri[0],vtri[1],vtri[2],0.0f);
+	float4 p2 = (float4)(vtri[3],vtri[4],vtri[5],0.0f);
+	float4 p3 = (float4)(vtri[6],vtri[7],vtri[8],0.0f);
+	float4 p1uv = (float4)(vtri[12],vtri[13],0.0f,0.0f);
+	float4 p2uv = (float4)(vtri[14],vtri[15],0.0f,0.0f);
+	float4 p3uv = (float4)(vtri[16],vtri[17],0.0f,0.0f);
 	float4 p4uv = (float4)(NAN);
 	float4 v12 = p2 - p1; float4 v21 = -v12;
 	float4 v13 = p3 - p1; float4 v31 = -v13;
@@ -330,7 +326,7 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 	int texs = tes[0];
 	int tlit = lit[0];
 
-	const int ts = 32, os = 13;
+	const int ts = 35, os = 13;
 	float rayz = INFINITY;
 
 	int objc = obc[0];
@@ -357,17 +353,18 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
 				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
 				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+9],tri[tid*ts+10],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+11],tri[tid*ts+12],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+13],tri[tid*ts+14],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+15];
-				float4 trifacecolor = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
-				float triroughness = tri[tid*ts+28];
-				float trimetallic = tri[tid*ts+29];
-				float trirefractind = tri[tid*ts+30];
-				float triopacity = tri[tid*ts+31];
+				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+				int triid = (int)tri[tid*ts+18];
+				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+				float triroughness = tri[tid*ts+31];
+				float trimetallic = tri[tid*ts+32];
+				float trirefractind = tri[tid*ts+33];
+				float triopacity = tri[tid*ts+34];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -376,10 +373,23 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 				tripos2 = translatepos(tripos2, objpos, 1.0f);
 				tripos3 = translatepos(tripos3, objpos, 1.0f);
 
-				float16 vtri = (float16)(tripos1.xyz,tripos2.xyz,tripos3.xyz,tripos1uv.xy,tripos2uv.xy,tripos3uv.xy,triid);
-
+				float vtri[35] = {
+					tripos1.x, tripos1.y, tripos1.z,
+					tripos2.x, tripos2.y, tripos2.z,
+					tripos3.x, tripos3.y, tripos3.z,
+					trinorm.x, trinorm.y, trinorm.z,
+					tripos1uv.x, tripos1uv.y,
+					tripos2uv.x, tripos2uv.y,
+					tripos3uv.x, tripos3uv.y,
+					triid,
+					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+					triroughness,
+					trimetallic,
+					trirefractind,
+					triopacity};
 				float4 triplane = triangleplane(vtri);
-				float4 trinorm = planenormal(triplane);
 
 				float8 intpos = raytriangleintersection(campos, camdir, vtri);
 				float4 raypos = intpos.s0123;
@@ -541,7 +551,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int tlit = lit[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 32, os = 13, vs = 4;
+	const int ts = 35, os = 13, vs = 4;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
@@ -594,17 +604,18 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
 				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
 				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+9],tri[tid*ts+10],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+11],tri[tid*ts+12],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+13],tri[tid*ts+14],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+15];
-				float4 trifacecolor = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
-				float triroughness = tri[tid*ts+28];
-				float trimetallic = tri[tid*ts+29];
-				float trirefractind = tri[tid*ts+30];
-				float triopacity = tri[tid*ts+31];
+				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+				int triid = (int)tri[tid*ts+18];
+				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+				float triroughness = tri[tid*ts+31];
+				float trimetallic = tri[tid*ts+32];
+				float trirefractind = tri[tid*ts+33];
+				float triopacity = tri[tid*ts+34];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -613,10 +624,23 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				tripos2 = translatepos(tripos2, objpos, 1.0f);
 				tripos3 = translatepos(tripos3, objpos, 1.0f);
 
-				float16 vtri = (float16)(tripos1.xyz,tripos2.xyz,tripos3.xyz,tripos1uv.xy,tripos2uv.xy,tripos3uv.xy,triid);
-
+				float vtri[35] = {
+					tripos1.x, tripos1.y, tripos1.z,
+					tripos2.x, tripos2.y, tripos2.z,
+					tripos3.x, tripos3.y, tripos3.z,
+					trinorm.x, trinorm.y, trinorm.z,
+					tripos1uv.x, tripos1uv.y,
+					tripos2uv.x, tripos2uv.y,
+					tripos3uv.x, tripos3uv.y,
+					triid,
+					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+					triroughness,
+					trimetallic,
+					trirefractind,
+					triopacity};
 				float4 triplane = triangleplane(vtri);
-				float4 trinorm = planenormal(triplane);
 
 				float16 intline = planetriangleintersection(colplane, vtri);
 				float4 colpos1 = intline.s01234567.s0123;
