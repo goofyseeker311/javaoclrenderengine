@@ -133,7 +133,11 @@ float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle)
 float4 triangleplane(float *vtri) {
 	float4 plane = (float4)(0.0f,0.0f,0.0f,0.0f);
 	float4 p1 = (float4)(vtri[0],vtri[1],vtri[2],0.0f);
-	float4 nm = (float4)(vtri[9],vtri[10],vtri[11],0.0f);
+	float4 p2 = (float4)(vtri[3],vtri[4],vtri[5],0.0f);
+	float4 p3 = (float4)(vtri[6],vtri[7],vtri[8],0.0f);
+	float4 v1 = p2 - p1;
+	float4 v2 = p3 - p1;
+	float4 nm = normalize(cross(v1, v2));
 	plane = planefromnormalatpos(p1, nm);
 	return plane;
 }
