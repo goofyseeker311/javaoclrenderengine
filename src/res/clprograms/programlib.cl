@@ -366,8 +366,8 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 				float triroughness = tri[tid*ts+28];
 				float trimetallic = tri[tid*ts+29];
-				float trirefractopm = tri[tid*ts+30];
-				float tritransparency = tri[tid*ts+31];
+				float trirefractind = tri[tid*ts+30];
+				float triopacity = tri[tid*ts+31];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -603,8 +603,8 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				float4 trilightmapcolor = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 				float triroughness = tri[tid*ts+28];
 				float trimetallic = tri[tid*ts+29];
-				float trirefractopm = tri[tid*ts+30];
-				float tritransparency = tri[tid*ts+31];
+				float trirefractind = tri[tid*ts+30];
+				float triopacity = tri[tid*ts+31];
 				
 				tripos1 = matrixposmult(tripos1, objmat);
 				tripos2 = matrixposmult(tripos2, objmat);
@@ -717,6 +717,17 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 											float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
 											if (!isnan(raycolor.s0)) {
 												pixelcolor = sourceoverblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+											}
+										}
+									}
+									if (triopacity<1.0f) {
+										float8 camposray = (float8)(campos,camray);
+										float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
+										if (!isnan(refractionray.s0)) {
+											int hitind = -1;
+											float8 raycolor = renderray(refractionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
+											if (!isnan(raycolor.s0)) {
+												pixelcolor = sourceoverblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
 											}
 										}
 									}
