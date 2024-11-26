@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.8.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.8.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -440,7 +440,7 @@ public class JavaOCLRenderEngine {
 		};
 		this.objectlist3length[0] = this.objectlist3pos3sca3rot3relsph4.length/13;
 		
-		triangleslength[0] = 0;
+		triangleslength[0] = this.objectlistlength[0]*this.trianglelistlength[0] + this.objectlist2length[0]*this.trianglelist2length[0] + this.objectlist3length[0]*this.trianglelist3length[0];
 
 		if (this.glinterop) {
 			this.graphicsbufferptr = computelib.createSharedGLBuffer(opencldevice, buf);

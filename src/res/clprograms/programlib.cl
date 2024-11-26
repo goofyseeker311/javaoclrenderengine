@@ -332,6 +332,10 @@ float4 sourceoverblend(float4 dest, float4 source, float alpha) {
 	retcolor.s3 = alpha*source.s3 + dest.s3*(1.0f-alpha*source.s3);
 	return retcolor;
 }
+float4 sourcemixblend(float4 dest, float4 source, float ratio) {
+	float4 retcolor = ratio*source + (1.0f-ratio)*dest;
+	return retcolor;
+}
 
 float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const float *obj, global const int *obc, global const int *lit) {
 	float8 raycolordist = (float8)(NAN);
@@ -747,17 +751,6 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									} else {
 										pixelcolor = triemissivecolor + texcolor*trifacecolor;
 									}
-									if (triroughness<1.0f) {
-										float8 camposray = (float8)(campos,camray);
-										float8 reflectionray = planereflectionray(camposray, triplane);
-										if (!isnan(reflectionray.s0)) {
-											int hitind = -1;
-											float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
-											if (!isnan(raycolor.s0)) {
-												pixelcolor = sourceoverblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
-											}
-										}
-									}
 									if (triopacity<1.0f) {
 										float8 camposray = (float8)(campos,camray);
 										float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
@@ -765,7 +758,18 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 											int hitind = -1;
 											float8 raycolor = renderray(refractionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
 											if (!isnan(raycolor.s0)) {
-												pixelcolor = sourceoverblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+											}
+										}
+									}
+									if (triroughness<1.0f) {
+										float8 camposray = (float8)(campos,camray);
+										float8 reflectionray = planereflectionray(camposray, triplane);
+										if (!isnan(reflectionray.s0)) {
+											int hitind = -1;
+											float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, obj, obc, lit);
+											if (!isnan(raycolor.s0)) {
+												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
 											}
 										}
 									}
