@@ -286,22 +286,32 @@ float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float r
 	float8 refractray = (float8)(NAN);
 	float4 raypos = vray.s0123;
 	float4 raydir = vray.s4567;
-	float4 vplanenorm = planenormal(vplane);
+	float vref1 = refraction2;
+	float vref2 = refraction1;
 	float rayintdist = rayplanedistance(raypos, raydir, vplane);
-	if ((isfinite(rayintdist))&&(rayintdist>0.0f)) {
+	float4 vplanenorm = planenormal(vplane);
+	float rayvplaneangle = vectorangle(vplanenorm, raydir);
+	if (rayvplaneangle>M_PI_2_F) {
+		rayvplaneangle = M_PI_F - rayvplaneangle;
+		vplanenorm = -vplanenorm;
+		vref1 = refraction1;
+		vref2 = refraction2;
+	}
+	if ((isfinite(rayintdist))&&(rayintdist>0.001f)) {
 		float4 rayint = translatepos(raypos, raydir, rayintdist);
 		float4 refnormal = cross(vplanenorm, raydir);
 		if ((refnormal.x==0.0f)&&(refnormal.y==0.0f)&&(refnormal.z==0.0f)) {
 			refractray.s0123 = rayint;
 			refractray.s4567 = raydir;
 		} else {
-			float rayvplaneangle = vectorangle(vplanenorm, raydir);
-			float rayvplaneangleout = refractionoutangle(rayvplaneangle, refraction1, refraction2);
+			float rayvplaneangleout = refractionoutangle(rayvplaneangle, vref1, vref2);
 			if (isfinite(rayvplaneangleout)) {
-				float refrayrotangle = rayvplaneangle-rayvplaneangleout;
-				float16 rayvplanerefrot = rotationmatrixaroundaxis(refnormal, -refrayrotangle);
-				float4 refractionraydir = matrixposmult(raydir, rayvplanerefrot);
-				float4 refractionraydirn = normalize(refractionraydir);
+				float4 refdownnormal = normalize(cross(refnormal, vplanenorm));
+				const float4 zeropos = (float4)(0.0f,0.0f,0.0f,0.0f);
+				float4 vplanezero = planefromnormalatpos(zeropos, vplanenorm);
+				float raydist = planepointdistance(raydir, vplanezero);
+				float refdowndist = tan(rayvplaneangleout)*raydist;
+				float4 refractionraydirn = raydist*vplanenorm + refdowndist*refdownnormal;
 				refractray.s0123 = rayint;
 				refractray.s4567 = refractionraydirn;
 			}
