@@ -693,6 +693,7 @@ public class ModelLib {
 		public Line[] linelist = null;
 		public Position[] vertexlist = null;
 		public Material[] materiallist = null;
+		public TreeMap<String,Material> imagelist = null;
 		public Sphere sphereboundaryvolume = null;
 		public Cube aabbboundaryvolume = null;
 		public Matrix transform = null;
@@ -767,34 +768,35 @@ public class ModelLib {
 	}
 
 	public static class ModelFaceVertexIndex {
-		public int vertexindex; 
-		public int textureindex; 
-		public int normalindex; 
+		public int vertexindex = -1; 
+		public int textureindex = -1; 
+		public int normalindex = -1; 
 		public ModelFaceVertexIndex(int vertexindexi, int textureindexi, int normalindexi) {this.vertexindex = vertexindexi; this.textureindex = textureindexi; this.normalindex = normalindexi;}
 	}
 	public static class ModelFaceIndex {
-		public ModelFaceVertexIndex[] facevertexindex;
-		public String usemtl;
+		public ModelFaceVertexIndex[] facevertexindex = null;
+		public String usemtl = null;
 		public ModelFaceIndex(ModelFaceVertexIndex[] facevertexindexi){this.facevertexindex=facevertexindexi;}
 	}
 	public static class ModelLineIndex {
-		public int[] linevertexindex;
+		public int[] linevertexindex = null;
 		public ModelLineIndex(int[] linevertexindexi){this.linevertexindex=linevertexindexi;}
 	}
 	public static class ModelObject {
-		public String objectname;
-		public ModelFaceIndex[] faceindex;
-		public ModelLineIndex[] lineindex;
+		public String objectname = null;
+		public ModelFaceIndex[] faceindex = null;
+		public ModelLineIndex[] lineindex = null;
 		public ModelObject(String objectnamei) {this.objectname = objectnamei;}
 	}
 	public static class Model {
 		public String filename = null;
 		public String mtllib = null;
-		public Position[] vertexlist;
-		public Direction[] facenormals;
-		public Coordinate[] texturecoords;
-		public Material[] materials;
-		public ModelObject[] objects;
+		public Position[] vertexlist = null;
+		public Direction[] facenormals = null;
+		public Coordinate[] texturecoords = null;
+		public Material[] materials= null;
+		public TreeMap<String,Material> images = null;
+		public ModelObject[] objects= null;
 		public Model(String filenamei) {this.filename = filenamei;}
 	}
 
@@ -1131,7 +1133,9 @@ public class ModelLib {
 							String farg = fline.substring(7).trim();
 							File loadmtlfile = new File(loadobjfile.getParent(),farg);
 							k.mtllib = farg;
-							k.materials = loadWaveFrontMTLFile(loadmtlfile.getPath(), loadresourcefromjar);
+							Model mtlmaterials = loadWaveFrontMTLFile(loadmtlfile.getPath(), loadresourcefromjar);
+							k.materials = mtlmaterials.materials;
+							k.images = mtlmaterials.images;
 						}else if ((fline.toLowerCase().startsWith("o "))||(fline.toLowerCase().startsWith("g "))) {
 							if (modelobjects.size()>0) {
 								modelobjects.get(modelobjects.size()-1).faceindex = modelfaceindex.toArray(new ModelFaceIndex[modelfaceindex.size()]);
@@ -1203,19 +1207,19 @@ public class ModelLib {
 		return k;
 	}
 
-	public static Material[] loadWaveFrontMTLFile(String filename, boolean loadresourcefromjar) {
-		Material[] k = null;
+	public static Model loadWaveFrontMTLFile(String filename, boolean loadresourcefromjar) {
+		Model k = new Model(null);
 		if (filename!=null) {
 			BufferedReader modelmtlfile = null;
 			try {
 				File loadmtlfile = new File(filename);
-				TreeMap<String,Material> modelmaterialimages = new TreeMap<String,Material>();
 				if (loadresourcefromjar) {
 					modelmtlfile = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream(loadmtlfile.getPath().replace(File.separatorChar, '/'))));
 				}else {
 					modelmtlfile = new BufferedReader(new FileReader(loadmtlfile));
 				}
 				if (modelmtlfile!=null) {
+					TreeMap<String,Material> modelmaterialimages = new TreeMap<String,Material>();
 					ArrayList<Material> modelmaterials = new ArrayList<Material>();
 					String fline = null;
 					while((fline=modelmtlfile.readLine())!=null) {
@@ -1230,11 +1234,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).fileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_ka ")) {
@@ -1242,11 +1246,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).ambientfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_ks ")) {
@@ -1254,11 +1258,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).specularfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_ke ")) {
@@ -1266,11 +1270,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).emissivefileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_pr ")) {
@@ -1278,11 +1282,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).roughnessfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_pm ")) {
@@ -1290,11 +1294,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).metallicfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_ps ")) {
@@ -1302,11 +1306,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).sheenfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_ns ")) {
@@ -1314,11 +1318,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).specularhighfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("map_d ")) {
@@ -1326,11 +1330,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).alphafileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("bump ")) {
@@ -1338,11 +1342,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).bumpfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("disp ")) {
@@ -1350,11 +1354,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).dispfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("decal ")) {
@@ -1362,11 +1366,11 @@ public class ModelLib {
 							File loadimgfile = new File(loadmtlfile.getParent(),farg);
 							modelmaterials.get(modelmaterials.size()-1).filename = farg;
 							BufferedImage loadimage = null;
-							if (modelmaterialimages.containsKey(loadimgfile.getPath())) {
-								loadimage = modelmaterialimages.get(loadimgfile.getPath()).fileimage;
+							if (modelmaterialimages.containsKey(farg)) {
+								loadimage = modelmaterialimages.get(farg).fileimage;
 							} else {
 								loadimage = UtilLib.loadImage(loadimgfile.getPath(), loadresourcefromjar);
-								modelmaterialimages.put(loadimgfile.getPath(),new Material(Color.WHITE,1.0f,loadimage));
+								modelmaterialimages.put(farg,new Material(Color.WHITE,1.0f,loadimage));
 							}
 							modelmaterials.get(modelmaterials.size()-1).decalfileimage = loadimage;
 						}else if (fline.toLowerCase().startsWith("kd ")) {
@@ -1414,9 +1418,10 @@ public class ModelLib {
 							modelmaterials.get(modelmaterials.size()-1).anisotropyrot = Float.parseFloat(farg);
 						}
 					}
-					k = modelmaterials.toArray(new Material[modelmaterials.size()]);
-					for (int i=0;i<k.length;i++) {
-						k[i].materialid = i;
+					k.images = modelmaterialimages;
+					k.materials = modelmaterials.toArray(new Material[modelmaterials.size()]);
+					for (int i=0;i<k.materials.length;i++) {
+						k.materials[i].materialid = i;
 					}
 				}
 				modelmtlfile.close();
@@ -1649,6 +1654,7 @@ public class ModelLib {
 		TreeSet<Line> linelisttree = new TreeSet<Line>();
 		Model loadmodel = ModelLib.loadWaveFrontOBJFile(filename, loadresourcefromjar);
 		loadentity.materiallist = loadmodel.materials;
+		loadentity.imagelist = loadmodel.images;
 		ArrayList<Entity> newentitylist = new ArrayList<Entity>();
 		for (int j=0;j<loadmodel.objects.length;j++) {
 			Entity newentity = new Entity();
