@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.8.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.8.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -199,7 +199,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid.obj", true);
 		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
 		for (int j=0;j<loadmodel.childlist.length;j++) {
 			Entity object = loadmodel.childlist[j];
@@ -398,9 +398,9 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
-		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri1ptr,tri1lenptr,obj1ptr,obj1lenptr}, new int[]{0}, new int[]{1});
+		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri1ptr,tri1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0,0}, new int[]{1,objectlistlength[0],trianglelistlength[0]});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,trianglesptr,triangleslenptr,tex1ptr,tex1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,trianglesptr,triangleslenptr,tex1ptr,tex1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,2});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);

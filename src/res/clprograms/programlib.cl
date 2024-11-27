@@ -475,48 +475,45 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 
 kernel void transformobject(global float *tli, global const float *tri, global const int *trc, global const float *obj, global const int *obc) {
 	unsigned int tlid = get_global_id(0);
+	unsigned int oid = get_global_id(1);
+	unsigned int tid = get_global_id(2);
 	int tric = trc[0];
 	int objc = obc[0];
 
 	const int ts = 35, os = 13;
 
-	for (int oid=0;oid<objc;oid++) {
+	float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+	float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+	float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
+	float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
 
-		float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
-		float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-		float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
-		float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+	float16 objscamat = scalingmatrix(objsca);
+	float16 objrotmat = rotationmatrix(objrot);
+	float16 objmat = matrixmatmult(objscamat, objrotmat);
 
-		float16 objscamat = scalingmatrix(objsca);
-		float16 objrotmat = rotationmatrix(objrot);
-		float16 objmat = matrixmatmult(objscamat, objrotmat);
+	float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+	float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+	float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
-		float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-		float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-		float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
-		for (int tid=0;tid<tric;tid++) {
+	float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+	float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+	float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+	float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+	
+	tripos1 = matrixposmult(tripos1, objmat);
+	tripos2 = matrixposmult(tripos2, objmat);
+	tripos3 = matrixposmult(tripos3, objmat);
+	trinorm = matrixposmult(trinorm, objmat);
+	tripos1 = translatepos(tripos1, objpos, 1.0f);
+	tripos2 = translatepos(tripos2, objpos, 1.0f);
+	tripos3 = translatepos(tripos3, objpos, 1.0f);
 
-			float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
-			float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
-			float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-			float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
-			
-			tripos1 = matrixposmult(tripos1, objmat);
-			tripos2 = matrixposmult(tripos2, objmat);
-			tripos3 = matrixposmult(tripos3, objmat);
-			trinorm = matrixposmult(trinorm, objmat);
-			tripos1 = translatepos(tripos1, objpos, 1.0f);
-			tripos2 = translatepos(tripos2, objpos, 1.0f);
-			tripos3 = translatepos(tripos3, objpos, 1.0f);
-
-			tli[tlid+oid*tric*ts+tid*ts+0] = tripos1.x; tli[tlid+oid*tric*ts+tid*ts+1] = tripos1.y; tli[tlid+oid*tric*ts+tid*ts+2] = tripos1.z;
-			tli[tlid+oid*tric*ts+tid*ts+3] = tripos2.x; tli[tlid+oid*tric*ts+tid*ts+4] = tripos2.y; tli[tlid+oid*tric*ts+tid*ts+5] = tripos2.z;
-			tli[tlid+oid*tric*ts+tid*ts+6] = tripos3.x; tli[tlid+oid*tric*ts+tid*ts+7] = tripos3.y; tli[tlid+oid*tric*ts+tid*ts+8] = tripos3.z;
-			tli[tlid+oid*tric*ts+tid*ts+9] = trinorm.x; tli[tlid+oid*tric*ts+tid*ts+10] = trinorm.y; tli[tlid+oid*tric*ts+tid*ts+11] = trinorm.z;
-			for (int i=12;i<ts;i++) {
-				tli[tlid+oid*tric*ts+tid*ts+i] = tri[tid*ts+i];
-			}
-		}
+	tli[tlid+oid*tric*ts+tid*ts+0] = tripos1.x; tli[tlid+oid*tric*ts+tid*ts+1] = tripos1.y; tli[tlid+oid*tric*ts+tid*ts+2] = tripos1.z;
+	tli[tlid+oid*tric*ts+tid*ts+3] = tripos2.x; tli[tlid+oid*tric*ts+tid*ts+4] = tripos2.y; tli[tlid+oid*tric*ts+tid*ts+5] = tripos2.z;
+	tli[tlid+oid*tric*ts+tid*ts+6] = tripos3.x; tli[tlid+oid*tric*ts+tid*ts+7] = tripos3.y; tli[tlid+oid*tric*ts+tid*ts+8] = tripos3.z;
+	tli[tlid+oid*tric*ts+tid*ts+9] = trinorm.x; tli[tlid+oid*tric*ts+tid*ts+10] = trinorm.y; tli[tlid+oid*tric*ts+tid*ts+11] = trinorm.z;
+	for (int i=12;i<ts;i++) {
+		tli[tlid+oid*tric*ts+tid*ts+i] = tri[tid*ts+i];
 	}
 }
 
@@ -592,7 +589,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int tlit = lit[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 35, os = 13, vs = 4;
+	const int ts = 35, os = 13, vs = 2;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
