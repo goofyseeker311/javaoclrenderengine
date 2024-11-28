@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.9.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.9.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -71,8 +71,9 @@ public class JavaOCLRenderEngine {
 	private String usingopencldevice = null;
 	private long audiodevice = NULL;
 	private long graphicsbufferptr = NULL, graphicszbufferptr = NULL, graphicshbufferptr = NULL, camposbufferptr = NULL, cammovbufferptr = NULL;
-	private long tri1ptr = NULL, tri1lenptr = NULL, tex1ptr = NULL, tex1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
-	private long trianglesptr = NULL, triangleslenptr = NULL;
+	private long tri1ptr = NULL, tri1lenptr = NULL, obj1ptr = NULL, obj1lenptr = NULL;
+	private long tri2ptr = NULL, tri2lenptr = NULL, obj2ptr = NULL, obj2lenptr = NULL;
+	private long trianglesptr = NULL, triangleslenptr = NULL, texturesptr = NULL, textureslenptr = NULL;
 	private long litptr = NULL;
 	private float[] graphicsbuffer = null;
 	@SuppressWarnings("unused")
@@ -80,13 +81,17 @@ public class JavaOCLRenderEngine {
 	private int[] graphicshbuffer = null;
 	private float[] camerapos3fov2res2rotmat16 = null;
 	private float[] cameramov3rot3 = null;
-	private float[] trianglelistpos3uv3id = null;
+	private float[] trianglelist = null;
+	private float[] trianglelist2 = null;
 	private int[] trianglelistlength = {0};
-	private int[] triangleslength = {0};
-	private int[] triangletexturelist = null;
-	private int[] triangletexturelength = {0};
+	private int[] trianglelist2length = {0};
+	private int[] triangleslistlen = {0};
+	private int[] textureslist = null;
+	private int[] textureslistlength = {0};
 	private float[] objectlistpos3sca3rot3relsph4 = null;
+	private float[] objectlist2pos3sca3rot3relsph4 = null;
 	private int[] objectlistlength = {0};
+	private int[] objectlist2length = {0};
 	private int[] renderlit = {1};
 	private boolean keyfwd = false;
 	private boolean keyback = false;
@@ -200,85 +205,53 @@ public class JavaOCLRenderEngine {
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
-		ArrayList<Float> trianglelistpos3uv3arraylist = new ArrayList<Float>();
-		for (int j=0;j<loadmodel.childlist.length;j++) {
-			Entity object = loadmodel.childlist[j];
-			for (int i=0;i<object.trianglelist.length;i++) {
-				Triangle modeltri = object.trianglelist[i];
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.x);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.y);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.z);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.x);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.y);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.z);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.x);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.y);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.z);
-				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dx);
-				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dy);
-				trianglelistpos3uv3arraylist.add((float)modeltri.norm.dz);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.u);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos1.tex.v);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.u);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.v);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.u);
-				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.v);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.imageid);
-				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
-				trianglelistpos3uv3arraylist.add((float)matfacecolor[0]);
-				trianglelistpos3uv3arraylist.add((float)matfacecolor[1]);
-				trianglelistpos3uv3arraylist.add((float)matfacecolor[2]);
-				trianglelistpos3uv3arraylist.add((float)matfacecolor[3]);
-				float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
-				trianglelistpos3uv3arraylist.add((float)matemissivecolor[0]);
-				trianglelistpos3uv3arraylist.add((float)matemissivecolor[1]);
-				trianglelistpos3uv3arraylist.add((float)matemissivecolor[2]);
-				trianglelistpos3uv3arraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
-				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
-				trianglelistpos3uv3arraylist.add((float)lightmapcolor[0]);
-				trianglelistpos3uv3arraylist.add((float)lightmapcolor[1]);
-				trianglelistpos3uv3arraylist.add((float)lightmapcolor[2]);
-				trianglelistpos3uv3arraylist.add((float)lightmapcolor[3]);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.roughness);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.metallic);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.refraction);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.transparency);
+		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
+		
+		int imagecounter = 0;
+		int imagelistlength = loadmodel.imagelist.length + loadmodel2.imagelist.length;
+		
+		BufferedImage textureimage = loadmodel2.imagelist[0];
+		this.textureslistlength[0] = textureimage.getWidth();
+		int texturesize = this.textureslistlength[0]*this.textureslistlength[0];
+		this.textureslist = new int[imagelistlength*texturesize];
+		for (int j=0;j<loadmodel.imagelist.length;j++) {
+			textureimage = loadmodel.imagelist[j];
+			DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
+			int[] texturedata = textureimagedataint.getData();
+			for (int i=0;i<texturesize;i++) {
+				this.textureslist[(j+imagecounter)*texturesize+i] = texturedata[i];
 			}
 		}
-
-		Float[] trianglelistpos3uv3idfloats = trianglelistpos3uv3arraylist.toArray(new Float[trianglelistpos3uv3arraylist.size()]);
-		this.trianglelistpos3uv3id = new float[trianglelistpos3uv3idfloats.length];
-		for (int i=0;i<trianglelistpos3uv3idfloats.length;i++) {
-			this.trianglelistpos3uv3id[i] = trianglelistpos3uv3idfloats[i];
-		}
-		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/35;
-
-		if (loadmodel.imagelist[0]!=null) {
-			BufferedImage textureimage = loadmodel.imagelist[0];
-			this.triangletexturelength[0] = textureimage.getWidth();
-			int texturesize = this.triangletexturelength[0]*this.triangletexturelength[0];
-			this.triangletexturelist = new int[loadmodel.imagelist.length*texturesize];
-			for (int j=0;j<loadmodel.imagelist.length;j++) {
-				textureimage = loadmodel.imagelist[j];
-				DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
-				int[] texturedata = textureimagedataint.getData();
-				for (int i=0;i<texturesize;i++) {
-					this.triangletexturelist[j*texturesize+i] = texturedata[i];
-				}
+		imagecounter += loadmodel.imagelist.length;
+		for (int j=0;j<loadmodel2.imagelist.length;j++) {
+			textureimage = loadmodel2.imagelist[j];
+			DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
+			int[] texturedata = textureimagedataint.getData();
+			for (int i=0;i<texturesize;i++) {
+				this.textureslist[(j+imagecounter)*texturesize+i] = texturedata[i];
 			}
 		}
+		imagecounter += loadmodel2.imagelist.length;
 
+		int imageoffset1 = 0;
+		int imageoffset2 = loadmodel.imagelist.length;
+		this.trianglelist = getEntityTriangles(loadmodel, imageoffset1);
+		this.trianglelist2 = getEntityTriangles(loadmodel2, imageoffset2);
+		this.trianglelistlength[0] = this.trianglelist.length/35;
+		this.trianglelist2length[0] = this.trianglelist2.length/35;
+		
 		Sphere sphbv = loadmodel.sphereboundaryvolume;
 		this.objectlistpos3sca3rot3relsph4 = new float[]{
 				0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				0.0f,0.0f,5.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				0.0f,5.0f,0.0f, 1.0f,1.0f,1.0f, 90.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
-				0.0f,-5.0f,0.0f, 1.0f,1.0f,1.0f, 90.0f,0.0f,0.0f, (float)sphbv.x,(float)sphbv.y,(float)sphbv.z,(float)sphbv.r,
 		};
 		this.objectlistlength[0] = this.objectlistpos3sca3rot3relsph4.length/13;
+		Sphere sphbv2 = loadmodel2.sphereboundaryvolume;
+		this.objectlist2pos3sca3rot3relsph4 = new float[]{
+				0.0f,0.0f,0.0f, 1.0f,1.0f,1.0f, 0.0f,0.0f,0.0f, (float)sphbv2.x,(float)sphbv2.y,(float)sphbv2.z,(float)sphbv2.r,
+		};
+		this.objectlist2length[0] = this.objectlist2pos3sca3rot3relsph4.length/13;
 		
-		this.triangleslength[0] = this.objectlistlength[0]*this.trianglelistlength[0];
+		this.triangleslistlen[0] = this.objectlistlength[0]*this.trianglelistlength[0] + this.objectlist2length[0]*this.trianglelist2length[0];
 
 		if (this.glinterop) {
 			this.graphicsbufferptr = computelib.createSharedGLBuffer(opencldevice, buf);
@@ -295,23 +268,33 @@ public class JavaOCLRenderEngine {
 		this.cammovbufferptr = computelib.createBuffer(opencldevice, cameramov3rot3.length);
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 
-		this.trianglesptr = computelib.createBuffer(opencldevice, this.triangleslength[0]*35);
+		this.trianglesptr = computelib.createBuffer(opencldevice, this.triangleslistlen[0]*35);
 		this.triangleslenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, triangleslenptr, this.triangleslength);
+		computelib.writeBufferi(opencldevice, queue, triangleslenptr, this.triangleslistlen);
 		
-		this.tri1ptr = computelib.createBuffer(opencldevice, trianglelistpos3uv3id.length);
-		computelib.writeBufferf(opencldevice, queue, tri1ptr, trianglelistpos3uv3id);
+		this.texturesptr = computelib.createBuffer(opencldevice, textureslist.length);
+		computelib.writeBufferi(opencldevice, queue, texturesptr, textureslist);
+		this.textureslenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, textureslenptr, textureslistlength);
+		
+		this.tri1ptr = computelib.createBuffer(opencldevice, trianglelist.length);
+		computelib.writeBufferf(opencldevice, queue, tri1ptr, trianglelist);
 		this.tri1lenptr = computelib.createBuffer(opencldevice, 1);
 		computelib.writeBufferi(opencldevice, queue, tri1lenptr, trianglelistlength);
-		this.tex1ptr = computelib.createBuffer(opencldevice, triangletexturelist.length);
-		computelib.writeBufferi(opencldevice, queue, tex1ptr, triangletexturelist);
-		this.tex1lenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, tex1lenptr, triangletexturelength);
 		this.obj1ptr = computelib.createBuffer(opencldevice, objectlistpos3sca3rot3relsph4.length);
 		computelib.writeBufferf(opencldevice, queue, obj1ptr, objectlistpos3sca3rot3relsph4);
 		this.obj1lenptr = computelib.createBuffer(opencldevice, 1);
 		computelib.writeBufferi(opencldevice, queue, obj1lenptr, objectlistlength);
 
+		this.tri2ptr = computelib.createBuffer(opencldevice, trianglelist2.length);
+		computelib.writeBufferf(opencldevice, queue, tri2ptr, trianglelist2);
+		this.tri2lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, tri2lenptr, trianglelist2length);
+		this.obj2ptr = computelib.createBuffer(opencldevice, objectlist2pos3sca3rot3relsph4.length);
+		computelib.writeBufferf(opencldevice, queue, obj2ptr, objectlist2pos3sca3rot3relsph4);
+		this.obj2lenptr = computelib.createBuffer(opencldevice, 1);
+		computelib.writeBufferi(opencldevice, queue, obj2lenptr, objectlist2length);
+		
 		this.litptr = computelib.createBuffer(opencldevice, 1);
 		computelib.writeBufferi(opencldevice, queue, litptr, renderlit);
 		
@@ -398,9 +381,11 @@ public class JavaOCLRenderEngine {
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,2});
+		int trianglecount1 = this.objectlistlength[0]*this.trianglelistlength[0]*35;
 		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri1ptr,tri1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0,0}, new int[]{1,objectlistlength[0],trianglelistlength[0]});
+		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri2ptr,tri2lenptr,obj2ptr,obj2lenptr}, new int[]{trianglecount1,0,0}, new int[]{1,objectlist2length[0],trianglelist2length[0]});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,trianglesptr,triangleslenptr,tex1ptr,tex1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,2});
+		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,trianglesptr,triangleslenptr,texturesptr,textureslenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,2});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
@@ -547,6 +532,62 @@ public class JavaOCLRenderEngine {
 		iconimagebuffer.put(0, iconglfwimage);
 		GLFW.glfwSetWindowIcon(window, iconimagebuffer);
 		MemoryUtil.memFree(iconimagebytebuffer);
+	}
+	
+	private float[] getEntityTriangles(Entity loadmodel, int imageidoffset) {
+		ArrayList<Float> trianglearraylist = new ArrayList<Float>();
+		for (int j=0;j<loadmodel.childlist.length;j++) {
+			Entity object = loadmodel.childlist[j];
+			for (int i=0;i<object.trianglelist.length;i++) {
+				Triangle modeltri = object.trianglelist[i];
+				trianglearraylist.add((float)modeltri.pos1.x);
+				trianglearraylist.add((float)modeltri.pos1.y);
+				trianglearraylist.add((float)modeltri.pos1.z);
+				trianglearraylist.add((float)modeltri.pos2.x);
+				trianglearraylist.add((float)modeltri.pos2.y);
+				trianglearraylist.add((float)modeltri.pos2.z);
+				trianglearraylist.add((float)modeltri.pos3.x);
+				trianglearraylist.add((float)modeltri.pos3.y);
+				trianglearraylist.add((float)modeltri.pos3.z);
+				trianglearraylist.add((float)modeltri.norm.dx);
+				trianglearraylist.add((float)modeltri.norm.dy);
+				trianglearraylist.add((float)modeltri.norm.dz);
+				trianglearraylist.add((float)modeltri.pos1.tex.u);
+				trianglearraylist.add((float)modeltri.pos1.tex.v);
+				trianglearraylist.add((float)modeltri.pos2.tex.u);
+				trianglearraylist.add((float)modeltri.pos2.tex.v);
+				trianglearraylist.add((float)modeltri.pos3.tex.u);
+				trianglearraylist.add((float)modeltri.pos3.tex.v);
+				trianglearraylist.add((float)modeltri.mat.imageid+imageidoffset);
+				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
+				trianglearraylist.add((float)matfacecolor[0]);
+				trianglearraylist.add((float)matfacecolor[1]);
+				trianglearraylist.add((float)matfacecolor[2]);
+				trianglearraylist.add((float)matfacecolor[3]);
+				float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
+				trianglearraylist.add((float)matemissivecolor[0]);
+				trianglearraylist.add((float)matemissivecolor[1]);
+				trianglearraylist.add((float)matemissivecolor[2]);
+				trianglearraylist.add((float)matemissivecolor[3]);
+				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
+				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
+				trianglearraylist.add((float)lightmapcolor[0]);
+				trianglearraylist.add((float)lightmapcolor[1]);
+				trianglearraylist.add((float)lightmapcolor[2]);
+				trianglearraylist.add((float)lightmapcolor[3]);
+				trianglearraylist.add((float)modeltri.mat.roughness);
+				trianglearraylist.add((float)modeltri.mat.metallic);
+				trianglearraylist.add((float)modeltri.mat.refraction);
+				trianglearraylist.add((float)modeltri.mat.transparency);
+			}
+		}
+
+		Float[] trianglefloats= trianglearraylist.toArray(new Float[trianglearraylist.size()]);
+		float[] trianglelist = new float[trianglefloats.length];
+		for (int i=0;i<trianglefloats.length;i++) {
+			trianglelist[i] = trianglefloats[i];
+		}
+		return trianglelist;
 	}
 
 	private class KeyProcessor implements GLFWKeyCallbackI {

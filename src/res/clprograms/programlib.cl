@@ -1066,7 +1066,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
 								if (!isnan(refractionray.s0)) {
 									int hitind = -1;
-									float8 raycolor = renderray4(refractionray, &hitind, tri, trc, tex, tes, lit);
+									float8 raycolor = renderray2(refractionray, &hitind, tri, trc, tex, tes, lit);
 									if (!isnan(raycolor.s0)) {
 										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
 									}
@@ -1077,7 +1077,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 								float8 reflectionray = planereflectionray(camposray, triplane);
 								if (!isnan(reflectionray.s0)) {
 									int hitind = -1;
-									float8 raycolor = renderray4(reflectionray, &hitind, tri, trc, tex, tes, lit);
+									float8 raycolor = renderray2(reflectionray, &hitind, tri, trc, tex, tes, lit);
 									if (!isnan(raycolor.s0)) {
 										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
 									}
