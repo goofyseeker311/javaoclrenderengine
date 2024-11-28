@@ -11,7 +11,9 @@ import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -21,6 +23,7 @@ public class ModelLib {
 	public static class Material implements Comparable<Material> {
 		public String materialname = null;
 		public int materialid = -1;
+		public int imageid = -1;
 		public BufferedImage fileimage = null;
 		public BufferedImage ambientfileimage = null;
 		public BufferedImage specularfileimage = null;
@@ -693,7 +696,7 @@ public class ModelLib {
 		public Line[] linelist = null;
 		public Position[] vertexlist = null;
 		public Material[] materiallist = null;
-		public TreeMap<String,Material> imagelist = null;
+		public BufferedImage[] imagelist = null;
 		public Sphere sphereboundaryvolume = null;
 		public Cube aabbboundaryvolume = null;
 		public Matrix transform = null;
@@ -795,7 +798,7 @@ public class ModelLib {
 		public Direction[] facenormals = null;
 		public Coordinate[] texturecoords = null;
 		public Material[] materials= null;
-		public TreeMap<String,Material> images = null;
+		public BufferedImage[] images = null;
 		public ModelObject[] objects= null;
 		public Model(String filenamei) {this.filename = filenamei;}
 	}
@@ -1418,10 +1421,18 @@ public class ModelLib {
 							modelmaterials.get(modelmaterials.size()-1).anisotropyrot = Float.parseFloat(farg);
 						}
 					}
-					k.images = modelmaterialimages;
+					Set<String> imagecollectionkeys = modelmaterialimages.keySet();
+					String[] imagepaths = imagecollectionkeys.toArray(new String[imagecollectionkeys.size()]);
+					Collection<Material> imagecollectionvalues = modelmaterialimages.values();
+					Material[] materialimages = imagecollectionvalues.toArray(new Material[imagecollectionvalues.size()]);
+					k.images = new BufferedImage[materialimages.length];
+					for (int i=0;i<k.images.length;i++) {
+						k.images[i] = materialimages[i].fileimage;
+					}
 					k.materials = modelmaterials.toArray(new Material[modelmaterials.size()]);
 					for (int i=0;i<k.materials.length;i++) {
 						k.materials[i].materialid = i;
+						k.materials[i].imageid = Arrays.binarySearch(imagepaths, k.materials[i].filename);
 					}
 				}
 				modelmtlfile.close();

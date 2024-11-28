@@ -429,9 +429,9 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	float4 camposdelta = (float4)(cmv[0],cmv[1],cmv[2],0.0f);
 	float3 camrotdelta = (float3)(cmv[3],cmv[4],cmv[5]);
 
-	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
-	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
-	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
+	float4 camdir = (float4)(0.0f,0.0f,-1.0f,0.0f);
+	float4 camrightdir = (float4)(1.0f,0.0f,0.0f,0.0f);
+	float4 camupdir = (float4)(0.0f,-1.0f,0.0f,0.0f);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);
@@ -457,7 +457,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	
-	const int vs = 4;
+	const int vs = 2;
 	int camresystep = camres.y / vs;
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
@@ -552,7 +552,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	int2 camhalfres = camres/2;
 	float camraylenx = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 	float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*yid;
-	float4 raydir = (float4)(1.0f,camraylenx,camrayleny,0.0f);
+	float4 raydir = (float4)(camraylenx,-camrayleny,-1.0f,0.0f);
 	float4 raydirrot = matrixposmult(raydir, cammat);
 
 	float8 camray = (float8)(NAN);
@@ -597,12 +597,12 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int2 camhalfres = camres/2;
 	float camcollen = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 
-	float4 camdir = (float4)(1.0f,0.0f,0.0f,0.0f);
-	float4 camrightdir = (float4)(0.0f,1.0f,0.0f,0.0f);
-	float4 camupdir = (float4)(0.0f,0.0f,1.0f,0.0f);
-	float4 coldir = (float4)(1.0f,camcollen,0.0f,0.0f);
-	float4 colupdir = (float4)(1.0f,camcollen,camhalffovlen.y,0.0f);
-	float4 coldowndir = (float4)(1.0f,camcollen,-camhalffovlen.y,0.0f);
+	float4 camdir = (float4)(0.0f,0.0f,-1.0f,0.0f);
+	float4 camrightdir = (float4)(1.0f,0.0f,0.0f,0.0f);
+	float4 camupdir = (float4)(0.0f,-1.0f,0.0f,0.0f);
+	float4 coldir = (float4)(0.0f,camcollen,-1.0f,0.0f);
+	float4 colupdir = (float4)(camcollen,-camhalffovlen.y,-1.0f,0.0f);
+	float4 coldowndir = (float4)(camcollen,camhalffovlen.y,-1.0f,0.0f);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);

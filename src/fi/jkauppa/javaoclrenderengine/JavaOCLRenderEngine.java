@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.8.8";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.8.9";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -129,7 +129,7 @@ public class JavaOCLRenderEngine {
 		this.graphicshfov = (float)(Math.toDegrees(2.0f*Math.atan((((double)this.graphicswidth)/((double)this.graphicsheight))*Math.tan(Math.toRadians((double)(this.graphicsvfov/2.0f))))));
 		this.graphicslength = this.graphicswidth*this.graphicsheight;
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
+		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
 		GLFW.glfwWindowHint(GLFW.GLFW_RED_BITS, videomode.redBits());
 		GLFW.glfwWindowHint(GLFW.GLFW_GREEN_BITS, videomode.greenBits());
 		GLFW.glfwWindowHint(GLFW.GLFW_BLUE_BITS, videomode.blueBits());
@@ -223,7 +223,7 @@ public class JavaOCLRenderEngine {
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos2.tex.v);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.u);
 				trianglelistpos3uv3arraylist.add((float)modeltri.pos3.tex.v);
-				trianglelistpos3uv3arraylist.add((float)modeltri.mat.materialid);
+				trianglelistpos3uv3arraylist.add((float)modeltri.mat.imageid);
 				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
 				trianglelistpos3uv3arraylist.add((float)matfacecolor[0]);
 				trianglelistpos3uv3arraylist.add((float)matfacecolor[1]);
@@ -254,13 +254,13 @@ public class JavaOCLRenderEngine {
 		}
 		this.trianglelistlength[0] = this.trianglelistpos3uv3id.length/35;
 
-		if (loadmodel.materiallist[0].fileimage!=null) {
-			BufferedImage textureimage = loadmodel.materiallist[0].fileimage;
+		if (loadmodel.imagelist[0]!=null) {
+			BufferedImage textureimage = loadmodel.imagelist[0];
 			this.triangletexturelength[0] = textureimage.getWidth();
 			int texturesize = this.triangletexturelength[0]*this.triangletexturelength[0];
-			this.triangletexturelist = new int[loadmodel.materiallist.length*texturesize];
-			for (int j=0;j<loadmodel.materiallist.length;j++) {
-				textureimage = loadmodel.materiallist[j].fileimage;
+			this.triangletexturelist = new int[loadmodel.imagelist.length*texturesize];
+			for (int j=0;j<loadmodel.imagelist.length;j++) {
+				textureimage = loadmodel.imagelist[j];
 				DataBufferInt textureimagedataint = (DataBufferInt)textureimage.getRaster().getDataBuffer();
 				int[] texturedata = textureimagedataint.getData();
 				for (int i=0;i<texturesize;i++) {
@@ -329,7 +329,7 @@ public class JavaOCLRenderEngine {
 			if (this.glinterop) {computelib.acquireSharedGLBuffer(queue, graphicsbufferptr);}
 			render();
 			if (this.glinterop) {computelib.releaseSharedGLBuffer(queue, graphicsbufferptr);}
-			if (!this.glinterop) {transferBuffer(buf, graphicsbuffer);}
+			if (!this.glinterop) {transferBufferf(buf, graphicsbuffer);}
 			updateTexture(tex, buf, graphicswidth, graphicsheight);
 			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
 			GL31.glBindTexture(GL31.GL_TEXTURE_2D, tex);
@@ -379,16 +379,16 @@ public class JavaOCLRenderEngine {
 		cameramov3rot3[3] = 0.0f;
 		cameramov3rot3[4] = 0.0f;
 		cameramov3rot3[5] = 0.0f;
-		if (this.keyfwd) {cameramov3rot3[0] += ds;}
-		if (this.keyback) {cameramov3rot3[0] -= ds;}
-		if (this.keyleft) {cameramov3rot3[1] -= ds;}
-		if (this.keyright) {cameramov3rot3[1] += ds;}
-		if (this.keyup) {cameramov3rot3[2] += ds;}
-		if (this.keydown) {cameramov3rot3[2] -= ds;}
-		if (this.keyrleft) {cameramov3rot3[3] += ds;}
-		if (this.keyrright) {cameramov3rot3[3] -= ds;}
-		cameramov3rot3[5] = (float)(0.001f*(mousex[0]-lastmousex));
-		cameramov3rot3[4] = (float)(0.001f*(mousey[0]-lastmousey));
+		if (this.keyfwd) {cameramov3rot3[0] = ds;}
+		if (this.keyback) {cameramov3rot3[0] = -ds;}
+		if (this.keyleft) {cameramov3rot3[1] = -ds;}
+		if (this.keyright) {cameramov3rot3[1] = ds;}
+		if (this.keyup) {cameramov3rot3[2] = ds;}
+		if (this.keydown) {cameramov3rot3[2] = -ds;}
+		if (this.keyrleft) {cameramov3rot3[5] = -ds;}
+		if (this.keyrright) {cameramov3rot3[5] = ds;}
+		cameramov3rot3[4] = -(float)(0.001f*(mousex[0]-lastmousex));
+		cameramov3rot3[3] = (float)(0.001f*(mousey[0]-lastmousey));
 		lastmousex = mousex[0];
 		lastmousey = mousey[0];
 	}
@@ -397,7 +397,7 @@ public class JavaOCLRenderEngine {
 		long framestarttime = System.nanoTime();
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
-		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,4});
+		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,2});
 		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri1ptr,tri1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0,0}, new int[]{1,objectlistlength[0],trianglelistlength[0]});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,trianglesptr,triangleslenptr,tex1ptr,tex1lenptr,litptr}, new int[]{0,0}, new int[]{graphicswidth,2});
@@ -496,12 +496,19 @@ public class JavaOCLRenderEngine {
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
-	private void transferBuffer(int id, float[] texturebuffer) {
+	@SuppressWarnings("unused")
+	private void transferBufferi(int id, int[] texturebuffer) {
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
 		GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 
+	private void transferBufferf(int id, float[] texturebuffer) {
+		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, id);
+		GL31.glBufferSubData(GL31.GL_PIXEL_UNPACK_BUFFER, 0, texturebuffer);
+		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
+	}
+	
 	private int createShader(String sourceShader, int type) {
 		int shader = GL31.glCreateShader(type);
 		ByteBuffer source = BufferUtils.createByteBuffer(8192);
