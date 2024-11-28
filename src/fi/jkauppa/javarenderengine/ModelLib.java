@@ -1432,7 +1432,9 @@ public class ModelLib {
 					k.materials = modelmaterials.toArray(new Material[modelmaterials.size()]);
 					for (int i=0;i<k.materials.length;i++) {
 						k.materials[i].materialid = i;
-						k.materials[i].imageid = Arrays.binarySearch(imagepaths, k.materials[i].filename);
+						if (k.materials[i].filename!=null) {
+							k.materials[i].imageid = Arrays.binarySearch(imagepaths, k.materials[i].filename);
+						}
 					}
 				}
 				modelmtlfile.close();
