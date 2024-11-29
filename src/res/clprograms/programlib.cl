@@ -396,16 +396,22 @@ float8 renderray4(float8 vray, int *imh, global const float *tri, global const i
 			int posuvinty = convert_int_rte(posuv.y*(texs-1));
 			int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
+			float faceangle = vectorangle(camray, trinorm);
+			bool isfrontfacenorm = faceangle>=M_PI_2_F;
+			bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
 				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 				float4 pixelcolor = (float4)(0.0f);
-				if (tlit) {
-					pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
-				} else {
-					pixelcolor = triemissivecolor + texcolor*trifacecolor;
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (tlit) {
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+					} else {
+						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+					}
 				}
 				if (triopacity<1.0f) {
 					float8 camposray = (float8)(campos,camray);
@@ -418,14 +424,16 @@ float8 renderray4(float8 vray, int *imh, global const float *tri, global const i
 						}
 					}
 				}
-				if (triroughness<1.0f) {
-					float8 camposray = (float8)(campos,camray);
-					float8 reflectionray = planereflectionray(camposray, triplane);
-					if (!isnan(reflectionray.s0)) {
-						int hitind = -1;
-						float8 raycolor = renderray3(reflectionray, &hitind, tri, trc, tex, tes, lit);
-						if (!isnan(raycolor.s0)) {
-							pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (triroughness<1.0f) {
+						float8 camposray = (float8)(campos,camray);
+						float8 reflectionray = planereflectionray(camposray, triplane);
+						if (!isnan(reflectionray.s0)) {
+							int hitind = -1;
+							float8 raycolor = renderray3(reflectionray, &hitind, tri, trc, tex, tes, lit);
+							if (!isnan(raycolor.s0)) {
+								pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+							}
 						}
 					}
 				}
@@ -500,16 +508,22 @@ float8 renderray3(float8 vray, int *imh, global const float *tri, global const i
 			int posuvinty = convert_int_rte(posuv.y*(texs-1));
 			int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
+			float faceangle = vectorangle(camray, trinorm);
+			bool isfrontfacenorm = faceangle>=M_PI_2_F;
+			bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
 				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 				float4 pixelcolor = (float4)(0.0f);
-				if (tlit) {
-					pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
-				} else {
-					pixelcolor = triemissivecolor + texcolor*trifacecolor;
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (tlit) {
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+					} else {
+						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+					}
 				}
 				if (triopacity<1.0f) {
 					float8 camposray = (float8)(campos,camray);
@@ -522,14 +536,16 @@ float8 renderray3(float8 vray, int *imh, global const float *tri, global const i
 						}
 					}
 				}
-				if (triroughness<1.0f) {
-					float8 camposray = (float8)(campos,camray);
-					float8 reflectionray = planereflectionray(camposray, triplane);
-					if (!isnan(reflectionray.s0)) {
-						int hitind = -1;
-						float8 raycolor = renderray2(reflectionray, &hitind, tri, trc, tex, tes, lit);
-						if (!isnan(raycolor.s0)) {
-							pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (triroughness<1.0f) {
+						float8 camposray = (float8)(campos,camray);
+						float8 reflectionray = planereflectionray(camposray, triplane);
+						if (!isnan(reflectionray.s0)) {
+							int hitind = -1;
+							float8 raycolor = renderray2(reflectionray, &hitind, tri, trc, tex, tes, lit);
+							if (!isnan(raycolor.s0)) {
+								pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+							}
 						}
 					}
 				}
@@ -604,16 +620,22 @@ float8 renderray2(float8 vray, int *imh, global const float *tri, global const i
 			int posuvinty = convert_int_rte(posuv.y*(texs-1));
 			int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
+			float faceangle = vectorangle(camray, trinorm);
+			bool isfrontfacenorm = faceangle>=M_PI_2_F;
+			bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
 				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 				float4 pixelcolor = (float4)(0.0f);
-				if (tlit) {
-					pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
-				} else {
-					pixelcolor = triemissivecolor + texcolor*trifacecolor;
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (tlit) {
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+					} else {
+						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+					}
 				}
 				if (triopacity<1.0f) {
 					float8 camposray = (float8)(campos,camray);
@@ -626,14 +648,16 @@ float8 renderray2(float8 vray, int *imh, global const float *tri, global const i
 						}
 					}
 				}
-				if (triroughness<1.0f) {
-					float8 camposray = (float8)(campos,camray);
-					float8 reflectionray = planereflectionray(camposray, triplane);
-					if (!isnan(reflectionray.s0)) {
-						int hitind = -1;
-						float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, lit);
-						if (!isnan(raycolor.s0)) {
-							pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (triroughness<1.0f) {
+						float8 camposray = (float8)(campos,camray);
+						float8 reflectionray = planereflectionray(camposray, triplane);
+						if (!isnan(reflectionray.s0)) {
+							int hitind = -1;
+							float8 raycolor = renderray(reflectionray, &hitind, tri, trc, tex, tes, lit);
+							if (!isnan(raycolor.s0)) {
+								pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+							}
 						}
 					}
 				}
@@ -708,16 +732,22 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 			int posuvinty = convert_int_rte(posuv.y*(texs-1));
 			int texind = posuvinty*texs+posuvintx + triid*texs*texs;
 
+			float faceangle = vectorangle(camray, trinorm);
+			bool isfrontfacenorm = faceangle>=M_PI_2_F;
+			bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
 				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 				float4 pixelcolor = (float4)(0.0f);
-				if (tlit) {
-					pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
-				} else {
-					pixelcolor = triemissivecolor + texcolor*trifacecolor;
+				if (isdoublesidednorm||isfrontfacenorm) {
+					if (tlit) {
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+					} else {
+						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+					}
 				}
 				raycolordist.s0 = pixelcolor.s0;
 				raycolordist.s1 = pixelcolor.s1;
@@ -1042,6 +1072,10 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 						int lineuvy = convert_int_rte(lineuv.y*(texs-1));
 						int texind = lineuvy*texs+lineuvx + triid*texs*texs;
 
+						float faceangle = vectorangle(camray, trinorm);
+						bool isfrontfacenorm = faceangle>=M_PI_2_F;
+						bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
 						int pixelind = (camres.y-y-1)*camres.x+xid;
 						if (drawdistance<imz[pixelind]) {
 							imz[pixelind] = drawdistance;
@@ -1049,10 +1083,12 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 							float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 							float4 pixelcolor = (float4)(0.0f);
-							if (tlit) {
-								pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
-							} else {
-								pixelcolor = triemissivecolor + texcolor*trifacecolor;
+							if (isdoublesidednorm||isfrontfacenorm) {
+								if (tlit) {
+									pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+								} else {
+									pixelcolor = triemissivecolor + texcolor*trifacecolor;
+								}
 							}
 							if (triopacity<1.0f) {
 								float8 camposray = (float8)(campos,camray);
@@ -1065,14 +1101,16 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									}
 								}
 							}
-							if (triroughness<1.0f) {
-								float8 camposray = (float8)(campos,camray);
-								float8 reflectionray = planereflectionray(camposray, triplane);
-								if (!isnan(reflectionray.s0)) {
-									int hitind = -1;
-									float8 raycolor = renderray2(reflectionray, &hitind, tri, trc, tex, tes, lit);
-									if (!isnan(raycolor.s0)) {
-										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+							if (isdoublesidednorm||isfrontfacenorm) {
+								if (triroughness<1.0f) {
+									float8 camposray = (float8)(campos,camray);
+									float8 reflectionray = planereflectionray(camposray, triplane);
+									if (!isnan(reflectionray.s0)) {
+										int hitind = -1;
+										float8 raycolor = renderray2(reflectionray, &hitind, tri, trc, tex, tes, lit);
+										if (!isnan(raycolor.s0)) {
+											pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+										}
 									}
 								}
 							}
