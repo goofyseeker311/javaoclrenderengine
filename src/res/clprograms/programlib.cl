@@ -206,44 +206,37 @@ float8 raytriangleintersection(float4 vpos, float4 vdir, float *vtri) {
 	float4 p2uv = (float4)(vtri[14],vtri[15],0.0f,0.0f);
 	float4 p3uv = (float4)(vtri[16],vtri[17],0.0f,0.0f);
 	float4 p4uv = (float4)(NAN);
-	float4 v12 = p2 - p1; float4 v21 = -v12;
-	float4 v13 = p3 - p1; float4 v31 = -v13;
-	float4 v23 = p3 - p2; float4 v32 = -v23;
-	float vl12 = length(v12);
-	float vl13 = length(v13);
-	float a1 = vectorangle(v12,v13);
-	float a2 = vectorangle(v21,v23);
-	float a3 = vectorangle(v31,v32);
-	float ai1 = vectorangle(v21,v13);
-	float4 t1 = p4 - p1;
-	float4 t2 = p4 - p2;
-	float4 t3 = p4 - p3;
-	float tl1 = length(t1);
-	float h12 = vectorangle(v12,t1); float h13 = vectorangle(v13,t1);
-	float h21 = vectorangle(v21,t2); float h23 = vectorangle(v23,t2);
-	float h31 = vectorangle(v31,t3); float h32 = vectorangle(v32,t3);
-	bool isatpoint1 = (t1.x==0)&&(t1.y==0)&&(t1.z==0);
-	bool isatpoint2 = (t2.x==0)&&(t2.y==0)&&(t2.z==0);
-	bool isatpoint3 = (t3.x==0)&&(t3.y==0)&&(t3.z==0);
-	bool withinangles = (h12<=a1)&&(h13<=a1)&&(h21<=a2)&&(h23<=a2)&&(h31<=a3)&&(h32<=a3);
-	if(isatpoint1||isatpoint2||isatpoint3||withinangles) {
-		if (isatpoint1) {
-			p4uv = p1uv;
-		} else if (isatpoint2) {
-			p4uv = p2uv;
-		} else if (isatpoint3) {
-			p4uv = p3uv;
-		} else {
-			float n12len = tl1*(sin(h13)/sin(ai1));
-			float n13len = tl1*(sin(h12)/sin(ai1));
-			float n12mult = n12len/vl12;
-			float n13mult = n13len/vl13;
-			float4 uv12delta = p2uv-p1uv;
-			float4 uv13delta = p3uv-p1uv;
-			p4uv = p1uv;
-			p4uv = translatepos(p4uv, uv12delta, n12mult);
-			p4uv = translatepos(p4uv, uv13delta, n13mult);
-		}
+	float4 v1 = p1 - vpos;
+	float4 v2 = p2 - vpos;
+	float4 v3 = p3 - vpos;
+	float4 v12norm = cross(v1,v2);
+	float4 v23norm = cross(v2,v3);
+	float4 v31norm = cross(v3,v1);
+	float4 v12plane = planefromnormalatpos(vpos,v12norm);
+	float4 v23plane = planefromnormalatpos(vpos,v23norm);
+	float4 v31plane = planefromnormalatpos(vpos,v31norm);
+	float v12dist = planepointdistance(p4, v12plane);
+	float v23dist = planepointdistance(p4, v23plane);
+	float v31dist = planepointdistance(p4, v31plane);
+	if(((v12dist<=0.0f)&&(v23dist<=0.0f)&&(v31dist<=0.0f))||((v12dist>=0.0f)&&(v23dist>=0.0f)&&(v31dist>=0.0f))) {
+		float4 v12 = p2 - p1;
+		float4 v21 = -v12;
+		float4 v13 = p3 - p1;
+		float vl12 = length(v12);
+		float vl13 = length(v13);
+		float ai1 = vectorangle(v21,v13);
+		float4 t1 = p4 - p1;
+		float tl1 = length(t1);
+		float h12 = vectorangle(v12,t1); float h13 = vectorangle(v13,t1);
+		float n12len = tl1*(sin(h13)/sin(ai1));
+		float n13len = tl1*(sin(h12)/sin(ai1));
+		float n12mult = n12len/vl12;
+		float n13mult = n13len/vl13;
+		float4 uv12delta = p2uv-p1uv;
+		float4 uv13delta = p3uv-p1uv;
+		p4uv = p1uv;
+		p4uv = translatepos(p4uv, uv12delta, n12mult);
+		p4uv = translatepos(p4uv, uv13delta, n13mult);
 		intposuvdist.s0123 = p4;
 		intposuvdist.s4567 = p4uv;
 		intposuvdist.s6 = tpdist;
