@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.9.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.9.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	private float graphicshfov = 70.0f, graphicsvfov = 39.375f;
 	private long window = NULL;
@@ -101,6 +101,7 @@ public class JavaOCLRenderEngine {
 	private boolean keydown = false;
 	private boolean keyrleft = false;
 	private boolean keyrright = false;
+	private boolean keyspeed = false;
 	private long nanolasttimetick = System.nanoTime();
 	private double[] mousex = {0}, mousey = {0};
 	private double lastmousex = 0, lastmousey = 0;
@@ -204,7 +205,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/ship.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/mined.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
 		
 		int imagecounter = 0;
@@ -362,12 +363,13 @@ public class JavaOCLRenderEngine {
 		cameramov3rot3[3] = 0.0f;
 		cameramov3rot3[4] = 0.0f;
 		cameramov3rot3[5] = 0.0f;
-		if (this.keyfwd) {cameramov3rot3[0] = ds;}
-		if (this.keyback) {cameramov3rot3[0] = -ds;}
-		if (this.keyleft) {cameramov3rot3[1] = -ds;}
-		if (this.keyright) {cameramov3rot3[1] = ds;}
-		if (this.keyup) {cameramov3rot3[2] = ds;}
-		if (this.keydown) {cameramov3rot3[2] = -ds;}
+		float sp = this.keyspeed?100.0f:1.0f;
+		if (this.keyfwd) {cameramov3rot3[0] = ds*sp;}
+		if (this.keyback) {cameramov3rot3[0] = -ds*sp;}
+		if (this.keyleft) {cameramov3rot3[1] = -ds*sp;}
+		if (this.keyright) {cameramov3rot3[1] = ds*sp;}
+		if (this.keyup) {cameramov3rot3[2] = ds*sp;}
+		if (this.keydown) {cameramov3rot3[2] = -ds*sp;}
 		if (this.keyrleft) {cameramov3rot3[5] = -ds;}
 		if (this.keyrright) {cameramov3rot3[5] = ds;}
 		cameramov3rot3[4] = -(float)(0.001f*(mousex[0]-lastmousex));
@@ -380,6 +382,12 @@ public class JavaOCLRenderEngine {
 		long framestarttime = System.nanoTime();
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
+		computelib.insertBarrier(queue);
+		computelib.readBufferf(opencldevice, queue, camposbufferptr, camerapos3fov2res2rotmat16);
+		objectlist2pos3sca3rot3relsph4[0] = camerapos3fov2res2rotmat16[0];
+		objectlist2pos3sca3rot3relsph4[1] = camerapos3fov2res2rotmat16[1];
+		objectlist2pos3sca3rot3relsph4[2] = camerapos3fov2res2rotmat16[2];
+		computelib.writeBufferf(opencldevice, queue, obj2ptr, objectlist2pos3sca3rot3relsph4);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,2});
 		int trianglecount1 = this.objectlistlength[0]*this.trianglelistlength[0]*35;
 		computelib.runProgram(opencldevice, queue, program, "transformobject", new long[]{trianglesptr,tri1ptr,tri1lenptr,obj1ptr,obj1lenptr}, new int[]{0,0,0}, new int[]{1,objectlistlength[0],trianglelistlength[0]});
@@ -601,6 +609,7 @@ public class JavaOCLRenderEngine {
 				if (key==GLFW.GLFW_KEY_LEFT_SHIFT) {keydown = true;}
 				if (key==GLFW.GLFW_KEY_Q) {keyrleft = true;}
 				if (key==GLFW.GLFW_KEY_E) {keyrright = true;}
+				if (key==GLFW.GLFW_KEY_LEFT_CONTROL) {keyspeed = true;}
 			}
 			if (action==GLFW.GLFW_RELEASE) {
 				if (key==GLFW.GLFW_KEY_W) {keyfwd = false;}
@@ -611,6 +620,7 @@ public class JavaOCLRenderEngine {
 				if (key==GLFW.GLFW_KEY_LEFT_SHIFT) {keydown = false;}
 				if (key==GLFW.GLFW_KEY_Q) {keyrleft = false;}
 				if (key==GLFW.GLFW_KEY_E) {keyrright = false;}
+				if (key==GLFW.GLFW_KEY_LEFT_CONTROL) {keyspeed = false;}
 			}
 		}
 	}
