@@ -3,8 +3,6 @@ float16 matrixmatmult(const float16 vmat1, const float16 vmat2);
 float16 scalingmatrix(float3 sca);
 float16 rotationmatrix(float3 rot);
 float16 rotationmatrixaroundaxis(float4 axis, float rot);
-float16 rotationmatrixlookhorizontalroll(float3 rot);
-float16 rotationmatrixlookdir(float4 lookat, float rollaxis);
 float vectorangle(float4 dir1, float4 dir2);
 float4 planefromnormalatpos(float4 pos, float4 dir);
 float rayplanedistance(float4 pos, float4 dir, float4 plane);
@@ -22,16 +20,22 @@ float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float r
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
-float8 renderray4(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
-float8 renderray3(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
-float8 renderray2(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
-float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
-kernel void movecamera(global float *cam, global const float *cmv);
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
-kernel void transformobject(global float *tli, global const float *tri, global const int *trc, global const float *obj, global const int *obc);
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit);
+float8 renderray4(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit);
+float8 renderray3(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit);
+float8 renderray2(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit);
+float8 renderray(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit);
+void movecamera(float *cam, const float *cmv);
+void clearview(float *img, float *imz, int *imh, float *cam);
+void transformobject(float *tli, const float *tri, const int *trc, const float *obj, const int *obc);
+void rendercross(float *img, float *imz, int *imh, float *cam);
+void renderrayview(float *img, float *imz, int *imh, float *cam, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit, const int *nor);
+void renderplaneview(float *img, float *imz, int *imh, float *cam, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit, const int *nor);
+kernel void movecamerakernel(global float *cam, global const float *cmv);
+kernel void clearviewkernel(global float *img, global float *imz, global int *imh, global float *cam);
+kernel void transformobjectkernel(global float *tli, global const float *tri, global const int *trc, global const float *obj, global const int *obc);
+kernel void rendercrosskernel(global float *img, global float *imz, global int *imh, global float *cam);
+kernel void renderrayviewkernel(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit, global const int *nor);
+kernel void renderplaneviewkernel(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit, global const int *nor);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -335,7 +339,7 @@ float4 sourcemixblend(float4 dest, float4 source, float alpha) {
 	return retcolor;
 }
 
-float8 renderray4(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+float8 renderray4(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
@@ -447,7 +451,7 @@ float8 renderray4(float8 vray, int *imh, global const float *tri, global const i
 	}
 	return raycolordist;
 }
-float8 renderray3(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+float8 renderray3(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
@@ -559,7 +563,7 @@ float8 renderray3(float8 vray, int *imh, global const float *tri, global const i
 	}
 	return raycolordist;
 }
-float8 renderray2(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+float8 renderray2(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
@@ -671,7 +675,7 @@ float8 renderray2(float8 vray, int *imh, global const float *tri, global const i
 	}
 	return raycolordist;
 }
-float8 renderray(float8 vray, int *imh, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+float8 renderray(float8 vray, int *imh, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
@@ -760,7 +764,7 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const in
 	return raycolordist;
 }
 
-kernel void movecamera(global float *cam, global const float *cmv) {
+void movecamera(float *cam, const float *cmv) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -791,7 +795,7 @@ kernel void movecamera(global float *cam, global const float *cmv) {
 	cam[22] = cammat.sF;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam) {
+void clearview(float *img, float *imz, int *imh, float *cam) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -812,7 +816,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	}
 }
 
-kernel void transformobject(global float *tli, global const float *tri, global const int *trc, global const float *obj, global const int *obc) {
+void transformobject(float *tli, const float *tri, const int *trc, const float *obj, const int *obc) {
 	unsigned int tlid = get_global_id(0);
 	unsigned int oid = get_global_id(1);
 	unsigned int tid = get_global_id(2);
@@ -856,7 +860,37 @@ kernel void transformobject(global float *tli, global const float *tri, global c
 	}
 }
 
-kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam) {
+void lightobject(float *img, float *imz, int *imh, float *tli, const float *tri, const int *trc, const int *tex, const int *tes) {
+	unsigned int tid = get_global_id(2);
+
+	const int ts = 35, lit = 1, nor = 1, cmstep = 32*32;
+
+	float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+	float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+	float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+
+	float4 centerpos = (tripos1 + tripos2 + tripos3) / 3.0f;
+	float16 tm = rotationmatrix((float3)(0.0f,0.0f,0.0f));
+	float16 tm2 = rotationmatrix((float3)(M_PI_F,0.0f,0.0f));
+	float16 tm3 = rotationmatrix((float3)(M_PI_2_F,0.0f,0.0f));
+	float16 tm4 = rotationmatrix((float3)(M_PI_2_F,0.0f,M_PI_2_F));
+	float16 tm5 = rotationmatrix((float3)(M_PI_2_F,0.0f,M_PI_F));
+	float16 tm6 = rotationmatrix((float3)(M_PI_2_F,0.0f,3.0f*M_PI_2_F));
+	float tricam[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm[0],tm[1],tm[2],tm[3],tm[4],tm[5],tm[6],tm[7],tm[8],tm[9],tm[10],tm[11],tm[12],tm[13],tm[14],tm[15]};
+	float tricam2[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm2[0],tm2[1],tm2[2],tm2[3],tm2[4],tm2[5],tm2[6],tm2[7],tm2[8],tm2[9],tm2[10],tm2[11],tm2[12],tm2[13],tm2[14],tm2[15]};
+	float tricam3[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm3[0],tm3[1],tm3[2],tm3[3],tm3[4],tm3[5],tm3[6],tm3[7],tm3[8],tm3[9],tm3[10],tm3[11],tm3[12],tm3[13],tm3[14],tm3[15]};
+	float tricam4[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm4[0],tm4[1],tm4[2],tm4[3],tm4[4],tm4[5],tm4[6],tm4[7],tm4[8],tm4[9],tm4[10],tm4[11],tm4[12],tm4[13],tm4[14],tm4[15]};
+	float tricam5[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm5[0],tm5[1],tm5[2],tm5[3],tm5[4],tm5[5],tm5[6],tm5[7],tm5[8],tm5[9],tm5[10],tm5[11],tm5[12],tm5[13],tm5[14],tm5[15]};
+	float tricam6[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm6[0],tm6[1],tm6[2],tm6[3],tm6[4],tm6[5],tm6[6],tm6[7],tm6[8],tm6[9],tm6[10],tm6[11],tm6[12],tm6[13],tm6[14],tm6[15]};
+	renderplaneview(&img[cmstep*0+cmstep*6*tid], &imz[cmstep*0+cmstep*6*tid], &imh[0+tid*6], &tricam, tri, trc, tex, tes, &lit, &nor);
+	renderplaneview(&img[cmstep*1+cmstep*6*tid], &imz[cmstep*1+cmstep*6*tid], &imh[1+tid*6], &tricam2, tri, trc, tex, tes, &lit, &nor);
+	renderplaneview(&img[cmstep*2+cmstep*6*tid], &imz[cmstep*2+cmstep*6*tid], &imh[2+tid*6], &tricam3, tri, trc, tex, tes, &lit, &nor);
+	renderplaneview(&img[cmstep*3+cmstep*6*tid], &imz[cmstep*3+cmstep*6*tid], &imh[3+tid*6], &tricam4, tri, trc, tex, tes, &lit, &nor);
+	renderplaneview(&img[cmstep*4+cmstep*6*tid], &imz[cmstep*4+cmstep*6*tid], &imh[4+tid*6], &tricam5, tri, trc, tex, tes, &lit, &nor);
+	renderplaneview(&img[cmstep*5+cmstep*6*tid], &imz[cmstep*5+cmstep*6*tid], &imh[5+tid*6], &tricam6, tri, trc, tex, tes, &lit, &nor);
+}
+
+void rendercross(float *img, float *imz, int *imh, float *cam) {
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	int2 camhalfres = camres/2;
 	int crosslength = 20;
@@ -878,13 +912,14 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 	}
 }
 
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+void renderrayview(float *img, float *imz, int *imh, float *cam, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit, const int *nor) {
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	float16 cammat = (float16)(cam[7],cam[8],cam[9],cam[10],cam[11],cam[12],cam[13],cam[14],cam[15],cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22]);
+	int sphnor = nor[0];
 
 	float2 camhalffov = camfov/2.0f;
 	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
@@ -893,6 +928,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*yid;
 	float4 raydir = (float4)(camraylenx,-camrayleny,-1.0f,0.0f);
 	float4 raydirrot = matrixposmult(raydir, cammat);
+	float raydirrotlen = length(raydirrot);
 
 	float8 camray = (float8)(NAN);
 	camray.s0123 = campos;
@@ -908,6 +944,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 		if (drawdistance<imz[pixelind]) {
 			imz[pixelind] = drawdistance;
 			if ((xid==camhalfres.x)&&(yid==camhalfres.y)) {imh[0] = hitid;}
+			if (sphnor) {raycolor.s012=raycolor.s012/raydirrotlen;}
 			img[pixelind*4+0] = raycolor.s0;
 			img[pixelind*4+1] = raycolor.s1;
 			img[pixelind*4+2] = raycolor.s2;
@@ -916,7 +953,7 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	}
 }
 
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit) {
+void renderplaneview(float *img, float *imz, int *imh, float *cam, const float *tri, const int *trc, const int *tex, const int *tes, const int *lit, const int *nor) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
@@ -926,6 +963,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int tric = trc[0];
 	int texs = tes[0];
 	int tlit = lit[0];
+	int sphnor = nor[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 	const int ts = 35, os = 13, vs = 2;
@@ -934,14 +972,14 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	float2 camhalffov = camfov/2.0f;
 	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
 	int2 camhalfres = camres/2;
-	float camcollen = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
+	float camcollenx = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
 
 	float4 camdir = (float4)(0.0f,0.0f,-1.0f,0.0f);
 	float4 camrightdir = (float4)(1.0f,0.0f,0.0f,0.0f);
 	float4 camupdir = (float4)(0.0f,-1.0f,0.0f,0.0f);
-	float4 coldir = (float4)(0.0f,camcollen,-1.0f,0.0f);
-	float4 colupdir = (float4)(camcollen,-camhalffovlen.y,-1.0f,0.0f);
-	float4 coldowndir = (float4)(camcollen,camhalffovlen.y,-1.0f,0.0f);
+	float4 coldir = (float4)(0.0f,camcollenx,-1.0f,0.0f);
+	float4 colupdir = (float4)(camcollenx,-camhalffovlen.y,-1.0f,0.0f);
+	float4 coldowndir = (float4)(camcollenx,camhalffovlen.y,-1.0f,0.0f);
 	float4 camdirrot = matrixposmult(camdir, cammat);
 	float4 camrightdirrot = matrixposmult(camrightdir, cammat);
 	float4 camupdirrot = matrixposmult(camupdir, cammat);
@@ -1055,6 +1093,9 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 					float4 vpixelpointdir12 = colpos2 - colpos1;
 					for (int y=campresystart;y<=campresyend;y++) {
 						float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+						float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
+						float4 raydirrot = matrixposmult(raydir, cammat);
+						float raydirrotlen = length(raydirrot);
 						float verticalangle = atan(camcolleny);
 						float vpixelcampointangle = verticalangle - vpixelyang1;
 						float8 vpixelpointdline = (float8)(0.0f);
@@ -1114,6 +1155,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									}
 								}
 							}
+							if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
 							img[pixelind*4+0] = pixelcolor.s0;
 							img[pixelind*4+1] = pixelcolor.s1;
 							img[pixelind*4+2] = pixelcolor.s2;
@@ -1125,3 +1167,11 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 		}
 	}
 }
+
+kernel void movecamerakernel(global float *cam, global const float *cmv) {movecamera(cam, cmv);}
+kernel void clearviewkernel(global float *img, global float *imz, global int *imh, global float *cam) {clearview(img, imz, imh, cam);}
+kernel void transformobjectkernel(global float *tli, global const float *tri, global const int *trc, global const float *obj, global const int *obc) {transformobject(tli, tri, trc, obj, obc);}
+kernel void lightobjectkernel(global float *img, global float *imz, global int *imh, global float *tli, global const float *tri, global const int *trc, global const int *tex, global const int *tes) {lightobject(img, imz, imh, tli, tri, trc, tex, tes);}
+kernel void rendercrosskernel(global float *img, global float *imz, global int *imh, global float *cam) {rendercross(img, imz, imh, cam);}
+kernel void renderrayviewkernel(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit, global const int *nor) {renderrayview(img, imz, imh, cam, tri, trc, tex, tes, lit, nor);}
+kernel void renderplaneviewkernel(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const int *trc, global const int *tex, global const int *tes, global const int *lit, global const int *nor) {renderplaneview(img, imz, imh, cam, tri, trc, tex, tes, lit, nor);}
