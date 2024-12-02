@@ -268,6 +268,28 @@ public class UtilLib {
 		return k;
 	}
 
+	public static byte[] loadBinary(String filename, boolean loadresourcefromjar) {
+		byte[] k = null;
+		if (filename!=null) {
+			try {
+				File binaryfile = new File(filename);
+				BufferedInputStream binaryfilestream = null;
+				if (loadresourcefromjar) {
+					binaryfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(binaryfile.getPath().replace(File.separatorChar, '/')));
+				}else {
+					binaryfilestream = new BufferedInputStream(new FileInputStream(binaryfile));
+				}
+				k = binaryfilestream.readAllBytes();
+				binaryfilestream.close();
+			} catch (Exception ex) {ex.printStackTrace();}
+		}
+		return k;
+	}
+
+	public static String loadText(String filename, boolean loadresourcefromjar) {
+		return new String(loadBinary(filename, loadresourcefromjar));
+	}
+	
 	public static class DoubleSort implements Comparable<DoubleSort> {
 		public Double value;
 		public int ind;

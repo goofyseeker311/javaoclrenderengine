@@ -1,8 +1,5 @@
 package fi.jkauppa.javaoclrenderengine;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.TreeMap;
@@ -145,23 +142,6 @@ public class ComputeLib {
 		CL12GL.clEnqueueReleaseGLObjects(queue, vmem, null, null);
 	}
 
-	public static String loadProgram(String filename, boolean loadresourcefromjar) {
-		String k = null;
-		if (filename!=null) {
-			try {
-				File textfile = new File(filename);
-				BufferedInputStream textfilestream = null;
-				if (loadresourcefromjar) {
-					textfilestream = new BufferedInputStream(ClassLoader.getSystemClassLoader().getResourceAsStream(textfile.getPath().replace(File.separatorChar, '/')));
-				}else {
-					textfilestream = new BufferedInputStream(new FileInputStream(textfile));
-				}
-				k = new String(textfilestream.readAllBytes());
-				textfilestream.close();
-			} catch (Exception ex) {ex.printStackTrace();}
-		}
-		return k;
-	}
 	public long compileProgram(long device, String source) {
 		long program = MemoryUtil.NULL;
 		MemoryStack clStack = MemoryStack.stackPush();

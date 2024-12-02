@@ -407,14 +407,17 @@ float8 renderray4(float8 vray, int *imh, const float *tri, const int *trc, const
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
-				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				float4 texcolor = trifacecolor;
+				if (triid>=0) {
+					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				}
 				float4 pixelcolor = (float4)(0.0f);
 				if (isdoublesidednorm||isfrontfacenorm) {
 					if (tlit) {
-						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
 					} else {
-						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+						pixelcolor = triemissivecolor + texcolor;
 					}
 				}
 				if (triopacity<1.0f) {
@@ -519,14 +522,17 @@ float8 renderray3(float8 vray, int *imh, const float *tri, const int *trc, const
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
-				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				float4 texcolor = trifacecolor;
+				if (triid>=0) {
+					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				}
 				float4 pixelcolor = (float4)(0.0f);
 				if (isdoublesidednorm||isfrontfacenorm) {
 					if (tlit) {
-						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
 					} else {
-						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+						pixelcolor = triemissivecolor + texcolor;
 					}
 				}
 				if (triopacity<1.0f) {
@@ -631,14 +637,17 @@ float8 renderray2(float8 vray, int *imh, const float *tri, const int *trc, const
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
-				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				float4 texcolor = trifacecolor;
+				if (triid>=0) {
+					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				}
 				float4 pixelcolor = (float4)(0.0f);
 				if (isdoublesidednorm||isfrontfacenorm) {
 					if (tlit) {
-						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
 					} else {
-						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+						pixelcolor = triemissivecolor + texcolor;
 					}
 				}
 				if (triopacity<1.0f) {
@@ -743,14 +752,17 @@ float8 renderray(float8 vray, int *imh, const float *tri, const int *trc, const 
 			if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 				rayz = drawdistance;
 				imh[0] = tid;
-				float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-				float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				float4 texcolor = trifacecolor;
+				if (triid>=0) {
+					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				}
 				float4 pixelcolor = (float4)(0.0f);
 				if (isdoublesidednorm||isfrontfacenorm) {
 					if (tlit) {
-						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+						pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
 					} else {
-						pixelcolor = triemissivecolor + texcolor*trifacecolor;
+						pixelcolor = triemissivecolor + texcolor;
 					}
 				}
 				raycolordist.s0 = pixelcolor.s0;
@@ -1121,14 +1133,17 @@ void renderplaneview(float *img, float *imz, int *imh, float *cam, const float *
 						if (drawdistance<imz[pixelind]) {
 							imz[pixelind] = drawdistance;
 							if ((xid==camhalfres.x)&&(y==camhalfres.y)) {imh[0] = tid;}
-							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-							float4 texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+							float4 texcolor = trifacecolor;
+							if (triid>=0) {
+								float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+								texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+							}
 							float4 pixelcolor = (float4)(0.0f);
 							if (isdoublesidednorm||isfrontfacenorm) {
 								if (tlit) {
-									pixelcolor = triemissivecolor + trilightmapcolor*texcolor*trifacecolor*(1.0f-trimetallic);
+									pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
 								} else {
-									pixelcolor = triemissivecolor + texcolor*trifacecolor;
+									pixelcolor = triemissivecolor + texcolor;
 								}
 							}
 							if (triopacity<1.0f) {

@@ -43,7 +43,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.0.9.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.0.9.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -210,7 +210,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/minef.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/testcubemodel11.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
 		
 		int imagecounter = 0;
@@ -241,8 +241,8 @@ public class JavaOCLRenderEngine {
 
 		int imageoffset1 = 0;
 		int imageoffset2 = loadmodel.imagelist.length;
-		this.trianglelist = getEntityTriangles(loadmodel, imageoffset1);
-		this.trianglelist2 = getEntityTriangles(loadmodel2, imageoffset2);
+		this.trianglelist = getEntityTriangles(loadmodel, 0.001f, imageoffset1);
+		this.trianglelist2 = getEntityTriangles(loadmodel2, 1.0f, imageoffset2);
 		this.trianglelistlength[0] = this.trianglelist.length/35;
 		this.trianglelist2length[0] = this.trianglelist2.length/35;
 		
@@ -309,7 +309,7 @@ public class JavaOCLRenderEngine {
 		this.norptr = computelib.createBuffer(opencldevice, 1);
 		computelib.writeBufferi(opencldevice, queue, norptr, rendersphnorm);
 		
-		String programSource = ComputeLib.loadProgram("res/clprograms/programlib.cl", true);
+		String programSource = UtilLib.loadText("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(opencldevice, programSource);
 		System.out.println("init.");
 	}
@@ -422,10 +422,8 @@ public class JavaOCLRenderEngine {
 	
 	private void createQuadProgram() {
 		int program = GL31.glCreateProgram();
-		String quadvertexshader = ComputeLib.loadProgram("res/glshaders/texturedquad.vs", true);
-		String quadfragmentshader = ComputeLib.loadProgram("res/glshaders/texturedquad.fs", true);
-		int vshader = createShader(quadvertexshader, GL31.GL_VERTEX_SHADER);
-		int fshader = createShader(quadfragmentshader, GL31.GL_FRAGMENT_SHADER);
+		int vshader = createShader("res/glshaders/texturedquad.vs", GL31.GL_VERTEX_SHADER);
+		int fshader = createShader("res/glshaders/texturedquad.fs", GL31.GL_FRAGMENT_SHADER);
 		GL31.glAttachShader(program, vshader);
 		GL31.glAttachShader(program, fshader);
 		GL31.glLinkProgram(program);
@@ -514,10 +512,11 @@ public class JavaOCLRenderEngine {
 		GL31.glBindBuffer(GL31.GL_PIXEL_UNPACK_BUFFER, 0);
 	}
 	
-	private int createShader(String sourceShader, int type) {
+	private int createShader(String sourceShaderFile, int type) {
+		byte[] sourcebytes = UtilLib.loadBinary(sourceShaderFile, true);
 		int shader = GL31.glCreateShader(type);
-		ByteBuffer source = BufferUtils.createByteBuffer(8192);
-		source.put(sourceShader.getBytes()).rewind();
+		ByteBuffer source = BufferUtils.createByteBuffer(sourcebytes.length);
+		source.put(sourcebytes).rewind();
 		PointerBuffer strings = BufferUtils.createPointerBuffer(1);
 		IntBuffer lengths = BufferUtils.createIntBuffer(1);
 		strings.put(0, source);
@@ -554,22 +553,22 @@ public class JavaOCLRenderEngine {
 		MemoryUtil.memFree(iconimagebytebuffer);
 	}
 	
-	private float[] getEntityTriangles(Entity loadmodel, int imageidoffset) {
+	private float[] getEntityTriangles(Entity loadmodel, float scale, int imageidoffset) {
 		ArrayList<Float> trianglearraylist = new ArrayList<Float>();
 		for (int j=0;j<loadmodel.childlist.length;j++) {
 			Entity object = loadmodel.childlist[j];
 			for (int i=0;i<object.trianglelist.length;i++) {
 				Triangle modeltri = object.trianglelist[i];
-				trianglearraylist.add((float)modeltri.pos1.x);
-				trianglearraylist.add((float)modeltri.pos1.y);
-				trianglearraylist.add((float)modeltri.pos1.z);
-				trianglearraylist.add((float)modeltri.pos2.x);
-				trianglearraylist.add((float)modeltri.pos2.y);
-				trianglearraylist.add((float)modeltri.pos2.z);
-				trianglearraylist.add((float)modeltri.pos3.x);
-				trianglearraylist.add((float)modeltri.pos3.y);
-				trianglearraylist.add((float)modeltri.pos3.z);
-				trianglearraylist.add((float)modeltri.norm.dx);
+				trianglearraylist.add(-scale*(float)modeltri.pos1.x);
+				trianglearraylist.add(scale*(float)modeltri.pos1.y);
+				trianglearraylist.add(scale*(float)modeltri.pos1.z);
+				trianglearraylist.add(-scale*(float)modeltri.pos2.x);
+				trianglearraylist.add(scale*(float)modeltri.pos2.y);
+				trianglearraylist.add(scale*(float)modeltri.pos2.z);
+				trianglearraylist.add(-scale*(float)modeltri.pos3.x);
+				trianglearraylist.add(scale*(float)modeltri.pos3.y);
+				trianglearraylist.add(scale*(float)modeltri.pos3.z);
+				trianglearraylist.add(-(float)modeltri.norm.dx);
 				trianglearraylist.add((float)modeltri.norm.dy);
 				trianglearraylist.add((float)modeltri.norm.dz);
 				trianglearraylist.add((float)modeltri.pos1.tex.u);
