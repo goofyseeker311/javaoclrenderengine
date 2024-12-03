@@ -27,6 +27,7 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const fl
 kernel void movecamera(global float *cam, global const float *cmv);
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void transformentity(global float *tli, global const float *tri, global const float *obj, global const float *ent);
+kernel void viewfilter(global float *imf, global const float *img, global const float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor);
 kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor);
@@ -1003,6 +1004,58 @@ kernel void lightobject(global float *img, global float *imz, global int *imh, g
 	//renderplaneview(&img[cmstep*3+cmstep*6*tid], &imz[cmstep*3+cmstep*6*tid], &imh[3+tid*6], &tricam4, tri, trc, tex, tes, &lit, &nor);
 	//renderplaneview(&img[cmstep*4+cmstep*6*tid], &imz[cmstep*4+cmstep*6*tid], &imh[4+tid*6], &tricam5, tri, trc, tex, tes, &lit, &nor);
 	//renderplaneview(&img[cmstep*5+cmstep*6*tid], &imz[cmstep*5+cmstep*6*tid], &imh[5+tid*6], &tricam6, tri, trc, tex, tes, &lit, &nor);
+}
+
+kernel void viewfilter(global float *imf, global const float *img, global const float *cam) {
+	unsigned int xid = get_global_id(0);
+	unsigned int yid = get_global_id(1);
+	int2 camres = (int2)((int)cam[5],(int)cam[6]);
+	const float fac = 0.01042f;
+
+	int pind = yid*camres.x+xid;
+	if ((xid>1)&&(xid<(camres.x-2))&&(yid>1)&&(yid<(camres.y-2))) {
+		int pindN = (yid-1)*camres.x+(xid+0);
+		int pindS = (yid+1)*camres.x+(xid+0);
+		int pindW = (yid+0)*camres.x+(xid-1);
+		int pindE = (yid+0)*camres.x+(xid+1);
+		int pindNW = (yid-1)*camres.x+(xid-1);
+		int pindNE = (yid-1)*camres.x+(xid+1);
+		int pindSW = (yid+1)*camres.x+(xid-1);
+		int pindSE = (yid+1)*camres.x+(xid+1);
+		int pindN2 = (yid-2)*camres.x+(xid+0);
+		int pindS2 = (yid+2)*camres.x+(xid+0);
+		int pindW2 = (yid+0)*camres.x+(xid-2);
+		int pindE2 = (yid+0)*camres.x+(xid+2);
+		int pindNW2 = (yid-2)*camres.x+(xid-2);
+		int pindNE2 = (yid-2)*camres.x+(xid+2);
+		int pindSW2 = (yid+2)*camres.x+(xid-2);
+		int pindSE2 = (yid+2)*camres.x+(xid+2);
+		int pindN2W = (yid-2)*camres.x+(xid-1);
+		int pindS2W = (yid+2)*camres.x+(xid-1);
+		int pindN2E = (yid-2)*camres.x+(xid+1);
+		int pindS2E = (yid+2)*camres.x+(xid+1);
+		int pindW2N = (yid+1)*camres.x+(xid-2);
+		int pindE2N = (yid+1)*camres.x+(xid+2);
+		int pindW2S = (yid-1)*camres.x+(xid-2);
+		int pindE2S = (yid-1)*camres.x+(xid+2);
+		imf[pind*4+0] = (1.0f-fac*24.0f)*img[pind*4+0] + fac*img[pindN*4+0] + fac*img[pindS*4+0] + fac*img[pindW*4+0] + fac*img[pindE*4+0] + fac*img[pindNW*4+0] + fac*img[pindNE*4+0] + fac*img[pindSW*4+0] + fac*img[pindSE*4+0]
+			+ fac*img[pindN2*4+0] + fac*img[pindS2*4+0] + fac*img[pindW2*4+0] + fac*img[pindE2*4+0] + fac*img[pindNW2*4+0] + fac*img[pindNE2*4+0] + fac*img[pindSW2*4+0] + fac*img[pindSE2*4+0]
+			+ fac*img[pindN2W*4+0] + fac*img[pindS2W*4+0] + fac*img[pindN2E*4+0] + fac*img[pindS2E*4+0] + fac*img[pindW2N*4+0] + fac*img[pindE2N*4+0] + fac*img[pindW2S*4+0] + fac*img[pindE2S*4+0];
+		imf[pind*4+1] = (1.0f-fac*24.0f)*img[pind*4+1] + fac*img[pindN*4+1] + fac*img[pindS*4+1] + fac*img[pindW*4+1] + fac*img[pindE*4+1] + fac*img[pindNW*4+1] + fac*img[pindNE*4+1] + fac*img[pindSW*4+1] + fac*img[pindSE*4+1]
+			+ fac*img[pindN2*4+1] + fac*img[pindS2*4+1] + fac*img[pindW2*4+1] + fac*img[pindE2*4+1] + fac*img[pindNW2*4+1] + fac*img[pindNE2*4+1] + fac*img[pindSW2*4+1] + fac*img[pindSE2*4+1]
+			+ fac*img[pindN2W*4+1] + fac*img[pindS2W*4+1] + fac*img[pindN2E*4+1] + fac*img[pindS2E*4+1] + fac*img[pindW2N*4+1] + fac*img[pindE2N*4+1] + fac*img[pindW2S*4+1] + fac*img[pindE2S*4+1];
+		imf[pind*4+2] = (1.0f-fac*24.0f)*img[pind*4+2] + fac*img[pindN*4+2] + fac*img[pindS*4+2] + fac*img[pindW*4+2] + fac*img[pindE*4+2] + fac*img[pindNW*4+2] + fac*img[pindNE*4+2] + fac*img[pindSW*4+2] + fac*img[pindSE*4+2]
+			+ fac*img[pindN2*4+2] + fac*img[pindS2*4+2] + fac*img[pindW2*4+2] + fac*img[pindE2*4+2] + fac*img[pindNW2*4+2] + fac*img[pindNE2*4+2] + fac*img[pindSW2*4+2] + fac*img[pindSE2*4+2]
+			+ fac*img[pindN2W*4+2] + fac*img[pindS2W*4+2] + fac*img[pindN2E*4+2] + fac*img[pindS2E*4+2] + fac*img[pindW2N*4+2] + fac*img[pindE2N*4+2] + fac*img[pindW2S*4+2] + fac*img[pindE2S*4+2];
+		imf[pind*4+3] = (1.0f-fac*24.0f)*img[pind*4+3] + fac*img[pindN*4+3] + fac*img[pindS*4+3] + fac*img[pindW*4+3] + fac*img[pindE*4+3] + fac*img[pindNW*4+3] + fac*img[pindNE*4+3] + fac*img[pindSW*4+3] + fac*img[pindSE*4+3]
+			+ fac*img[pindN2*4+3] + fac*img[pindS2*4+3] + fac*img[pindW2*4+3] + fac*img[pindE2*4+3] + fac*img[pindNW2*4+3] + fac*img[pindNE2*4+3] + fac*img[pindSW2*4+3] + fac*img[pindSE2*4+3]
+			+ fac*img[pindN2W*4+3] + fac*img[pindS2W*4+3] + fac*img[pindN2E*4+3] + fac*img[pindS2E*4+3] + fac*img[pindW2N*4+3] + fac*img[pindE2N*4+3] + fac*img[pindW2S*4+3] + fac*img[pindE2S*4+3];
+	} else {
+		imf[pind*4+0] = img[pind*4+0];
+		imf[pind*4+1] = img[pind*4+1];
+		imf[pind*4+2] = img[pind*4+2];
+		imf[pind*4+3] = img[pind*4+3];
+	}
 }
 
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam) {
