@@ -909,7 +909,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	
-	const int vs = 8;
+	const int vs = 10;
 	int camresystep = camres.y / vs;
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
@@ -1019,7 +1019,7 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
-	const float fac = 0.03125f;
+	const float fac = 0.0625f;
 
 	int pind = yid*camres.x+xid;
 	if ((xid>1)&&(xid<(camres.x-2))&&(yid>1)&&(yid<(camres.y-2))) {
@@ -1031,22 +1031,10 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 		int pindNE = (yid-1)*camres.x+(xid+1);
 		int pindSW = (yid+1)*camres.x+(xid-1);
 		int pindSE = (yid+1)*camres.x+(xid+1);
-		int pindN2W = (yid-2)*camres.x+(xid-1);
-		int pindS2W = (yid+2)*camres.x+(xid-1);
-		int pindN2E = (yid-2)*camres.x+(xid+1);
-		int pindS2E = (yid+2)*camres.x+(xid+1);
-		int pindW2N = (yid+1)*camres.x+(xid-2);
-		int pindE2N = (yid+1)*camres.x+(xid+2);
-		int pindW2S = (yid-1)*camres.x+(xid-2);
-		int pindE2S = (yid-1)*camres.x+(xid+2);
-		imf[pind*4+0] = (1.0f-fac*16.0f)*img[pind*4+0] + fac*img[pindN*4+0] + fac*img[pindS*4+0] + fac*img[pindW*4+0] + fac*img[pindE*4+0] + fac*img[pindNW*4+0] + fac*img[pindNE*4+0] + fac*img[pindSW*4+0] + fac*img[pindSE*4+0]
-			+ fac*img[pindN2W*4+0] + fac*img[pindS2W*4+0] + fac*img[pindN2E*4+0] + fac*img[pindS2E*4+0] + fac*img[pindW2N*4+0] + fac*img[pindE2N*4+0] + fac*img[pindW2S*4+0] + fac*img[pindE2S*4+0];
-		imf[pind*4+1] = (1.0f-fac*16.0f)*img[pind*4+1] + fac*img[pindN*4+1] + fac*img[pindS*4+1] + fac*img[pindW*4+1] + fac*img[pindE*4+1] + fac*img[pindNW*4+1] + fac*img[pindNE*4+1] + fac*img[pindSW*4+1] + fac*img[pindSE*4+1]
-			+ fac*img[pindN2W*4+1] + fac*img[pindS2W*4+1] + fac*img[pindN2E*4+1] + fac*img[pindS2E*4+1] + fac*img[pindW2N*4+1] + fac*img[pindE2N*4+1] + fac*img[pindW2S*4+1] + fac*img[pindE2S*4+1];
-		imf[pind*4+2] = (1.0f-fac*16.0f)*img[pind*4+2] + fac*img[pindN*4+2] + fac*img[pindS*4+2] + fac*img[pindW*4+2] + fac*img[pindE*4+2] + fac*img[pindNW*4+2] + fac*img[pindNE*4+2] + fac*img[pindSW*4+2] + fac*img[pindSE*4+2]
-			+ fac*img[pindN2W*4+2] + fac*img[pindS2W*4+2] + fac*img[pindN2E*4+2] + fac*img[pindS2E*4+2] + fac*img[pindW2N*4+2] + fac*img[pindE2N*4+2] + fac*img[pindW2S*4+2] + fac*img[pindE2S*4+2];
-		imf[pind*4+3] = (1.0f-fac*16.0f)*img[pind*4+3] + fac*img[pindN*4+3] + fac*img[pindS*4+3] + fac*img[pindW*4+3] + fac*img[pindE*4+3] + fac*img[pindNW*4+3] + fac*img[pindNE*4+3] + fac*img[pindSW*4+3] + fac*img[pindSE*4+3]
-			+ fac*img[pindN2W*4+3] + fac*img[pindS2W*4+3] + fac*img[pindN2E*4+3] + fac*img[pindS2E*4+3] + fac*img[pindW2N*4+3] + fac*img[pindE2N*4+3] + fac*img[pindW2S*4+3] + fac*img[pindE2S*4+3];
+		imf[pind*4+0] = (1.0f-fac*8.0f)*img[pind*4+0] + fac*img[pindN*4+0] + fac*img[pindS*4+0] + fac*img[pindW*4+0] + fac*img[pindE*4+0] + fac*img[pindNW*4+0] + fac*img[pindNE*4+0] + fac*img[pindSW*4+0] + fac*img[pindSE*4+0];
+		imf[pind*4+1] = (1.0f-fac*8.0f)*img[pind*4+1] + fac*img[pindN*4+1] + fac*img[pindS*4+1] + fac*img[pindW*4+1] + fac*img[pindE*4+1] + fac*img[pindNW*4+1] + fac*img[pindNE*4+1] + fac*img[pindSW*4+1] + fac*img[pindSE*4+1];
+		imf[pind*4+2] = (1.0f-fac*8.0f)*img[pind*4+2] + fac*img[pindN*4+2] + fac*img[pindS*4+2] + fac*img[pindW*4+2] + fac*img[pindE*4+2] + fac*img[pindNW*4+2] + fac*img[pindNE*4+2] + fac*img[pindSW*4+2] + fac*img[pindSE*4+2];
+		imf[pind*4+3] = (1.0f-fac*8.0f)*img[pind*4+3] + fac*img[pindN*4+3] + fac*img[pindS*4+3] + fac*img[pindW*4+3] + fac*img[pindE*4+3] + fac*img[pindNW*4+3] + fac*img[pindNE*4+3] + fac*img[pindSW*4+3] + fac*img[pindSE*4+3];
 	} else {
 		imf[pind*4+0] = img[pind*4+0];
 		imf[pind*4+1] = img[pind*4+1];
@@ -1131,7 +1119,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int sphnor = nor[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 35, os = 15, es = 15, vs = 8;
+	const int ts = 35, os = 15, es = 15, vs = 10;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
