@@ -217,7 +217,8 @@ float8 raytriangleintersection(float4 vpos, float4 vdir, float *vtri) {
 	float v12dist = planepointdistance(p4, v12plane);
 	float v23dist = planepointdistance(p4, v23plane);
 	float v31dist = planepointdistance(p4, v31plane);
-	if(((v12dist<=0.0f)&&(v23dist<=0.0f)&&(v31dist<=0.0f))||((v12dist>=0.0f)&&(v23dist>=0.0f)&&(v31dist>=0.0f))) {
+	const float tol = FLT_EPSILON;
+	if(((v12dist<=tol)&&(v23dist<=tol)&&(v31dist<=tol))||((v12dist>=-tol)&&(v23dist>=-tol)&&(v31dist>=-tol))) {
 		float4 v12 = p2 - p1;
 		float4 v21 = -v12;
 		float4 v13 = p3 - p1;
@@ -1010,7 +1011,7 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
-	const float fac = 0.01042f;
+	const float fac = 0.03125f;
 
 	int pind = yid*camres.x+xid;
 	if ((xid>1)&&(xid<(camres.x-2))&&(yid>1)&&(yid<(camres.y-2))) {
@@ -1022,14 +1023,6 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 		int pindNE = (yid-1)*camres.x+(xid+1);
 		int pindSW = (yid+1)*camres.x+(xid-1);
 		int pindSE = (yid+1)*camres.x+(xid+1);
-		int pindN2 = (yid-2)*camres.x+(xid+0);
-		int pindS2 = (yid+2)*camres.x+(xid+0);
-		int pindW2 = (yid+0)*camres.x+(xid-2);
-		int pindE2 = (yid+0)*camres.x+(xid+2);
-		int pindNW2 = (yid-2)*camres.x+(xid-2);
-		int pindNE2 = (yid-2)*camres.x+(xid+2);
-		int pindSW2 = (yid+2)*camres.x+(xid-2);
-		int pindSE2 = (yid+2)*camres.x+(xid+2);
 		int pindN2W = (yid-2)*camres.x+(xid-1);
 		int pindS2W = (yid+2)*camres.x+(xid-1);
 		int pindN2E = (yid-2)*camres.x+(xid+1);
@@ -1038,17 +1031,13 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 		int pindE2N = (yid+1)*camres.x+(xid+2);
 		int pindW2S = (yid-1)*camres.x+(xid-2);
 		int pindE2S = (yid-1)*camres.x+(xid+2);
-		imf[pind*4+0] = (1.0f-fac*24.0f)*img[pind*4+0] + fac*img[pindN*4+0] + fac*img[pindS*4+0] + fac*img[pindW*4+0] + fac*img[pindE*4+0] + fac*img[pindNW*4+0] + fac*img[pindNE*4+0] + fac*img[pindSW*4+0] + fac*img[pindSE*4+0]
-			+ fac*img[pindN2*4+0] + fac*img[pindS2*4+0] + fac*img[pindW2*4+0] + fac*img[pindE2*4+0] + fac*img[pindNW2*4+0] + fac*img[pindNE2*4+0] + fac*img[pindSW2*4+0] + fac*img[pindSE2*4+0]
+		imf[pind*4+0] = (1.0f-fac*16.0f)*img[pind*4+0] + fac*img[pindN*4+0] + fac*img[pindS*4+0] + fac*img[pindW*4+0] + fac*img[pindE*4+0] + fac*img[pindNW*4+0] + fac*img[pindNE*4+0] + fac*img[pindSW*4+0] + fac*img[pindSE*4+0]
 			+ fac*img[pindN2W*4+0] + fac*img[pindS2W*4+0] + fac*img[pindN2E*4+0] + fac*img[pindS2E*4+0] + fac*img[pindW2N*4+0] + fac*img[pindE2N*4+0] + fac*img[pindW2S*4+0] + fac*img[pindE2S*4+0];
-		imf[pind*4+1] = (1.0f-fac*24.0f)*img[pind*4+1] + fac*img[pindN*4+1] + fac*img[pindS*4+1] + fac*img[pindW*4+1] + fac*img[pindE*4+1] + fac*img[pindNW*4+1] + fac*img[pindNE*4+1] + fac*img[pindSW*4+1] + fac*img[pindSE*4+1]
-			+ fac*img[pindN2*4+1] + fac*img[pindS2*4+1] + fac*img[pindW2*4+1] + fac*img[pindE2*4+1] + fac*img[pindNW2*4+1] + fac*img[pindNE2*4+1] + fac*img[pindSW2*4+1] + fac*img[pindSE2*4+1]
+		imf[pind*4+1] = (1.0f-fac*16.0f)*img[pind*4+1] + fac*img[pindN*4+1] + fac*img[pindS*4+1] + fac*img[pindW*4+1] + fac*img[pindE*4+1] + fac*img[pindNW*4+1] + fac*img[pindNE*4+1] + fac*img[pindSW*4+1] + fac*img[pindSE*4+1]
 			+ fac*img[pindN2W*4+1] + fac*img[pindS2W*4+1] + fac*img[pindN2E*4+1] + fac*img[pindS2E*4+1] + fac*img[pindW2N*4+1] + fac*img[pindE2N*4+1] + fac*img[pindW2S*4+1] + fac*img[pindE2S*4+1];
-		imf[pind*4+2] = (1.0f-fac*24.0f)*img[pind*4+2] + fac*img[pindN*4+2] + fac*img[pindS*4+2] + fac*img[pindW*4+2] + fac*img[pindE*4+2] + fac*img[pindNW*4+2] + fac*img[pindNE*4+2] + fac*img[pindSW*4+2] + fac*img[pindSE*4+2]
-			+ fac*img[pindN2*4+2] + fac*img[pindS2*4+2] + fac*img[pindW2*4+2] + fac*img[pindE2*4+2] + fac*img[pindNW2*4+2] + fac*img[pindNE2*4+2] + fac*img[pindSW2*4+2] + fac*img[pindSE2*4+2]
+		imf[pind*4+2] = (1.0f-fac*16.0f)*img[pind*4+2] + fac*img[pindN*4+2] + fac*img[pindS*4+2] + fac*img[pindW*4+2] + fac*img[pindE*4+2] + fac*img[pindNW*4+2] + fac*img[pindNE*4+2] + fac*img[pindSW*4+2] + fac*img[pindSE*4+2]
 			+ fac*img[pindN2W*4+2] + fac*img[pindS2W*4+2] + fac*img[pindN2E*4+2] + fac*img[pindS2E*4+2] + fac*img[pindW2N*4+2] + fac*img[pindE2N*4+2] + fac*img[pindW2S*4+2] + fac*img[pindE2S*4+2];
-		imf[pind*4+3] = (1.0f-fac*24.0f)*img[pind*4+3] + fac*img[pindN*4+3] + fac*img[pindS*4+3] + fac*img[pindW*4+3] + fac*img[pindE*4+3] + fac*img[pindNW*4+3] + fac*img[pindNE*4+3] + fac*img[pindSW*4+3] + fac*img[pindSE*4+3]
-			+ fac*img[pindN2*4+3] + fac*img[pindS2*4+3] + fac*img[pindW2*4+3] + fac*img[pindE2*4+3] + fac*img[pindNW2*4+3] + fac*img[pindNE2*4+3] + fac*img[pindSW2*4+3] + fac*img[pindSE2*4+3]
+		imf[pind*4+3] = (1.0f-fac*16.0f)*img[pind*4+3] + fac*img[pindN*4+3] + fac*img[pindS*4+3] + fac*img[pindW*4+3] + fac*img[pindE*4+3] + fac*img[pindNW*4+3] + fac*img[pindNE*4+3] + fac*img[pindSW*4+3] + fac*img[pindSE*4+3]
 			+ fac*img[pindN2W*4+3] + fac*img[pindS2W*4+3] + fac*img[pindN2E*4+3] + fac*img[pindS2E*4+3] + fac*img[pindW2N*4+3] + fac*img[pindE2N*4+3] + fac*img[pindW2S*4+3] + fac*img[pindE2S*4+3];
 	} else {
 		imf[pind*4+0] = img[pind*4+0];
@@ -1330,7 +1319,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 										float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
 										if (!isnan(refractionray.s0)) {
 											int hitind = -1;
-											float8 raycolor = renderray2(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+											float8 raycolor = renderray(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
 											if (!isnan(raycolor.s0)) {
 												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
 											}
@@ -1342,7 +1331,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 											float8 reflectionray = planereflectionray(camposray, triplane);
 											if (!isnan(reflectionray.s0)) {
 												int hitind = -1;
-												float8 raycolor = renderray2(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+												float8 raycolor = renderray(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
 												if (!isnan(raycolor.s0)) {
 													pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
 												}
