@@ -1,5 +1,6 @@
 package fi.jkauppa.javaoclrenderengine;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.nio.ByteBuffer;
@@ -43,7 +44,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.1.1.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.1.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -65,7 +66,6 @@ public class JavaOCLRenderEngine {
 	private float frametimeavg = 0.0f;
 	private ComputeLib computelib = null;
 	private int selecteddevice = 0;
-	@SuppressWarnings("unused")
 	private boolean isfullscreen = false;
 	private boolean glinterop = true;
 	private long opencldevice = NULL, queue = NULL, program = NULL;
@@ -143,7 +143,7 @@ public class JavaOCLRenderEngine {
 			GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
 			GLFW.glfwSetWindowMonitor(window, NULL, 0, 0, screenwidth, screenheight, GLFW.GLFW_DONT_CARE);
 		}
-		GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+		//GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
 		GLFW.glfwSetKeyCallback(window, keyprocessor);
 		GLFW.glfwSetCursorPosCallback(window, mouseposprocessor);
 		GLFW.glfwSetMouseButtonCallback(window, mousebuttonprocessor);
@@ -164,6 +164,8 @@ public class JavaOCLRenderEngine {
 		lastmousex = mousex[0]; lastmousey = mousey[0];
 		BufferedImage iconimage = UtilLib.loadImage("res/images/icon.png", true);
 		this.setIcon(iconimage);
+		BufferedImage cursorimage = UtilLib.loadImage("res/images/cursor.png", true);
+		this.setCursor(cursorimage, 16, 16, 4, 1);
 
 		this.selecteddevice = vselecteddevice;
 		this.computelib = new ComputeLib(window);
@@ -509,6 +511,30 @@ public class JavaOCLRenderEngine {
 		iconimagebuffer.put(0, iconglfwimage);
 		GLFW.glfwSetWindowIcon(window, iconimagebuffer);
 		MemoryUtil.memFree(iconimagebytebuffer);
+	}
+
+	private void setCursor(BufferedImage cursorimage, int width, int height, int xhot, int yhot) {
+		BufferedImage cursorimg = new BufferedImage(width, height, cursorimage.getType());
+		Graphics2D cursorgfx = cursorimg.createGraphics();
+		cursorgfx.drawImage(cursorimage, 0, 0, cursorimg.getWidth(), cursorimg.getHeight(), 0, 0, cursorimage.getWidth(), cursorimage.getHeight(), null);
+		DataBufferInt iconimagedataint = (DataBufferInt)cursorimg.getRaster().getDataBuffer();
+		int[] iconimageints = iconimagedataint.getData();
+		IntBuffer iconimageintbuffer = IntBuffer.wrap(iconimageints);
+		ByteBuffer iconimagebytebuffer = MemoryUtil.memAlloc(iconimageints.length*4);
+		iconimagebytebuffer.asIntBuffer().put(iconimageintbuffer);
+		for (int i=0;i<iconimageints.length;i++) {
+			byte cr = iconimagebytebuffer.get(i*4+2);
+			byte cg = iconimagebytebuffer.get(i*4+1);
+			byte cb = iconimagebytebuffer.get(i*4+0);
+			byte ca = iconimagebytebuffer.get(i*4+3);
+			iconimagebytebuffer.put(i*4+0, cr);
+			iconimagebytebuffer.put(i*4+1, cg);
+			iconimagebytebuffer.put(i*4+2, cb);
+			iconimagebytebuffer.put(i*4+3, ca);
+		}
+		GLFWImage cursorglfwimage = GLFWImage.create().set(cursorimg.getWidth(), cursorimg.getHeight(), iconimagebytebuffer);
+		long customcursor = GLFW.glfwCreateCursor(cursorglfwimage, xhot, yhot);
+		GLFW.glfwSetCursor(window, customcursor);
 	}
 	
 	private class TriangleObjectEntity {
