@@ -354,120 +354,136 @@ float8 renderray4(float8 vray, int *imh, global const float *tri, global const f
 		int entobjind = (int)ent[eid*es+13];
 		int entobjlen = (int)ent[eid*es+14];
 
-		for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
-			float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
-			float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-			float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
-			float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
-			int objtriind = (int)obj[oid*os+13];
-			int objtrilen = (int)obj[oid*os+14];
+		float16 entscamat = scalingmatrix(entsca);
+		float16 entrotmat = rotationmatrix(entrot);
+		float16 entmat = matrixmatmult(entscamat, entrotmat);
 
-			float16 objscamat = scalingmatrix(objsca);
-			float16 objrotmat = rotationmatrix(objrot);
-			float16 objmat = matrixmatmult(objscamat, objrotmat);
+		float4 entsphdir = (float4)(entsph.x, entsph.y, entsph.z, 0.0f);
+		float4 entsphdirrot = matrixposmult(entsphdir, entmat);
+		float4 entbvc = entpos + entsphdirrot; entbvc.w = entsph.w;
 
-			float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-			float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-			float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+		float eppdist = raypointdistance(campos, camdir, entbvc);
+		if (fabs(eppdist)<=entsph.w) {
 
-			for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
-				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
-				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
-				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+18];
-				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
-				float triroughness = tri[tid*ts+31];
-				float trimetallic = tri[tid*ts+32];
-				float trirefractind = tri[tid*ts+33];
-				float triopacity = tri[tid*ts+34];
-				
-				float vtri[35] = {
-					tripos1.x, tripos1.y, tripos1.z,
-					tripos2.x, tripos2.y, tripos2.z,
-					tripos3.x, tripos3.y, tripos3.z,
-					trinorm.x, trinorm.y, trinorm.z,
-					tripos1uv.x, tripos1uv.y,
-					tripos2uv.x, tripos2uv.y,
-					tripos3uv.x, tripos3uv.y,
-					triid,
-					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
-					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
-					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
-					triroughness,
-					trimetallic,
-					trirefractind,
-					triopacity};
-				float4 triplane = triangleplane(vtri);
+			for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
+				float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+				float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+				float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
+				float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+				int objtriind = (int)obj[oid*os+13];
+				int objtrilen = (int)obj[oid*os+14];
 
-				float8 intpos = raytriangleintersection(campos, camdir, vtri);
-				float4 raypos = intpos.s0123;
-				float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
-				float raydist = intpos.s6;
+				float16 objscamat = scalingmatrix(objsca);
+				float16 objrotmat = rotationmatrix(objrot);
+				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
-				if (!isnan(raypos.x)) {
-					float drawdistance = raydist;
-					float4 camray = camdir;
+				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
-					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
-					int posuvintx = convert_int_rte(posuv.x*(texs-1));
-					int posuvinty = convert_int_rte(posuv.y*(texs-1));
-					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+				float oppdist = raypointdistance(campos, camdir, objbvc);
+				if (fabs(oppdist)<=objsph.w) {
 
-					float faceangle = vectorangle(camray, trinorm);
-					bool isfrontfacenorm = faceangle>=M_PI_2_F;
-					bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+					for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
+						float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+						float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+						float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+						float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+						float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+						float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+						float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+						int triid = (int)tri[tid*ts+18];
+						float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+						float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+						float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+						float triroughness = tri[tid*ts+31];
+						float trimetallic = tri[tid*ts+32];
+						float trirefractind = tri[tid*ts+33];
+						float triopacity = tri[tid*ts+34];
+						
+						float vtri[35] = {
+							tripos1.x, tripos1.y, tripos1.z,
+							tripos2.x, tripos2.y, tripos2.z,
+							tripos3.x, tripos3.y, tripos3.z,
+							trinorm.x, trinorm.y, trinorm.z,
+							tripos1uv.x, tripos1uv.y,
+							tripos2uv.x, tripos2uv.y,
+							tripos3uv.x, tripos3uv.y,
+							triid,
+							trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+							triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+							trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+							triroughness,
+							trimetallic,
+							trirefractind,
+							triopacity};
+						float4 triplane = triangleplane(vtri);
 
-					if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
-						rayz = drawdistance;
-						imh[0] = tid;
-						float4 texcolor = trifacecolor;
-						if (triid>=0) {
-							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-							texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-						}
-						float4 pixelcolor = (float4)(0.0f);
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (tlit) {
-								pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
-							} else {
-								pixelcolor = triemissivecolor + texcolor;
-							}
-						}
-						if (triopacity<1.0f) {
-							float8 camposray = (float8)(campos,camray);
-							float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
-							if (!isnan(refractionray.s0)) {
-								int hitind = -1;
-								float8 raycolor = renderray3(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-								if (!isnan(raycolor.s0)) {
-									pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+						float8 intpos = raytriangleintersection(campos, camdir, vtri);
+						float4 raypos = intpos.s0123;
+						float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
+						float raydist = intpos.s6;
+
+						if (!isnan(raypos.x)) {
+							float drawdistance = raydist;
+							float4 camray = camdir;
+
+							float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+							int posuvintx = convert_int_rte(posuv.x*(texs-1));
+							int posuvinty = convert_int_rte(posuv.y*(texs-1));
+							int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+
+							float faceangle = vectorangle(camray, trinorm);
+							bool isfrontfacenorm = faceangle>=M_PI_2_F;
+							bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
+							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
+								rayz = drawdistance;
+								imh[0] = tid;
+								float4 texcolor = trifacecolor;
+								if (triid>=0) {
+									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+									texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 								}
-							}
-						}
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (triroughness<1.0f) {
-								float8 camposray = (float8)(campos,camray);
-								float8 reflectionray = planereflectionray(camposray, triplane);
-								if (!isnan(reflectionray.s0)) {
-									int hitind = -1;
-									float8 raycolor = renderray3(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-									if (!isnan(raycolor.s0)) {
-										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+								float4 pixelcolor = (float4)(0.0f);
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (tlit) {
+										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
+									} else {
+										pixelcolor = triemissivecolor + texcolor;
 									}
 								}
+								if (triopacity<1.0f) {
+									float8 camposray = (float8)(campos,camray);
+									float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
+									if (!isnan(refractionray.s0)) {
+										int hitind = -1;
+										float8 raycolor = renderray3(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+										if (!isnan(raycolor.s0)) {
+											pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+										}
+									}
+								}
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (triroughness<1.0f) {
+										float8 camposray = (float8)(campos,camray);
+										float8 reflectionray = planereflectionray(camposray, triplane);
+										if (!isnan(reflectionray.s0)) {
+											int hitind = -1;
+											float8 raycolor = renderray3(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+											if (!isnan(raycolor.s0)) {
+												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+											}
+										}
+									}
+								}
+								raycolordist.s0 = pixelcolor.s0;
+								raycolordist.s1 = pixelcolor.s1;
+								raycolordist.s2 = pixelcolor.s2;
+								raycolordist.s3 = pixelcolor.s3;
+								raycolordist.s4 = drawdistance;
 							}
 						}
-						raycolordist.s0 = pixelcolor.s0;
-						raycolordist.s1 = pixelcolor.s1;
-						raycolordist.s2 = pixelcolor.s2;
-						raycolordist.s3 = pixelcolor.s3;
-						raycolordist.s4 = drawdistance;
 					}
 				}
 			}
@@ -494,120 +510,136 @@ float8 renderray3(float8 vray, int *imh, global const float *tri, global const f
 		int entobjind = (int)ent[eid*es+13];
 		int entobjlen = (int)ent[eid*es+14];
 
-		for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
-			float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
-			float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-			float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
-			float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
-			int objtriind = (int)obj[oid*os+13];
-			int objtrilen = (int)obj[oid*os+14];
+		float16 entscamat = scalingmatrix(entsca);
+		float16 entrotmat = rotationmatrix(entrot);
+		float16 entmat = matrixmatmult(entscamat, entrotmat);
 
-			float16 objscamat = scalingmatrix(objsca);
-			float16 objrotmat = rotationmatrix(objrot);
-			float16 objmat = matrixmatmult(objscamat, objrotmat);
+		float4 entsphdir = (float4)(entsph.x, entsph.y, entsph.z, 0.0f);
+		float4 entsphdirrot = matrixposmult(entsphdir, entmat);
+		float4 entbvc = entpos + entsphdirrot; entbvc.w = entsph.w;
 
-			float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-			float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-			float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+		float eppdist = raypointdistance(campos, camdir, entbvc);
+		if (fabs(eppdist)<=entsph.w) {
 
-			for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
-				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
-				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
-				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+18];
-				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
-				float triroughness = tri[tid*ts+31];
-				float trimetallic = tri[tid*ts+32];
-				float trirefractind = tri[tid*ts+33];
-				float triopacity = tri[tid*ts+34];
-				
-				float vtri[35] = {
-					tripos1.x, tripos1.y, tripos1.z,
-					tripos2.x, tripos2.y, tripos2.z,
-					tripos3.x, tripos3.y, tripos3.z,
-					trinorm.x, trinorm.y, trinorm.z,
-					tripos1uv.x, tripos1uv.y,
-					tripos2uv.x, tripos2uv.y,
-					tripos3uv.x, tripos3uv.y,
-					triid,
-					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
-					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
-					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
-					triroughness,
-					trimetallic,
-					trirefractind,
-					triopacity};
-				float4 triplane = triangleplane(vtri);
+			for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
+				float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+				float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+				float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
+				float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+				int objtriind = (int)obj[oid*os+13];
+				int objtrilen = (int)obj[oid*os+14];
 
-				float8 intpos = raytriangleintersection(campos, camdir, vtri);
-				float4 raypos = intpos.s0123;
-				float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
-				float raydist = intpos.s6;
+				float16 objscamat = scalingmatrix(objsca);
+				float16 objrotmat = rotationmatrix(objrot);
+				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
-				if (!isnan(raypos.x)) {
-					float drawdistance = raydist;
-					float4 camray = camdir;
+				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
-					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
-					int posuvintx = convert_int_rte(posuv.x*(texs-1));
-					int posuvinty = convert_int_rte(posuv.y*(texs-1));
-					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+				float oppdist = raypointdistance(campos, camdir, objbvc);
+				if (fabs(oppdist)<=objsph.w) {
 
-					float faceangle = vectorangle(camray, trinorm);
-					bool isfrontfacenorm = faceangle>=M_PI_2_F;
-					bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+					for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
+						float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+						float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+						float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+						float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+						float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+						float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+						float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+						int triid = (int)tri[tid*ts+18];
+						float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+						float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+						float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+						float triroughness = tri[tid*ts+31];
+						float trimetallic = tri[tid*ts+32];
+						float trirefractind = tri[tid*ts+33];
+						float triopacity = tri[tid*ts+34];
+						
+						float vtri[35] = {
+							tripos1.x, tripos1.y, tripos1.z,
+							tripos2.x, tripos2.y, tripos2.z,
+							tripos3.x, tripos3.y, tripos3.z,
+							trinorm.x, trinorm.y, trinorm.z,
+							tripos1uv.x, tripos1uv.y,
+							tripos2uv.x, tripos2uv.y,
+							tripos3uv.x, tripos3uv.y,
+							triid,
+							trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+							triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+							trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+							triroughness,
+							trimetallic,
+							trirefractind,
+							triopacity};
+						float4 triplane = triangleplane(vtri);
 
-					if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
-						rayz = drawdistance;
-						imh[0] = tid;
-						float4 texcolor = trifacecolor;
-						if (triid>=0) {
-							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-							texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-						}
-						float4 pixelcolor = (float4)(0.0f);
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (tlit) {
-								pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
-							} else {
-								pixelcolor = triemissivecolor + texcolor;
-							}
-						}
-						if (triopacity<1.0f) {
-							float8 camposray = (float8)(campos,camray);
-							float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
-							if (!isnan(refractionray.s0)) {
-								int hitind = -1;
-								float8 raycolor = renderray2(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-								if (!isnan(raycolor.s0)) {
-									pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+						float8 intpos = raytriangleintersection(campos, camdir, vtri);
+						float4 raypos = intpos.s0123;
+						float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
+						float raydist = intpos.s6;
+
+						if (!isnan(raypos.x)) {
+							float drawdistance = raydist;
+							float4 camray = camdir;
+
+							float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+							int posuvintx = convert_int_rte(posuv.x*(texs-1));
+							int posuvinty = convert_int_rte(posuv.y*(texs-1));
+							int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+
+							float faceangle = vectorangle(camray, trinorm);
+							bool isfrontfacenorm = faceangle>=M_PI_2_F;
+							bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
+							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
+								rayz = drawdistance;
+								imh[0] = tid;
+								float4 texcolor = trifacecolor;
+								if (triid>=0) {
+									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+									texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 								}
-							}
-						}
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (triroughness<1.0f) {
-								float8 camposray = (float8)(campos,camray);
-								float8 reflectionray = planereflectionray(camposray, triplane);
-								if (!isnan(reflectionray.s0)) {
-									int hitind = -1;
-									float8 raycolor = renderray2(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-									if (!isnan(raycolor.s0)) {
-										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+								float4 pixelcolor = (float4)(0.0f);
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (tlit) {
+										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
+									} else {
+										pixelcolor = triemissivecolor + texcolor;
 									}
 								}
+								if (triopacity<1.0f) {
+									float8 camposray = (float8)(campos,camray);
+									float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
+									if (!isnan(refractionray.s0)) {
+										int hitind = -1;
+										float8 raycolor = renderray2(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+										if (!isnan(raycolor.s0)) {
+											pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+										}
+									}
+								}
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (triroughness<1.0f) {
+										float8 camposray = (float8)(campos,camray);
+										float8 reflectionray = planereflectionray(camposray, triplane);
+										if (!isnan(reflectionray.s0)) {
+											int hitind = -1;
+											float8 raycolor = renderray2(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+											if (!isnan(raycolor.s0)) {
+												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+											}
+										}
+									}
+								}
+								raycolordist.s0 = pixelcolor.s0;
+								raycolordist.s1 = pixelcolor.s1;
+								raycolordist.s2 = pixelcolor.s2;
+								raycolordist.s3 = pixelcolor.s3;
+								raycolordist.s4 = drawdistance;
 							}
 						}
-						raycolordist.s0 = pixelcolor.s0;
-						raycolordist.s1 = pixelcolor.s1;
-						raycolordist.s2 = pixelcolor.s2;
-						raycolordist.s3 = pixelcolor.s3;
-						raycolordist.s4 = drawdistance;
 					}
 				}
 			}
@@ -634,120 +666,136 @@ float8 renderray2(float8 vray, int *imh, global const float *tri, global const f
 		int entobjind = (int)ent[eid*es+13];
 		int entobjlen = (int)ent[eid*es+14];
 
-		for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
-			float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
-			float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-			float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
-			float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
-			int objtriind = (int)obj[oid*os+13];
-			int objtrilen = (int)obj[oid*os+14];
+		float16 entscamat = scalingmatrix(entsca);
+		float16 entrotmat = rotationmatrix(entrot);
+		float16 entmat = matrixmatmult(entscamat, entrotmat);
 
-			float16 objscamat = scalingmatrix(objsca);
-			float16 objrotmat = rotationmatrix(objrot);
-			float16 objmat = matrixmatmult(objscamat, objrotmat);
+		float4 entsphdir = (float4)(entsph.x, entsph.y, entsph.z, 0.0f);
+		float4 entsphdirrot = matrixposmult(entsphdir, entmat);
+		float4 entbvc = entpos + entsphdirrot; entbvc.w = entsph.w;
 
-			float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-			float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-			float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+		float eppdist = raypointdistance(campos, camdir, entbvc);
+		if (fabs(eppdist)<=entsph.w) {
 
-			for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
-				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
-				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
-				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+18];
-				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
-				float triroughness = tri[tid*ts+31];
-				float trimetallic = tri[tid*ts+32];
-				float trirefractind = tri[tid*ts+33];
-				float triopacity = tri[tid*ts+34];
-				
-				float vtri[35] = {
-					tripos1.x, tripos1.y, tripos1.z,
-					tripos2.x, tripos2.y, tripos2.z,
-					tripos3.x, tripos3.y, tripos3.z,
-					trinorm.x, trinorm.y, trinorm.z,
-					tripos1uv.x, tripos1uv.y,
-					tripos2uv.x, tripos2uv.y,
-					tripos3uv.x, tripos3uv.y,
-					triid,
-					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
-					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
-					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
-					triroughness,
-					trimetallic,
-					trirefractind,
-					triopacity};
-				float4 triplane = triangleplane(vtri);
+			for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
+				float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+				float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+				float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
+				float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+				int objtriind = (int)obj[oid*os+13];
+				int objtrilen = (int)obj[oid*os+14];
 
-				float8 intpos = raytriangleintersection(campos, camdir, vtri);
-				float4 raypos = intpos.s0123;
-				float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
-				float raydist = intpos.s6;
+				float16 objscamat = scalingmatrix(objsca);
+				float16 objrotmat = rotationmatrix(objrot);
+				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
-				if (!isnan(raypos.x)) {
-					float drawdistance = raydist;
-					float4 camray = camdir;
+				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
-					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
-					int posuvintx = convert_int_rte(posuv.x*(texs-1));
-					int posuvinty = convert_int_rte(posuv.y*(texs-1));
-					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+				float oppdist = raypointdistance(campos, camdir, objbvc);
+				if (fabs(oppdist)<=objsph.w) {
 
-					float faceangle = vectorangle(camray, trinorm);
-					bool isfrontfacenorm = faceangle>=M_PI_2_F;
-					bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+					for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
+						float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+						float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+						float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+						float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+						float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+						float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+						float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+						int triid = (int)tri[tid*ts+18];
+						float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+						float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+						float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+						float triroughness = tri[tid*ts+31];
+						float trimetallic = tri[tid*ts+32];
+						float trirefractind = tri[tid*ts+33];
+						float triopacity = tri[tid*ts+34];
+						
+						float vtri[35] = {
+							tripos1.x, tripos1.y, tripos1.z,
+							tripos2.x, tripos2.y, tripos2.z,
+							tripos3.x, tripos3.y, tripos3.z,
+							trinorm.x, trinorm.y, trinorm.z,
+							tripos1uv.x, tripos1uv.y,
+							tripos2uv.x, tripos2uv.y,
+							tripos3uv.x, tripos3uv.y,
+							triid,
+							trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+							triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+							trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+							triroughness,
+							trimetallic,
+							trirefractind,
+							triopacity};
+						float4 triplane = triangleplane(vtri);
 
-					if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
-						rayz = drawdistance;
-						imh[0] = tid;
-						float4 texcolor = trifacecolor;
-						if (triid>=0) {
-							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-							texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-						}
-						float4 pixelcolor = (float4)(0.0f);
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (tlit) {
-								pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
-							} else {
-								pixelcolor = triemissivecolor + texcolor;
-							}
-						}
-						if (triopacity<1.0f) {
-							float8 camposray = (float8)(campos,camray);
-							float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
-							if (!isnan(refractionray.s0)) {
-								int hitind = -1;
-								float8 raycolor = renderray(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-								if (!isnan(raycolor.s0)) {
-									pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+						float8 intpos = raytriangleintersection(campos, camdir, vtri);
+						float4 raypos = intpos.s0123;
+						float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
+						float raydist = intpos.s6;
+
+						if (!isnan(raypos.x)) {
+							float drawdistance = raydist;
+							float4 camray = camdir;
+
+							float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+							int posuvintx = convert_int_rte(posuv.x*(texs-1));
+							int posuvinty = convert_int_rte(posuv.y*(texs-1));
+							int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+
+							float faceangle = vectorangle(camray, trinorm);
+							bool isfrontfacenorm = faceangle>=M_PI_2_F;
+							bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
+							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
+								rayz = drawdistance;
+								imh[0] = tid;
+								float4 texcolor = trifacecolor;
+								if (triid>=0) {
+									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+									texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 								}
-							}
-						}
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (triroughness<1.0f) {
-								float8 camposray = (float8)(campos,camray);
-								float8 reflectionray = planereflectionray(camposray, triplane);
-								if (!isnan(reflectionray.s0)) {
-									int hitind = -1;
-									float8 raycolor = renderray(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
-									if (!isnan(raycolor.s0)) {
-										pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+								float4 pixelcolor = (float4)(0.0f);
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (tlit) {
+										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
+									} else {
+										pixelcolor = triemissivecolor + texcolor;
 									}
 								}
+								if (triopacity<1.0f) {
+									float8 camposray = (float8)(campos,camray);
+									float8 refractionray = planerefractionray(camposray, triplane, 1.0f, trirefractind);
+									if (!isnan(refractionray.s0)) {
+										int hitind = -1;
+										float8 raycolor = renderray(refractionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+										if (!isnan(raycolor.s0)) {
+											pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triopacity);
+										}
+									}
+								}
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (triroughness<1.0f) {
+										float8 camposray = (float8)(campos,camray);
+										float8 reflectionray = planereflectionray(camposray, triplane);
+										if (!isnan(reflectionray.s0)) {
+											int hitind = -1;
+											float8 raycolor = renderray(reflectionray, &hitind, tri, obj, ent, enc, tex, tes, lit);
+											if (!isnan(raycolor.s0)) {
+												pixelcolor = sourcemixblend(pixelcolor, raycolor.s0123, 1.0f-triroughness);
+											}
+										}
+									}
+								}
+								raycolordist.s0 = pixelcolor.s0;
+								raycolordist.s1 = pixelcolor.s1;
+								raycolordist.s2 = pixelcolor.s2;
+								raycolordist.s3 = pixelcolor.s3;
+								raycolordist.s4 = drawdistance;
 							}
 						}
-						raycolordist.s0 = pixelcolor.s0;
-						raycolordist.s1 = pixelcolor.s1;
-						raycolordist.s2 = pixelcolor.s2;
-						raycolordist.s3 = pixelcolor.s3;
-						raycolordist.s4 = drawdistance;
 					}
 				}
 			}
@@ -774,97 +822,113 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const fl
 		int entobjind = (int)ent[eid*es+13];
 		int entobjlen = (int)ent[eid*es+14];
 
-		for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
-			float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
-			float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
-			float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
-			float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
-			int objtriind = (int)obj[oid*os+13];
-			int objtrilen = (int)obj[oid*os+14];
+		float16 entscamat = scalingmatrix(entsca);
+		float16 entrotmat = rotationmatrix(entrot);
+		float16 entmat = matrixmatmult(entscamat, entrotmat);
 
-			float16 objscamat = scalingmatrix(objsca);
-			float16 objrotmat = rotationmatrix(objrot);
-			float16 objmat = matrixmatmult(objscamat, objrotmat);
+		float4 entsphdir = (float4)(entsph.x, entsph.y, entsph.z, 0.0f);
+		float4 entsphdirrot = matrixposmult(entsphdir, entmat);
+		float4 entbvc = entpos + entsphdirrot; entbvc.w = entsph.w;
 
-			float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
-			float4 objsphdirrot = matrixposmult(objsphdir, objmat);
-			float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
+		float eppdist = raypointdistance(campos, camdir, entbvc);
+		if (fabs(eppdist)<=entsph.w) {
 
-			for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
+			for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
+				float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
+				float3 objsca = (float3)(obj[oid*os+3],obj[oid*os+4],obj[oid*os+5]);
+				float3 objrot = radians((float3)(obj[oid*os+6],obj[oid*os+7],obj[oid*os+8]));
+				float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
+				int objtriind = (int)obj[oid*os+13];
+				int objtrilen = (int)obj[oid*os+14];
 
-				float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
-				float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
-				float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
-				float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
-				float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
-				float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
-				float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
-				int triid = (int)tri[tid*ts+18];
-				float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
-				float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
-				float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
-				float triroughness = tri[tid*ts+31];
-				float trimetallic = tri[tid*ts+32];
-				float trirefractind = tri[tid*ts+33];
-				float triopacity = tri[tid*ts+34];
-				
-				float vtri[35] = {
-					tripos1.x, tripos1.y, tripos1.z,
-					tripos2.x, tripos2.y, tripos2.z,
-					tripos3.x, tripos3.y, tripos3.z,
-					trinorm.x, trinorm.y, trinorm.z,
-					tripos1uv.x, tripos1uv.y,
-					tripos2uv.x, tripos2uv.y,
-					tripos3uv.x, tripos3uv.y,
-					triid,
-					trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
-					triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
-					trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
-					triroughness,
-					trimetallic,
-					trirefractind,
-					triopacity};
-				float4 triplane = triangleplane(vtri);
+				float16 objscamat = scalingmatrix(objsca);
+				float16 objrotmat = rotationmatrix(objrot);
+				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
-				float8 intpos = raytriangleintersection(campos, camdir, vtri);
-				float4 raypos = intpos.s0123;
-				float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
-				float raydist = intpos.s6;
+				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
+				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
+				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
-				if (!isnan(raypos.x)) {
-					float drawdistance = raydist;
-					float4 camray = camdir;
+				float oppdist = raypointdistance(campos, camdir, objbvc);
+				if (fabs(oppdist)<=objsph.w) {
 
-					float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
-					int posuvintx = convert_int_rte(posuv.x*(texs-1));
-					int posuvinty = convert_int_rte(posuv.y*(texs-1));
-					int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+					for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
 
-					float faceangle = vectorangle(camray, trinorm);
-					bool isfrontfacenorm = faceangle>=M_PI_2_F;
-					bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+						float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
+						float4 tripos2 = (float4)(tri[tid*ts+3],tri[tid*ts+4],tri[tid*ts+5],0.0f);
+						float4 tripos3 = (float4)(tri[tid*ts+6],tri[tid*ts+7],tri[tid*ts+8],0.0f);
+						float4 trinorm = (float4)(tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11],0.0f);
+						float4 tripos1uv = (float4)(tri[tid*ts+12],tri[tid*ts+13],0.0f,0.0f);
+						float4 tripos2uv = (float4)(tri[tid*ts+14],tri[tid*ts+15],0.0f,0.0f);
+						float4 tripos3uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],0.0f,0.0f);
+						int triid = (int)tri[tid*ts+18];
+						float4 trifacecolor = (float4)(tri[tid*ts+19],tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22]);
+						float4 triemissivecolor = (float4)(tri[tid*ts+23],tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26]);
+						float4 trilightmapcolor = (float4)(tri[tid*ts+27],tri[tid*ts+28],tri[tid*ts+29],tri[tid*ts+30]);
+						float triroughness = tri[tid*ts+31];
+						float trimetallic = tri[tid*ts+32];
+						float trirefractind = tri[tid*ts+33];
+						float triopacity = tri[tid*ts+34];
+						
+						float vtri[35] = {
+							tripos1.x, tripos1.y, tripos1.z,
+							tripos2.x, tripos2.y, tripos2.z,
+							tripos3.x, tripos3.y, tripos3.z,
+							trinorm.x, trinorm.y, trinorm.z,
+							tripos1uv.x, tripos1uv.y,
+							tripos2uv.x, tripos2uv.y,
+							tripos3uv.x, tripos3uv.y,
+							triid,
+							trifacecolor.s0, trifacecolor.s1, trifacecolor.s2, trifacecolor.s3,
+							triemissivecolor.s0, triemissivecolor.s1, triemissivecolor.s2, triemissivecolor.s3,
+							trilightmapcolor.s0, trilightmapcolor.s1, trilightmapcolor.s2, trilightmapcolor.s3,
+							triroughness,
+							trimetallic,
+							trirefractind,
+							triopacity};
+						float4 triplane = triangleplane(vtri);
 
-					if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
-						rayz = drawdistance;
-						imh[0] = tid;
-						float4 texcolor = trifacecolor;
-						if (triid>=0) {
-							float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-							texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-						}
-						float4 pixelcolor = (float4)(0.0f);
-						if (isdoublesidednorm||isfrontfacenorm) {
-							if (tlit) {
-								pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
-							} else {
-								pixelcolor = triemissivecolor + texcolor;
+						float8 intpos = raytriangleintersection(campos, camdir, vtri);
+						float4 raypos = intpos.s0123;
+						float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
+						float raydist = intpos.s6;
+
+						if (!isnan(raypos.x)) {
+							float drawdistance = raydist;
+							float4 camray = camdir;
+
+							float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+							int posuvintx = convert_int_rte(posuv.x*(texs-1));
+							int posuvinty = convert_int_rte(posuv.y*(texs-1));
+							int texind = posuvinty*texs+posuvintx + triid*texs*texs;
+
+							float faceangle = vectorangle(camray, trinorm);
+							bool isfrontfacenorm = faceangle>=M_PI_2_F;
+							bool isdoublesidednorm = (trinorm.x==0.0f)&&(trinorm.y==0.0f)&&(trinorm.z==0.0f);
+
+							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
+								rayz = drawdistance;
+								imh[0] = tid;
+								float4 texcolor = trifacecolor;
+								if (triid>=0) {
+									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+									texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+								}
+								float4 pixelcolor = (float4)(0.0f);
+								if (isdoublesidednorm||isfrontfacenorm) {
+									if (tlit) {
+										pixelcolor = triemissivecolor + trilightmapcolor*texcolor*(1.0f-trimetallic);
+									} else {
+										pixelcolor = triemissivecolor + texcolor;
+									}
+								}
+								raycolordist.s0 = pixelcolor.s0;
+								raycolordist.s1 = pixelcolor.s1;
+								raycolordist.s2 = pixelcolor.s2;
+								raycolordist.s3 = pixelcolor.s3;
+								raycolordist.s4 = drawdistance;
 							}
 						}
-						raycolordist.s0 = pixelcolor.s0;
-						raycolordist.s1 = pixelcolor.s1;
-						raycolordist.s2 = pixelcolor.s2;
-						raycolordist.s3 = pixelcolor.s3;
-						raycolordist.s4 = drawdistance;
 					}
 				}
 			}
@@ -909,7 +973,7 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
 	
-	const int vs = 10;
+	const int vs = 8;
 	int camresystep = camres.y / vs;
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
@@ -1119,7 +1183,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	int sphnor = nor[0];
 
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
-	const int ts = 35, os = 15, es = 15, vs = 10;
+	const int ts = 35, os = 15, es = 15, vs = 8;
 
 	int camresystep = camres.y / vs;
 	float2 camhalffov = camfov/2.0f;
@@ -1165,7 +1229,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 		float4 entbvc = entpos + entsphdirrot; entbvc.w = entsph.w;
 
 		float eppdist = planepointdistance(entbvc, colplane);
-		if (eppdist<=entsph.w) {
+		if (fabs(eppdist)<=entsph.w) {
 
 			for (int oid=entobjind;oid<(entobjind+entobjlen);oid++) {
 				float4 objpos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],0.0f);
@@ -1184,7 +1248,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
 
 				float oppdist = planepointdistance(objbvc, colplane);
-				if (oppdist<=objsph.w) {
+				if (fabs(oppdist)<=objsph.w) {
 
 					for (int tid=objtriind;tid<(objtriind+objtrilen);tid++) {
 						float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],0.0f);
