@@ -377,6 +377,9 @@ float8 renderray4(float8 vray, int *imh, global const float *tri, global const f
 				float16 objrotmat = rotationmatrix(objrot);
 				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
+				objmat = matrixmatmult(entmat, objmat);
+				objpos = translatepos(objpos, entpos, 1.0f);
+
 				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
 				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
@@ -532,6 +535,9 @@ float8 renderray3(float8 vray, int *imh, global const float *tri, global const f
 				float16 objscamat = scalingmatrix(objsca);
 				float16 objrotmat = rotationmatrix(objrot);
 				float16 objmat = matrixmatmult(objscamat, objrotmat);
+
+				objmat = matrixmatmult(entmat, objmat);
+				objpos = translatepos(objpos, entpos, 1.0f);
 
 				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
@@ -689,6 +695,9 @@ float8 renderray2(float8 vray, int *imh, global const float *tri, global const f
 				float16 objrotmat = rotationmatrix(objrot);
 				float16 objmat = matrixmatmult(objscamat, objrotmat);
 
+				objmat = matrixmatmult(entmat, objmat);
+				objpos = translatepos(objpos, entpos, 1.0f);
+
 				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
 				float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
@@ -844,6 +853,9 @@ float8 renderray(float8 vray, int *imh, global const float *tri, global const fl
 				float16 objscamat = scalingmatrix(objsca);
 				float16 objrotmat = rotationmatrix(objrot);
 				float16 objmat = matrixmatmult(objscamat, objrotmat);
+
+				objmat = matrixmatmult(entmat, objmat);
+				objpos = translatepos(objpos, entpos, 1.0f);
 
 				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
