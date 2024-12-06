@@ -44,7 +44,7 @@ import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
-	private static String programtitle = "Java OpenCL Render Engine v1.1.1.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.1.4";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -209,9 +209,19 @@ public class JavaOCLRenderEngine {
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/pasteroid4.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
-		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, 1.0f);
-		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel2, 1.0f);
-		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjent, triobjent2});
+		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, 5.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, -5.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel, 0.0f, 5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjent4 = getEntityObjectTriangles(loadmodel, 0.0f, -5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, 0.0f, 0.0f, -5.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, 0.0f, 0.0f, 5.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel2, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent});
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent2});
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent3});
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent4});
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent5});
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent6});
 		
 		this.entitylist = alltriobjents.entities;
 		this.entitylistlength[0] = alltriobjents.entities.length/15;
@@ -267,7 +277,6 @@ public class JavaOCLRenderEngine {
 		
 		String programSource = UtilLib.loadText("res/clprograms/programlib.cl", true);
 		this.program = this.computelib.compileProgram(opencldevice, programSource);
-		computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{triangleslitptr,trianglesptr,objectsptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		computelib.insertBarrier(queue);
 		System.out.println("init.");
 	}
@@ -352,13 +361,12 @@ public class JavaOCLRenderEngine {
 		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
 		computelib.insertBarrier(queue);
 		computelib.readBufferf(opencldevice, queue, camposbufferptr, camerapos3fov2res2rotmat16);
-		int spaceboxind = this.objectslist.length/15-1;
-		this.objectslist[spaceboxind*15+0] = camerapos3fov2res2rotmat16[0];
-		this.objectslist[spaceboxind*15+1] = camerapos3fov2res2rotmat16[1];
-		this.objectslist[spaceboxind*15+2] = camerapos3fov2res2rotmat16[2];
-		computelib.writeBufferf(opencldevice, queue, objectsptr, this.objectslist);
+		this.entitylist[0] = camerapos3fov2res2rotmat16[0];
+		this.entitylist[1] = camerapos3fov2res2rotmat16[1];
+		this.entitylist[2] = camerapos3fov2res2rotmat16[2];
+		computelib.writeBufferf(opencldevice, queue, entitiesptr, this.entitylist);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,8});
-		//computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{triangleslitptr,trianglesptr,objectsptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
+		computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{triangleslitptr,trianglesptr,objectsptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		//computelib.insertBarrier(queue);
 		//computelib.runProgram(opencldevice, queue, program, "lightobject", new long[]{,,,triangleslitptr,triangleslitptr,triangleslenptr,texturesptr,textureslenptr}, new int[]{0,0,0}, new int[]{triangleslistlen[0],1,triangleslistlen[0]});
 		computelib.insertBarrier(queue);
@@ -627,7 +635,7 @@ public class JavaOCLRenderEngine {
 		return mergedtriobjent;
 	}
 	
-	private TriangleObjectEntity getEntityObjectTriangles(Entity loadmodel, float scale) {
+	private TriangleObjectEntity getEntityObjectTriangles(Entity loadmodel, float posx, float posy, float posz, float scale, float rotx, float roty, float rotz) {
 		TriangleObjectEntity triobjent = new TriangleObjectEntity();
 		ArrayList<Float> trianglearraylist = new ArrayList<Float>();
 		ArrayList<Float> objectarraylist = new ArrayList<Float>();
@@ -648,12 +656,12 @@ public class JavaOCLRenderEngine {
 			}
 		}
 		
-		entityarraylist.add(0.0f);
-		entityarraylist.add(0.0f);
-		entityarraylist.add(0.0f);
-		entityarraylist.add(1.0f);
-		entityarraylist.add(1.0f);
-		entityarraylist.add(1.0f);
+		entityarraylist.add(posx);
+		entityarraylist.add(posy);
+		entityarraylist.add(posz);
+		entityarraylist.add(scale);
+		entityarraylist.add(scale);
+		entityarraylist.add(scale);
 		entityarraylist.add(0.0f);
 		entityarraylist.add(0.0f);
 		entityarraylist.add(0.0f);
@@ -670,9 +678,9 @@ public class JavaOCLRenderEngine {
 			objectarraylist.add(0.0f);
 			objectarraylist.add(0.0f);
 			objectarraylist.add(0.0f);
-			objectarraylist.add(1.0f);
-			objectarraylist.add(1.0f);
-			objectarraylist.add(1.0f);
+			objectarraylist.add(scale);
+			objectarraylist.add(scale);
+			objectarraylist.add(scale);
 			objectarraylist.add(0.0f);
 			objectarraylist.add(0.0f);
 			objectarraylist.add(0.0f);

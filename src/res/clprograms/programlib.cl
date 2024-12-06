@@ -1020,6 +1020,9 @@ kernel void transformentity(global float *tli, global const float *tri, global c
 		float16 objrotmat = rotationmatrix(objrot);
 		float16 objmat = matrixmatmult(objscamat, objrotmat);
 
+		objmat = matrixmatmult(entmat, objmat);
+		objpos = translatepos(objpos, entpos, 1.0f);
+
 		float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 		float4 objsphdirrot = matrixposmult(objsphdir, objmat);
 		float4 objbvc = objpos + objsphdirrot; objbvc.w = objsph.w;
@@ -1086,7 +1089,7 @@ kernel void viewfilter(global float *imf, global const float *img, global const 
 	const float fac = 0.0625f;
 
 	int pind = yid*camres.x+xid;
-	if ((xid>1)&&(xid<(camres.x-2))&&(yid>1)&&(yid<(camres.y-2))) {
+	if ((xid>0)&&(xid<(camres.x-1))&&(yid>0)&&(yid<(camres.y-1))) {
 		int pindN = (yid-1)*camres.x+(xid+0);
 		int pindS = (yid+1)*camres.x+(xid+0);
 		int pindW = (yid+0)*camres.x+(xid-1);
@@ -1242,6 +1245,9 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 				float16 objscamat = scalingmatrix(objsca);
 				float16 objrotmat = rotationmatrix(objrot);
 				float16 objmat = matrixmatmult(objscamat, objrotmat);
+
+				objmat = matrixmatmult(entmat, objmat);
+				objpos = translatepos(objpos, entpos, 1.0f);
 
 				float4 objsphdir = (float4)(objsph.x, objsph.y, objsph.z, 0.0f);
 				float4 objsphdirrot = matrixposmult(objsphdir, objmat);
