@@ -30,7 +30,7 @@ kernel void transformentity(global float *tli, global const float *tri, global c
 kernel void viewfilter(global float *imf, global const float *img, global const float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor, global const int *rsx, global const int *rsy, global const int *rsn);
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor);
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor, global const int *rsx, global const int *rsy, global const int *rsn);
 
 float4 matrixposmult(const float4 pos, const float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -1194,9 +1194,17 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	}
 }
 
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor) {
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global const float *tri, global const float *obj, global const float *ent, global const int *enc, global const int *tex, global const int *tes, global const int *lit, global const int *nor, global const int *rsx, global const int *rsy, global const int *rsn) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
+	int rstepx = rsx[0];
+	int rstepy = rsy[0];
+	int rstepnum = rsn[0];
+	int xidstep = xid % rstepx;
+	int xstep = rstepnum % rstepx;
+	int ystep = rstepnum / rstepx;
+	if (xidstep!=xstep) {return;}
+	
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -1372,7 +1380,7 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 									if (py2s<campresyend) {campresyend=py2s;}
 
 									float4 vpixelpointdir12 = colpos2 - colpos1;
-									for (int y=campresystart;y<=campresyend;y++) {
+									for (int y=campresystart+ystep;y<=campresyend;y+=rstepy) {
 										float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
 										float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
 										float4 raydirrot = matrixposmult(raydir, cammat);
