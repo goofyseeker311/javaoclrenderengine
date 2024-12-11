@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.1.8";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.1.9";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -95,7 +95,7 @@ public class JavaOCLRenderEngine {
 	private int[] entitylistlength = {0};
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
-	private int[] rstepx = {2}, rstepy = {1}, rstepnum = {0};
+	private int[] rstepx = {2}, rstepy = {2}, rstepnum = {0};
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -127,8 +127,8 @@ public class JavaOCLRenderEngine {
 			this.screenwidth = videomode.width();
 			this.screenheight = videomode.height();
 		}
-		this.graphicswidth = screenwidth*2;
-		this.graphicsheight = screenheight*2;
+		this.graphicswidth = screenwidth;
+		this.graphicsheight = screenheight;
 		if (vglinterop==0) {
 			this.glinterop = false;
 		}
@@ -212,19 +212,27 @@ public class JavaOCLRenderEngine {
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/pasteroid4.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
-		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel2, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, 5.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, -5.0f, 0.0f, 0.0f, 1.0f, 45.0f, 0.0f, 0.0f);
-		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel, 0.0f, 5.0f, 0.0f, 1.0f, 60.0f, 20.0f, 0.0f);
-		TriangleObjectEntity triobjent4 = getEntityObjectTriangles(loadmodel, 0.0f, -5.0f, 0.0f, 1.0f, 20.0f, 70.0f, 0.0f);
-		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, 0.0f, 0.0f, -5.0f, 1.0f, 0.0f, 60.0f, 30.0f);
-		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, 0.0f, 0.0f, 5.0f, 1.0f, 30.0f, 0.0f, 50.0f);
+		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel2, new float[]{0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, new float[]{5.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, new float[]{-5.0f, 0.0f, 0.0f, 1.0f, 45.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 5.0f, 0.0f, 1.0f, 60.0f, 20.0f, 0.0f});
+		TriangleObjectEntity triobjent4 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, -5.0f, 0.0f, 1.0f, 20.0f, 70.0f, 0.0f});
+		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, -5.0f, 1.0f, 0.0f, 60.0f, 30.0f});
+		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, 5.0f, 1.0f, 30.0f, 0.0f, 50.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
-		int asteroidcount = 15;
+		int asteroidcount = 1000;
+		float[] asteroids = new float[asteroidcount*7];
 		for (int i=0;i<asteroidcount;i++) {
-			TriangleObjectEntity triobjent7 = getEntityObjectTriangles(loadmodel, rand.nextFloat(-100.0f, 100.0f), rand.nextFloat(-100.0f, 100.0f), rand.nextFloat(-100.0f, 100.0f), 1.0f, rand.nextFloat(0.0f, 360.0f), rand.nextFloat(0.0f, 360.0f), rand.nextFloat(0.0f, 360.0f));
-			alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, triobjent7});
+			asteroids[i*7+0] = rand.nextFloat(-100.0f, 100.0f);
+			asteroids[i*7+1] = rand.nextFloat(-100.0f, 100.0f);
+			asteroids[i*7+2] = rand.nextFloat(-100.0f, 100.0f);
+			asteroids[i*7+3] = 1.0f;
+			asteroids[i*7+4] = rand.nextFloat(0.0f, 360.0f);
+			asteroids[i*7+5] = rand.nextFloat(0.0f, 360.0f);
+			asteroids[i*7+6] = rand.nextFloat(0.0f, 360.0f);
 		}
+		TriangleObjectEntity asteroidstriobjents = getEntityObjectTriangles(loadmodel, asteroids);
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, asteroidstriobjents});
 		
 		this.entitylist = alltriobjents.entities;
 		this.entitylistlength[0] = alltriobjents.entities.length/15;
@@ -379,15 +387,15 @@ public class JavaOCLRenderEngine {
 		if (++rstepnum[0]>=(rstepx[0]*rstepy[0])) {rstepnum[0]=0;}
 		computelib.writeBufferi(opencldevice, queue, rstepnumptr, rstepnum);
 		
-		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,8});
+		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,8});
 		//computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{triangleslitptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		//computelib.insertBarrier(queue);
 		//computelib.runProgram(opencldevice, queue, program, "lightobject", new long[]{,,,triangleslitptr,triangleslitptr,triangleslenptr,texturesptr,textureslenptr}, new int[]{0,0,0}, new int[]{triangleslistlen[0],1,triangleslistlen[0]});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderrayview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
-		//computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,8});
-		//computelib.insertBarrier(queue);
-		//computelib.runProgram(opencldevice, queue, program, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		computelib.runProgram(opencldevice, queue, program, "renderrayview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		//computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,8});
+		computelib.insertBarrier(queue);
+		computelib.runProgram(opencldevice, queue, program, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(queue);
@@ -649,7 +657,7 @@ public class JavaOCLRenderEngine {
 		return mergedtriobjent;
 	}
 	
-	private TriangleObjectEntity getEntityObjectTriangles(Entity loadmodel, float posx, float posy, float posz, float scale, float rotx, float roty, float rotz) {
+	private TriangleObjectEntity getEntityObjectTriangles(Entity loadmodel, float[] objects) {
 		TriangleObjectEntity triobjent = new TriangleObjectEntity();
 		ArrayList<Float> trianglearraylist = new ArrayList<Float>();
 		ArrayList<Float> objectarraylist = new ArrayList<Float>();
@@ -670,82 +678,93 @@ public class JavaOCLRenderEngine {
 			}
 		}
 		
-		entityarraylist.add(posx);
-		entityarraylist.add(posy);
-		entityarraylist.add(posz);
-		entityarraylist.add(scale);
-		entityarraylist.add(scale);
-		entityarraylist.add(scale);
-		entityarraylist.add(rotx);
-		entityarraylist.add(roty);
-		entityarraylist.add(rotz);
-		entityarraylist.add(-scale*(float)loadmodel.sphereboundaryvolume.x);
-		entityarraylist.add(scale*(float)loadmodel.sphereboundaryvolume.y);
-		entityarraylist.add(scale*(float)loadmodel.sphereboundaryvolume.z);
-		entityarraylist.add(scale*(float)loadmodel.sphereboundaryvolume.r);
-		entityarraylist.add(0.0f);
-		entityarraylist.add((float)loadmodel.childlist.length);
+		int objectscount = objects.length/7;
+		for (int k=0;k<objectscount;k++) {
+			float posx = objects[k*7+0];
+			float posy = objects[k*7+1];
+			float posz = objects[k*7+2];
+			float scal = objects[k*7+3];
+			float rotx = objects[k*7+4];
+			float roty = objects[k*7+5];
+			float rotz = objects[k*7+6];
 		
-		for (int j=0;j<loadmodel.childlist.length;j++) {
-			Entity object = loadmodel.childlist[j];
+			entityarraylist.add(posx);
+			entityarraylist.add(posy);
+			entityarraylist.add(posz);
+			entityarraylist.add(scal);
+			entityarraylist.add(scal);
+			entityarraylist.add(scal);
+			entityarraylist.add(rotx);
+			entityarraylist.add(roty);
+			entityarraylist.add(rotz);
+			entityarraylist.add(-scal*(float)loadmodel.sphereboundaryvolume.x);
+			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.y);
+			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.z);
+			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.r);
+			entityarraylist.add((float)objectarraylist.size()/15);
+			entityarraylist.add((float)loadmodel.childlist.length);
 			
-			objectarraylist.add(0.0f);
-			objectarraylist.add(0.0f);
-			objectarraylist.add(0.0f);
-			objectarraylist.add(1.0f);
-			objectarraylist.add(1.0f);
-			objectarraylist.add(1.0f);
-			objectarraylist.add(0.0f);
-			objectarraylist.add(0.0f);
-			objectarraylist.add(0.0f);
-			objectarraylist.add(-scale*(float)object.sphereboundaryvolume.x);
-			objectarraylist.add(scale*(float)object.sphereboundaryvolume.y);
-			objectarraylist.add(scale*(float)object.sphereboundaryvolume.z);
-			objectarraylist.add(scale*(float)object.sphereboundaryvolume.r);
-			objectarraylist.add((float)trianglearraylist.size()/35);
-			objectarraylist.add((float)object.trianglelist.length);
-			
-			for (int i=0;i<object.trianglelist.length;i++) {
-				Triangle modeltri = object.trianglelist[i];
-				trianglearraylist.add(-scale*(float)modeltri.pos1.x);
-				trianglearraylist.add(scale*(float)modeltri.pos1.y);
-				trianglearraylist.add(scale*(float)modeltri.pos1.z);
-				trianglearraylist.add(-scale*(float)modeltri.pos2.x);
-				trianglearraylist.add(scale*(float)modeltri.pos2.y);
-				trianglearraylist.add(scale*(float)modeltri.pos2.z);
-				trianglearraylist.add(-scale*(float)modeltri.pos3.x);
-				trianglearraylist.add(scale*(float)modeltri.pos3.y);
-				trianglearraylist.add(scale*(float)modeltri.pos3.z);
-				trianglearraylist.add(-(float)modeltri.norm.dx);
-				trianglearraylist.add((float)modeltri.norm.dy);
-				trianglearraylist.add((float)modeltri.norm.dz);
-				trianglearraylist.add((float)modeltri.pos1.tex.u);
-				trianglearraylist.add((float)modeltri.pos1.tex.v);
-				trianglearraylist.add((float)modeltri.pos2.tex.u);
-				trianglearraylist.add((float)modeltri.pos2.tex.v);
-				trianglearraylist.add((float)modeltri.pos3.tex.u);
-				trianglearraylist.add((float)modeltri.pos3.tex.v);
-				trianglearraylist.add((float)modeltri.mat.imageid);
-				float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
-				trianglearraylist.add((float)matfacecolor[0]);
-				trianglearraylist.add((float)matfacecolor[1]);
-				trianglearraylist.add((float)matfacecolor[2]);
-				trianglearraylist.add((float)matfacecolor[3]);
-				float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
-				trianglearraylist.add((float)matemissivecolor[0]);
-				trianglearraylist.add((float)matemissivecolor[1]);
-				trianglearraylist.add((float)matemissivecolor[2]);
-				trianglearraylist.add((float)matemissivecolor[3]);
-				float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
-				if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
-				trianglearraylist.add((float)lightmapcolor[0]);
-				trianglearraylist.add((float)lightmapcolor[1]);
-				trianglearraylist.add((float)lightmapcolor[2]);
-				trianglearraylist.add((float)lightmapcolor[3]);
-				trianglearraylist.add((float)modeltri.mat.roughness);
-				trianglearraylist.add((float)modeltri.mat.metallic);
-				trianglearraylist.add((float)modeltri.mat.refraction);
-				trianglearraylist.add((float)modeltri.mat.transparency);
+			for (int j=0;j<loadmodel.childlist.length;j++) {
+				Entity object = loadmodel.childlist[j];
+				
+				objectarraylist.add(0.0f);
+				objectarraylist.add(0.0f);
+				objectarraylist.add(0.0f);
+				objectarraylist.add(1.0f);
+				objectarraylist.add(1.0f);
+				objectarraylist.add(1.0f);
+				objectarraylist.add(0.0f);
+				objectarraylist.add(0.0f);
+				objectarraylist.add(0.0f);
+				objectarraylist.add(-scal*(float)object.sphereboundaryvolume.x);
+				objectarraylist.add(scal*(float)object.sphereboundaryvolume.y);
+				objectarraylist.add(scal*(float)object.sphereboundaryvolume.z);
+				objectarraylist.add(scal*(float)object.sphereboundaryvolume.r);
+				objectarraylist.add((float)trianglearraylist.size()/35);
+				objectarraylist.add((float)object.trianglelist.length);
+				
+				for (int i=0;i<object.trianglelist.length;i++) {
+					Triangle modeltri = object.trianglelist[i];
+					trianglearraylist.add(-scal*(float)modeltri.pos1.x);
+					trianglearraylist.add(scal*(float)modeltri.pos1.y);
+					trianglearraylist.add(scal*(float)modeltri.pos1.z);
+					trianglearraylist.add(-scal*(float)modeltri.pos2.x);
+					trianglearraylist.add(scal*(float)modeltri.pos2.y);
+					trianglearraylist.add(scal*(float)modeltri.pos2.z);
+					trianglearraylist.add(-scal*(float)modeltri.pos3.x);
+					trianglearraylist.add(scal*(float)modeltri.pos3.y);
+					trianglearraylist.add(scal*(float)modeltri.pos3.z);
+					trianglearraylist.add(-(float)modeltri.norm.dx);
+					trianglearraylist.add((float)modeltri.norm.dy);
+					trianglearraylist.add((float)modeltri.norm.dz);
+					trianglearraylist.add((float)modeltri.pos1.tex.u);
+					trianglearraylist.add((float)modeltri.pos1.tex.v);
+					trianglearraylist.add((float)modeltri.pos2.tex.u);
+					trianglearraylist.add((float)modeltri.pos2.tex.v);
+					trianglearraylist.add((float)modeltri.pos3.tex.u);
+					trianglearraylist.add((float)modeltri.pos3.tex.v);
+					trianglearraylist.add((float)modeltri.mat.imageid);
+					float[] matfacecolor = modeltri.mat.facecolor.getRGBComponents(new float[4]);
+					trianglearraylist.add((float)matfacecolor[0]);
+					trianglearraylist.add((float)matfacecolor[1]);
+					trianglearraylist.add((float)matfacecolor[2]);
+					trianglearraylist.add((float)matfacecolor[3]);
+					float[] matemissivecolor = modeltri.mat.emissivecolor.getRGBComponents(new float[4]);
+					trianglearraylist.add((float)matemissivecolor[0]);
+					trianglearraylist.add((float)matemissivecolor[1]);
+					trianglearraylist.add((float)matemissivecolor[2]);
+					trianglearraylist.add((float)matemissivecolor[3]);
+					float[] lightmapcolor = {0.0f,0.0f,0.0f,0.0f};
+					if (modeltri.mat.ambientcolor!=null) {lightmapcolor = modeltri.mat.ambientcolor.getRGBComponents(new float[4]);}
+					trianglearraylist.add((float)lightmapcolor[0]);
+					trianglearraylist.add((float)lightmapcolor[1]);
+					trianglearraylist.add((float)lightmapcolor[2]);
+					trianglearraylist.add((float)lightmapcolor[3]);
+					trianglearraylist.add((float)modeltri.mat.roughness);
+					trianglearraylist.add((float)modeltri.mat.metallic);
+					trianglearraylist.add((float)modeltri.mat.refraction);
+					trianglearraylist.add((float)modeltri.mat.transparency);
+				}
 			}
 		}
 

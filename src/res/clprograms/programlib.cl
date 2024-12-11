@@ -341,7 +341,6 @@ float8 renderray(float8 vray, int *imh, global float *tri, global int *trc, glob
 
 	const int ts = 35, os = 15, es = 15;
 	float rayz = INFINITY;
-	prefetch(ent,entc*es*4);
 
 	for (int eid=0;eid<entc;eid++) {
 		float4 entpos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],0.0f);
@@ -350,7 +349,6 @@ float8 renderray(float8 vray, int *imh, global float *tri, global int *trc, glob
 		float4 entsph = (float4)(ent[eid*es+9],ent[eid*es+10],ent[eid*es+11],ent[eid*es+12]);
 		int entobjind = (int)ent[eid*es+13];
 		int entobjlen = (int)ent[eid*es+14];
-		prefetch(&obj[entobjind],entobjlen*os*4);
 
 		float16 entscamat = scalingmatrix(entsca);
 		float16 entrotmat = rotationmatrix(entrot);
@@ -370,7 +368,6 @@ float8 renderray(float8 vray, int *imh, global float *tri, global int *trc, glob
 				float4 objsph = (float4)(obj[oid*os+9],obj[oid*os+10],obj[oid*os+11],obj[oid*os+12]);
 				int objtriind = (int)obj[oid*os+13];
 				int objtrilen = (int)obj[oid*os+14];
-				prefetch(&tri[objtriind],objtrilen*ts*4);
 
 				float16 objscamat = scalingmatrix(objsca);
 				float16 objrotmat = rotationmatrix(objrot);
@@ -528,9 +525,6 @@ kernel void transformentity(global float *tli, global float *tri, global int *tr
 	int objc = obc[0];
 	int tric = trc[0];
 	const int ts = 35, os = 15, es = 15;
-	prefetch(&ent[eid],es*4);
-	prefetch(obj,objc*os*4);
-	prefetch(tri,tric*ts*4);
 
 	float4 entpos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],0.0f);
 	float3 entsca = (float3)(ent[eid*es+3],ent[eid*es+4],ent[eid*es+5]);
@@ -676,13 +670,9 @@ kernel void renderrayview(global float *img, global float *imz, global int *imh,
 	unsigned int yid = get_global_id(1);
 	const int ts = 35, os = 15, es = 15;
 	
-	prefetch(imh,4); prefetch(cam,23*4); prefetch(enc,4); prefetch(obc,4); prefetch(trc,4); prefetch(tes,4); prefetch(lit,4); prefetch(nor,4); prefetch(rsx,4); prefetch(rsy,4); prefetch(rsn,4);
 	int entc = enc[0];
 	int objc = obc[0];
 	int tric = trc[0];
-	prefetch(ent,entc*es*4);
-	prefetch(obj,objc*os*4);
-	prefetch(tri,tric*ts*4);
 	
 	int rstepx = rsx[0];
 	int rstepy = rsy[0];
@@ -737,13 +727,9 @@ kernel void renderplaneview(global float *img, global float *imz, global int *im
 	const int ts = 35, os = 15, es = 15, vs = 8;
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 
-	prefetch(imh,4); prefetch(cam,23*4); prefetch(enc,4); prefetch(obc,4); prefetch(trc,4); prefetch(tes,4); prefetch(lit,4); prefetch(nor,4); prefetch(rsx,4); prefetch(rsy,4); prefetch(rsn,4);
 	int entc = enc[0];
 	int objc = obc[0];
 	int tric = trc[0];
-	prefetch(ent,entc*es*4);
-	prefetch(obj,objc*os*4);
-	prefetch(tri,tric*ts*4);
 
 	int rstepx = rsx[0];
 	int rstepy = rsy[0];
