@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.2.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.2.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -220,13 +220,13 @@ public class JavaOCLRenderEngine {
 		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, -5.0f, 1.0f, 0.0f, 60.0f, 30.0f});
 		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, 5.0f, 1.0f, 30.0f, 0.0f, 50.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
-		int asteroidcount = 10000;
+		int asteroidcount = 100;
 		float[] asteroids = new float[asteroidcount*7];
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*7+0] = rand.nextFloat(-100.0f, 100.0f);
 			asteroids[i*7+1] = rand.nextFloat(-100.0f, 100.0f);
 			asteroids[i*7+2] = rand.nextFloat(-100.0f, 100.0f);
-			asteroids[i*7+3] = 1.0f;
+			asteroids[i*7+3] = 10.0f;
 			asteroids[i*7+4] = rand.nextFloat(0.0f, 360.0f);
 			asteroids[i*7+5] = rand.nextFloat(0.0f, 360.0f);
 			asteroids[i*7+6] = rand.nextFloat(0.0f, 360.0f);
@@ -695,10 +695,10 @@ public class JavaOCLRenderEngine {
 			entityarraylist.add(rotx);
 			entityarraylist.add(roty);
 			entityarraylist.add(rotz);
-			entityarraylist.add(-scal*(float)loadmodel.sphereboundaryvolume.x);
-			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.y);
-			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.z);
-			entityarraylist.add(scal*(float)loadmodel.sphereboundaryvolume.r);
+			entityarraylist.add(-(float)loadmodel.sphereboundaryvolume.x);
+			entityarraylist.add((float)loadmodel.sphereboundaryvolume.y);
+			entityarraylist.add((float)loadmodel.sphereboundaryvolume.z);
+			entityarraylist.add((float)loadmodel.sphereboundaryvolume.r);
 			entityarraylist.add((float)objectarraylist.size()/15);
 			entityarraylist.add((float)loadmodel.childlist.length);
 			
@@ -714,24 +714,24 @@ public class JavaOCLRenderEngine {
 				objectarraylist.add(0.0f);
 				objectarraylist.add(0.0f);
 				objectarraylist.add(0.0f);
-				objectarraylist.add(-scal*(float)object.sphereboundaryvolume.x);
-				objectarraylist.add(scal*(float)object.sphereboundaryvolume.y);
-				objectarraylist.add(scal*(float)object.sphereboundaryvolume.z);
-				objectarraylist.add(scal*(float)object.sphereboundaryvolume.r);
+				objectarraylist.add(-(float)object.sphereboundaryvolume.x);
+				objectarraylist.add((float)object.sphereboundaryvolume.y);
+				objectarraylist.add((float)object.sphereboundaryvolume.z);
+				objectarraylist.add((float)object.sphereboundaryvolume.r);
 				objectarraylist.add((float)trianglearraylist.size()/35);
 				objectarraylist.add((float)object.trianglelist.length);
 				
 				for (int i=0;i<object.trianglelist.length;i++) {
 					Triangle modeltri = object.trianglelist[i];
-					trianglearraylist.add(-scal*(float)modeltri.pos1.x);
-					trianglearraylist.add(scal*(float)modeltri.pos1.y);
-					trianglearraylist.add(scal*(float)modeltri.pos1.z);
-					trianglearraylist.add(-scal*(float)modeltri.pos2.x);
-					trianglearraylist.add(scal*(float)modeltri.pos2.y);
-					trianglearraylist.add(scal*(float)modeltri.pos2.z);
-					trianglearraylist.add(-scal*(float)modeltri.pos3.x);
-					trianglearraylist.add(scal*(float)modeltri.pos3.y);
-					trianglearraylist.add(scal*(float)modeltri.pos3.z);
+					trianglearraylist.add(-(float)modeltri.pos1.x);
+					trianglearraylist.add((float)modeltri.pos1.y);
+					trianglearraylist.add((float)modeltri.pos1.z);
+					trianglearraylist.add(-(float)modeltri.pos2.x);
+					trianglearraylist.add((float)modeltri.pos2.y);
+					trianglearraylist.add((float)modeltri.pos2.z);
+					trianglearraylist.add(-(float)modeltri.pos3.x);
+					trianglearraylist.add((float)modeltri.pos3.y);
+					trianglearraylist.add((float)modeltri.pos3.z);
 					trianglearraylist.add(-(float)modeltri.norm.dx);
 					trianglearraylist.add((float)modeltri.norm.dy);
 					trianglearraylist.add((float)modeltri.norm.dz);
