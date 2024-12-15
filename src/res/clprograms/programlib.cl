@@ -58,7 +58,7 @@ float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
 float8 renderray(float8 vray, int *imh, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit);
-kernel void movecamera(global float *cam, global float *cmv);
+kernel void movecamera(global float *cam, global float *cmv, global float *ent);
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void transformentity(global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
 kernel void physicscollision(global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
@@ -472,7 +472,7 @@ float8 renderray(float8 vray, int *imh, global float *tri, global int *trc, glob
 	return raycolordist;
 }
 
-kernel void movecamera(global float *cam, global float *cmv) {
+kernel void movecamera(global float *cam, global float *cmv, global float *ent) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[3],cam[4]));
 	int2 camres = (int2)((int)cam[5],(int)cam[6]);
@@ -501,6 +501,8 @@ kernel void movecamera(global float *cam, global float *cmv) {
 	cam[16] = cammat.s9; cam[17] = cammat.sA; cam[18] = cammat.sB;
 	cam[19] = cammat.sC; cam[20] = cammat.sD; cam[21] = cammat.sE;
 	cam[22] = cammat.sF;
+
+	ent[0] = campos.x; ent[1] = campos.y; ent[2] = campos.z;
 }
 
 kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam) {
@@ -658,8 +660,8 @@ kernel void physicscollision(global float *tli, global float *oli, global float 
 				if (sphdist<0.0f) {
 					float4 entpos = (float4)(ent[eix*es+0],ent[eix*es+1],ent[eix*es+2],ent[eix*es+3]);
 
-					float4 sphdir = cent.sph - vent.sph; sphdir.w = 0.0f;
-					float step = deltatime * 10.0f;
+					float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
+					float step = deltatime * 1.0f;
 					sphdir *= step;
 					entpos += sphdir;
 

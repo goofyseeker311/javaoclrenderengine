@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.2.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.2.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -209,7 +209,7 @@ public class JavaOCLRenderEngine {
 		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
 		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
 
-		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,200.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid10.obj", true);
@@ -223,11 +223,12 @@ public class JavaOCLRenderEngine {
 		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, 5.0f, 1.0f, 30.0f, 0.0f, 50.0f, 0.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
 		int asteroidcount = 100;
+		float placeradius = 100.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
-			asteroids[i*oc+0] = rand.nextFloat(-100.0f, 100.0f);
-			asteroids[i*oc+1] = rand.nextFloat(-100.0f, 100.0f);
-			asteroids[i*oc+2] = rand.nextFloat(-100.0f, 100.0f);
+			asteroids[i*oc+0] = rand.nextFloat(-placeradius, placeradius);
+			asteroids[i*oc+1] = rand.nextFloat(-placeradius, placeradius);
+			asteroids[i*oc+2] = rand.nextFloat(-placeradius, placeradius);
 			asteroids[i*oc+3] = 10.0f;
 			asteroids[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
 			asteroids[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
@@ -383,17 +384,12 @@ public class JavaOCLRenderEngine {
 	public void render() {
 		long framestarttime = System.nanoTime();
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
-		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
-		computelib.insertBarrier(queue);
-		computelib.readBufferf(opencldevice, queue, camposbufferptr, camerapos3fov2res2rotmat16);
-		this.entitylist[0] = camerapos3fov2res2rotmat16[0];
-		this.entitylist[1] = camerapos3fov2res2rotmat16[1];
-		this.entitylist[2] = camerapos3fov2res2rotmat16[2];
-		computelib.writeBufferf(opencldevice, queue, entitiesptr, this.entitylist);
 		if (++rstepnum[0]>=(rstepx[0]*rstepy[0])) {rstepnum[0]=0;}
 		computelib.writeBufferi(opencldevice, queue, rstepnumptr, rstepnum);
 		computelib.writeBufferf(opencldevice, queue, deltatimeptr, lasttimedeltaseconds);
 		
+		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr,entitiesptr}, new int[]{0}, new int[]{1});
+		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,8});
 		computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{triangleslitptr,objectslitptr,entitieslitptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		computelib.insertBarrier(queue);
