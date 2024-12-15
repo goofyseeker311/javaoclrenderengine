@@ -644,6 +644,8 @@ kernel void physicscollision(global float *tli, global float *oli, global float 
 	cent.phys = (int)eli[eix*es+16];
 	if (cent.phys!=1) {return;}
 
+	float4 entdir = (float4)(0.0f);
+
 	for (int eid=0;eid<entc;eid++) {
 		if (eid!=eix) {
 			entity vent;
@@ -655,21 +657,22 @@ kernel void physicscollision(global float *tli, global float *oli, global float 
 			vent.len = (int)eli[eid*es+15];
 			vent.phys = (int)eli[eid*es+16];
 
-			if (vent.phys==1) {
-				float sphdist = spherespheredistance(cent.sph, vent.sph);
-				if (sphdist<0.0f) {
-					float4 entpos = (float4)(ent[eix*es+0],ent[eix*es+1],ent[eix*es+2],ent[eix*es+3]);
-
-					float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
-					float step = deltatime * 1.0f;
-					sphdir *= step;
-					entpos += sphdir;
-
-					ent[eix*es+0] = entpos.x; ent[eix*es+1] = entpos.y; ent[eix*es+2] = entpos.z; ent[eix*es+3] = entpos.w;
-				}
+			float sphdist = spherespheredistance(cent.sph, vent.sph);
+			if (sphdist<0.0f) {
+				float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
+				entdir += sphdir;
 			}
 		}
 	}
+
+	float4 entpos = (float4)(ent[eix*es+0],ent[eix*es+1],ent[eix*es+2],ent[eix*es+3]);
+	float4 enddirlim = entdir * deltatime;
+	float enddirlimlen = length(enddirlim);
+	if (enddirlimlen>1.0f) {
+		enddirlim /= enddirlimlen;
+	}
+	entpos += enddirlim;
+	ent[eix*es+0] = entpos.x; ent[eix*es+1] = entpos.y; ent[eix*es+2] = entpos.z; ent[eix*es+3] = entpos.w;
 }
 
 kernel void lightobject(global float *img, global float *imz, global int *imh, global float *tli, global float *tri, global float *obj, global float *ent, global int *enc, global int *tex, global int *tes) {
