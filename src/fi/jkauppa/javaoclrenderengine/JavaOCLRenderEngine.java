@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.2.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.2.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -84,7 +84,7 @@ public class JavaOCLRenderEngine {
 	@SuppressWarnings("unused")
 	private float[] graphicszbuffer = null;
 	private int[] graphicshbuffer = null;
-	private float[] camerapos3fov2res2rotmat16 = null;
+	private float[] camerapos3dir3rgt3up3fov2res2rotmat16 = null;
 	private float[] cameramov3rot3 = null;
 	private float[] triangleslist = null;
 	private int[] triangleslistlength = {0};
@@ -209,7 +209,7 @@ public class JavaOCLRenderEngine {
 		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
 		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
 
-		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid10.obj", true);
@@ -258,8 +258,8 @@ public class JavaOCLRenderEngine {
 		this.graphicsibufferptr = computelib.createBuffer(opencldevice, graphicslength*4);
 		this.graphicshbufferptr = computelib.createBuffer(opencldevice, 1);
 		this.graphicshbuffer = new int[1];
-		this.camposbufferptr = computelib.createBuffer(opencldevice, camerapos3fov2res2rotmat16.length);
-		computelib.writeBufferf(opencldevice, queue, camposbufferptr, camerapos3fov2res2rotmat16);
+		this.camposbufferptr = computelib.createBuffer(opencldevice, camerapos3dir3rgt3up3fov2res2rotmat16.length);
+		computelib.writeBufferf(opencldevice, queue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
 		this.cammovbufferptr = computelib.createBuffer(opencldevice, cameramov3rot3.length);
 		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
 
@@ -358,7 +358,7 @@ public class JavaOCLRenderEngine {
 		GLFW.glfwSetWindowTitle(window, programtitle+": "+String.format("%.0f",1000.0f/frametimeavg).replace(',', '.')+
 				"fps, computetime: "+String.format("%.3f",frametimeavg).replace(',', '.')+"ms ["+usingopencldevice+"] ("
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
-				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"]"
+				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"] hit: "+graphicshbuffer[0]
 				);
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
@@ -843,6 +843,14 @@ public class JavaOCLRenderEngine {
 		@Override public void invoke(long window, int button, int action, int mods) {
 			if ((button==0)&&(action==1)) {
 				AL10.alSourcePlay(sourcebuf);
+				computelib.readBufferf(opencldevice, queue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
+				computelib.readBufferf(opencldevice, queue, entitiesptr, entitylist);
+				if (entitylist[graphicshbuffer[0]*es+16]==1.0f) {
+					entitylist[graphicshbuffer[0]*es+0] += camerapos3dir3rgt3up3fov2res2rotmat16[3];
+					entitylist[graphicshbuffer[0]*es+1] += camerapos3dir3rgt3up3fov2res2rotmat16[4];
+					entitylist[graphicshbuffer[0]*es+2] += camerapos3dir3rgt3up3fov2res2rotmat16[5];
+					computelib.writeBufferf(opencldevice, queue, entitiesptr, entitylist);
+				}
 			}
 		}
 	}
