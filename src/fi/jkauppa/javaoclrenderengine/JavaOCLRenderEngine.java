@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.2.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.2.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -209,27 +209,27 @@ public class JavaOCLRenderEngine {
 		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
 		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
 
-		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,200.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.camerapos3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid10.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
-		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel2, new float[]{0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f});
-		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, new float[]{5.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f});
-		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, new float[]{-5.0f, 0.0f, 0.0f, 1.0f, 45.0f, 0.0f, 0.0f, 0.0f});
-		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 5.0f, 0.0f, 1.0f, 60.0f, 20.0f, 0.0f, 0.0f});
-		TriangleObjectEntity triobjent4 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, -5.0f, 0.0f, 1.0f, 20.0f, 70.0f, 0.0f, 0.0f});
-		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, -5.0f, 1.0f, 0.0f, 60.0f, 30.0f, 0.0f});
-		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, 5.0f, 1.0f, 30.0f, 0.0f, 50.0f, 0.0f});
+		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel2, new float[]{0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f});
+		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, new float[]{0.5f, 0.0f, 0.0f, 0.1f, 0.0f, 0.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, new float[]{-0.5f, 0.0f, 0.0f, 0.1f, 45.0f, 0.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.5f, 0.0f, 0.1f, 60.0f, 20.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent4 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, -0.5f, 0.0f, 0.1f, 20.0f, 70.0f, 0.0f, 0.0f});
+		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, -0.5f, 0.1f, 0.0f, 60.0f, 30.0f, 0.0f});
+		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f, 0.0f, 0.5f, 0.1f, 30.0f, 0.0f, 50.0f, 0.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
 		int asteroidcount = 100;
-		float placeradius = 10.0f;
+		float placeradius = 20.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*oc+0] = rand.nextFloat(-placeradius, placeradius);
 			asteroids[i*oc+1] = rand.nextFloat(-placeradius, placeradius);
 			asteroids[i*oc+2] = rand.nextFloat(-placeradius, placeradius);
-			asteroids[i*oc+3] = 10.0f;
+			asteroids[i*oc+3] = 1.0f;
 			asteroids[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
 			asteroids[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
 			asteroids[i*oc+6] = rand.nextFloat(0.0f, 360.0f);

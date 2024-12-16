@@ -657,20 +657,23 @@ kernel void physicscollision(global float *tli, global float *oli, global float 
 			vent.len = (int)eli[eid*es+15];
 			vent.phys = (int)eli[eid*es+16];
 
-			float sphdist = spherespheredistance(cent.sph, vent.sph);
-			if (sphdist<0.0f) {
-				float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
-				entdir += sphdir;
+			if (vent.phys!=-1) {
+				float sphdist = spherespheredistance(cent.sph, vent.sph);
+				if (sphdist<0.0f) {
+					float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
+					entdir += sphdir;
+				}
 			}
 		}
 	}
 
 	float4 entpos = (float4)(ent[eix*es+0],ent[eix*es+1],ent[eix*es+2],ent[eix*es+3]);
-	float4 enddirlim = entdir * deltatime;
+	float4 enddirlim = entdir;
 	float enddirlimlen = length(enddirlim);
-	if (enddirlimlen>1.0f) {
+	if (enddirlimlen>0.1f) {
 		enddirlim /= enddirlimlen;
 	}
+	enddirlim *= deltatime;
 	entpos += enddirlim;
 	ent[eix*es+0] = entpos.x; ent[eix*es+1] = entpos.y; ent[eix*es+2] = entpos.z; ent[eix*es+3] = entpos.w;
 }
