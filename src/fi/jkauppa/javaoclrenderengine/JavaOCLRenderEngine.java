@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.2.9";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.3.0";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -397,7 +397,7 @@ public class JavaOCLRenderEngine {
 		//computelib.insertBarrier(queue);
 		//computelib.runProgram(opencldevice, queue, program, "lightobject", new long[]{,,,triangleslitptr,triangleslitptr,triangleslenptr,texturesptr,textureslenptr}, new int[]{0,0,0}, new int[]{triangleslistlen[0],1,triangleslistlen[0]});
 		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "renderrayview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectslitptr,objectslenptr,entitieslitptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0,0}, new int[]{entitylistlength[0],graphicswidth,graphicsheight});
+		computelib.runProgram(opencldevice, queue, program, "renderrayview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectslitptr,objectslenptr,entitieslitptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
 		computelib.insertBarrier(queue);
 		computelib.runProgram(opencldevice, queue, program, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
 		computelib.insertBarrier(queue);
