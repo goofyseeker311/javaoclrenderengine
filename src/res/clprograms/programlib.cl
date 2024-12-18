@@ -797,9 +797,9 @@ void lightentity(int tid, float *tli, float *tri, int *trc, float *obj, int *obc
 		for (int y=0;y<cmsize;y++) {for (int x=0;x<cmsize;x++) {renderrayview(x, y, img, imz, &hitid, tricam6, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
 		for (int y=0;y<cmsize;y++) {for (int x=0;x<cmsize;x++) {int pind=y*cmsize+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
 
-		lightmapcolor.s0 = lightmapcolor.s0 * 10.0f/cmlen;
-		lightmapcolor.s1 = lightmapcolor.s1 * 10.0f/cmlen;
-		lightmapcolor.s2 = lightmapcolor.s2 * 10.0f/cmlen;
+		lightmapcolor.s0 = lightmapcolor.s0 * 1.0f/cmlen;
+		lightmapcolor.s1 = lightmapcolor.s1 * 1.0f/cmlen;
+		lightmapcolor.s2 = lightmapcolor.s2 * 1.0f/cmlen;
 
 		tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
 	}

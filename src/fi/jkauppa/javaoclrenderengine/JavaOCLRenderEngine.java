@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.3.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.3.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -217,7 +217,7 @@ public class JavaOCLRenderEngine {
 
 		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid10.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
-		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
+		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen2.obj", true);
 		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel3, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
 		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel, new float[]{0.5f,0.0f,0.0f, 0.1f, 0.0f,0.0f,0.0f, 0.0f,1.0f});
 		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel, new float[]{-0.5f,0.0f,0.0f, 0.1f, 45.0f,0.0f,0.0f, 0.0f,1.0f});
