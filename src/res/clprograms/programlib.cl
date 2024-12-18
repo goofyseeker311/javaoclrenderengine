@@ -1,3 +1,8 @@
+#define ts 46
+#define os 16
+#define es 17
+#define vs 8
+
 typedef struct {
 	float4 pos;
 	float3 scale;
@@ -33,6 +38,7 @@ typedef struct {
 	float metallic;
 	float refractind;
 	float opacity;
+	int prelit;
 } triangle;
 
 float4 matrixposmult(float4 pos, float16 mat);
@@ -59,20 +65,20 @@ float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
 float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit);
 
-void movecamera(global float *cam, global float *cmv, global float *ent);
+void movecamera(float *cam, float *cmv);
 void clearview(int xid, int vid, float *img, float *imz, int *imh, float *cam);
-void transformentity(int eid, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
-void physicscollision(int eid, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, float *dts);
-void lightentity(int yid, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes);
+void transformentity(int eid, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent);
+void physicscollision(int eid, float *cam, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, float *dts);
+void lightentity(int yid, float *tli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes);
 void viewfilter(int xid, int yid, float *imf, float *img, float *cam);
 void rendercross(float *img, float *imz, int *imh, float *cam);
 void renderrayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
 
-kernel void movecamerakernel(global float *cam, global float *cmv, global float *ent);
+kernel void movecamerakernel(global float *cam, global float *cmv);
 kernel void clearviewkernel(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void transformentitykernel(global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
-kernel void physicscollisionkernel(global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
-kernel void lightentitykernel(global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
+kernel void physicscollisionkernel(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
+kernel void lightentitykernel(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
 kernel void viewfilterkernel(global float *imf, global float *img, global float *cam);
 kernel void rendercrosskernel(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderrayviewkernel(global float *img, global float *imz, global int *imh, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
@@ -393,7 +399,6 @@ float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *o
 	int texs = tes[0];
 	int tlit = lit[0];
 
-	const int ts = 45, os = 16, es = 17;
 	float rayz = INFINITY;
 
 	for (int eid=0;eid<entc;eid++) {
@@ -438,6 +443,7 @@ float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *o
 						vtri.metallic = tri[tid*ts+42];
 						vtri.refractind = tri[tid*ts+43];
 						vtri.opacity = tri[tid*ts+44];
+						vtri.prelit = (int)tri[tid*ts+45];
 						
 						float4 triplane = triangleplane(&vtri);
 						float8 intpos = raytriangleintersection(campos, camdir, &vtri);
@@ -483,10 +489,10 @@ float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *o
 	return raycolordist;
 }
 
-kernel void movecamerakernel(global float *cam, global float *cmv, global float *ent) {
-	movecamera(cam, cmv, ent);
+kernel void movecamerakernel(global float *cam, global float *cmv) {
+	movecamera(cam, cmv);
 }
-void movecamera(global float *cam, global float *cmv, global float *ent) {
+void movecamera(float *cam, float *cmv) {
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float2 camfov = radians((float2)(cam[12],cam[13]));
 	int2 camres = (int2)((int)cam[14],(int)cam[15]);
@@ -518,8 +524,6 @@ void movecamera(global float *cam, global float *cmv, global float *ent) {
 	cam[25] = cammat.s9; cam[26] = cammat.sA; cam[27] = cammat.sB;
 	cam[28] = cammat.sC; cam[29] = cammat.sD; cam[30] = cammat.sE;
 	cam[31] = cammat.sF;
-
-	ent[0] = campos.x; ent[1] = campos.y; ent[2] = campos.z;
 }
 
 kernel void clearviewkernel(global float *img, global float *imz, global int *imh, global float *cam) {
@@ -530,7 +534,6 @@ kernel void clearviewkernel(global float *img, global float *imz, global int *im
 void clearview(int xid, int vid, float *img, float *imz, int *imh, float *cam) {
 	int2 camres = (int2)((int)cam[14],(int)cam[15]);
 	
-	const int vs = 8;
 	int camresystep = camres.y / vs;
 	int campresystart = camresystep*vid;
 	int campresyend = camresystep*vid + camresystep-1;
@@ -550,10 +553,9 @@ kernel void transformentitykernel(global float *tli, global float *oli, global f
 	unsigned int eid = get_global_id(0);
 	transformentity(eid, tli, oli, eli, tri, trc, obj, obc, ent);
 }
-void transformentity(int eid, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
+void transformentity(int eid, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent) {
 	int objc = obc[0];
 	int tric = trc[0];
-	const int ts = 45, os = 16, es = 17;
 
 	entity vent;
 	vent.pos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],ent[eid*es+3]);
@@ -623,6 +625,7 @@ void transformentity(int eid, global float *tli, global float *oli, global float
 			vtri.metallic = tri[tid*ts+42];
 			vtri.refractind = tri[tid*ts+43];
 			vtri.opacity = tri[tid*ts+44];
+			vtri.prelit = (int)tri[tid*ts+45];
 			
 			float4 tripos1 = matrixposmult(vtri.pos1, objmat);
 			float4 tripos2 = matrixposmult(vtri.pos2, objmat);
@@ -647,18 +650,21 @@ void transformentity(int eid, global float *tli, global float *oli, global float
 			tli[tid*ts+42] = vtri.metallic;
 			tli[tid*ts+43] = vtri.refractind;
 			tli[tid*ts+44] = vtri.opacity;
+			tli[tid*ts+45] = vtri.prelit;
 		}
 	}
 }
 
-kernel void physicscollisionkernel(global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts) {
+kernel void physicscollisionkernel(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts) {
 	unsigned int eid = get_global_id(0);
-	physicscollision(eid, tli, oli, eli, tri, trc, obj, obc, ent, enc, dts);
+	physicscollision(eid, cam, tli, oli, eli, tri, trc, obj, obc, ent, enc, dts);
 }
-void physicscollision(int eid, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, float *dts) {
+void physicscollision(int eid, float *cam, float *tli, float *oli, float *eli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, float *dts) {
 	int entc = enc[0];
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
 	float deltatime = dts[0];
-	const int ts = 45, os = 16, es = 17;
+
+	ent[0] = campos.x; ent[1] = campos.y; ent[2] = campos.z;
 
 	entity cent;
 	cent.pos = (float4)(eli[eid*es+0],eli[eid*es+1],eli[eid*es+2],eli[eid*es+3]);
@@ -704,39 +710,87 @@ void physicscollision(int eid, float *tli, float *oli, float *eli, float *tri, i
 	ent[eid*es+0] = entpos.x; ent[eid*es+1] = entpos.y; ent[eid*es+2] = entpos.z; ent[eid*es+3] = entpos.w;
 }
 
-kernel void lightentitykernel(global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes) {
+kernel void lightentitykernel(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes) {
 	unsigned int tid = get_global_id(0);
-	lightentity(tid, tri, trc, obj, obc, ent, enc, tex, tes) ;
+	lightentity(tid, tli, tri, trc, obj, obc, ent, enc, tex, tes) ;
 }
-void lightentity(int tid, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes) {
-	const int ts = 45, os = 16, es = 17;
-	const int lit = 1, nor = 1, cmstep = 32*32;
+void lightentity(int tid, float *tli, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes) {
+	triangle vtri;
+	vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+	vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+	vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+	vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+	vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+	vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+	vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+	vtri.texid = (int)tri[tid*ts+28];
+	vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
+	vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
+	vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
+	vtri.roughness = tri[tid*ts+41];
+	vtri.metallic = tri[tid*ts+42];
+	vtri.refractind = tri[tid*ts+43];
+	vtri.opacity = tri[tid*ts+44];
+	vtri.prelit = (int)tri[tid*ts+45];
 
-	/*
-	float4 tripos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
-	float4 tripos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
-	float4 tripos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+	if (vtri.prelit==1) {return;}
 
-	float4 centerpos = (tripos1 + tripos2 + tripos3) / 3.0f;
-	float16 tm = rotationmatrix((float3)(0.0f,0.0f,0.0f));
-	float16 tm2 = rotationmatrix((float3)(M_PI_F,0.0f,0.0f));
-	float16 tm3 = rotationmatrix((float3)(M_PI_2_F,0.0f,0.0f));
-	float16 tm4 = rotationmatrix((float3)(M_PI_2_F,0.0f,M_PI_2_F));
-	float16 tm5 = rotationmatrix((float3)(M_PI_2_F,0.0f,M_PI_F));
-	float16 tm6 = rotationmatrix((float3)(M_PI_2_F,0.0f,3.0f*M_PI_2_F));
-	float tricam[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm[0],tm[1],tm[2],tm[3],tm[4],tm[5],tm[6],tm[7],tm[8],tm[9],tm[10],tm[11],tm[12],tm[13],tm[14],tm[15]};
-	float tricam2[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm2[0],tm2[1],tm2[2],tm2[3],tm2[4],tm2[5],tm2[6],tm2[7],tm2[8],tm2[9],tm2[10],tm2[11],tm2[12],tm2[13],tm2[14],tm2[15]};
-	float tricam3[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm3[0],tm3[1],tm3[2],tm3[3],tm3[4],tm3[5],tm3[6],tm3[7],tm3[8],tm3[9],tm3[10],tm3[11],tm3[12],tm3[13],tm3[14],tm3[15]};
-	float tricam4[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm4[0],tm4[1],tm4[2],tm4[3],tm4[4],tm4[5],tm4[6],tm4[7],tm4[8],tm4[9],tm4[10],tm4[11],tm4[12],tm4[13],tm4[14],tm4[15]};
-	float tricam5[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm5[0],tm5[1],tm5[2],tm5[3],tm5[4],tm5[5],tm5[6],tm5[7],tm5[8],tm5[9],tm5[10],tm5[11],tm5[12],tm5[13],tm5[14],tm5[15]};
-	float tricam6[23] = {centerpos.x,centerpos.y,centerpos.z, 90.0f,90.0f,32.0f,32.0f,tm6[0],tm6[1],tm6[2],tm6[3],tm6[4],tm6[5],tm6[6],tm6[7],tm6[8],tm6[9],tm6[10],tm6[11],tm6[12],tm6[13],tm6[14],tm6[15]};
-	//rayview(&img[cmstep*0+cmstep*6*tid], &imz[cmstep*0+cmstep*6*tid], &imh[0+tid*6], &tricam, tri, trc, tex, tes, &lit, &nor);
-	//rayview(&img[cmstep*1+cmstep*6*tid], &imz[cmstep*1+cmstep*6*tid], &imh[1+tid*6], &tricam2, tri, trc, tex, tes, &lit, &nor);
-	//rayview(&img[cmstep*2+cmstep*6*tid], &imz[cmstep*2+cmstep*6*tid], &imh[2+tid*6], &tricam3, tri, trc, tex, tes, &lit, &nor);
-	//rayview(&img[cmstep*3+cmstep*6*tid], &imz[cmstep*3+cmstep*6*tid], &imh[3+tid*6], &tricam4, tri, trc, tex, tes, &lit, &nor);
-	//rayview(&img[cmstep*4+cmstep*6*tid], &imz[cmstep*4+cmstep*6*tid], &imh[4+tid*6], &tricam5, tri, trc, tex, tes, &lit, &nor);
-	//rayview(&img[cmstep*5+cmstep*6*tid], &imz[cmstep*5+cmstep*6*tid], &imh[5+tid*6], &tricam6, tri, trc, tex, tes, &lit, &nor);
-	*/
+	float4 centerpos = (vtri.pos1 + vtri.pos2 + vtri.pos3) / 3.0f;
+	float tcmv[6] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f};
+	float tcmv2[6] = {centerpos.x,centerpos.y,centerpos.z, M_PI_F,0.0f,0.0f};
+	float tcmv3[6] = {centerpos.x,centerpos.y,centerpos.z, M_PI_2_F,0.0f,0.0f};
+	float tcmv4[6] = {centerpos.x,centerpos.y,centerpos.z, M_PI_2_F,0.0f,M_PI_2_F};
+	float tcmv5[6] = {centerpos.x,centerpos.y,centerpos.z, M_PI_2_F,0.0f,M_PI_F};
+	float tcmv6[6] = {centerpos.x,centerpos.y,centerpos.z, M_PI_2_F,0.0f,3.0f*M_PI_2_F};
+	float tricam[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam2[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam3[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam4[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam5[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam6[32] = {0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, 90.0f,90.0f,32.0f,32.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	movecamera(tricam, tcmv);
+	movecamera(tricam2, tcmv2);
+	movecamera(tricam3, tcmv3);
+	movecamera(tricam4, tcmv4);
+	movecamera(tricam5, tcmv5);
+	movecamera(tricam6, tcmv6);
+
+	const int lit = 1, nor = 1, cmsize = 32, rsx = 1, rsy = 1, rsn = 0;
+
+	float img[32*32*4];
+	float imz[32*32];
+	float4 lightmapcolor = (float4)(0.0f,0.0f,0.0f,1.0f);
+
+	for (int y=0;y<cmsize;y++) {
+		for (int x=0;x<cmsize;x++) {
+			int pind = y*cmsize+x;
+			img[pind*4+0] = 0.0f;
+			img[pind*4+1] = 0.0f;
+			img[pind*4+2] = 0.0f;
+			img[pind*4+3] = 0.0f;
+			imz[pind] = INFINITY;
+			int hitid = -1;
+			renderrayview(x, y, img, imz, &hitid, tricam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+			renderrayview(x, y, img, imz, &hitid, tricam2, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+			renderrayview(x, y, img, imz, &hitid, tricam3, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+			renderrayview(x, y, img, imz, &hitid, tricam4, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+			renderrayview(x, y, img, imz, &hitid, tricam5, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+			renderrayview(x, y, img, imz, &hitid, tricam6, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+			lightmapcolor.s0 += img[pind*4+0]; lightmapcolor.s1 += img[pind*4+1]; lightmapcolor.s2 += img[pind*4+2];
+		}
+	}
+
+	lightmapcolor.s0 = 0.7f;
+	lightmapcolor.s1 = 1.0f;
+	lightmapcolor.s2 = 0.7f;
+	lightmapcolor.s3 = 1.0f;
+
+	tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
 }
 
 kernel void viewfilterkernel(global float *imf, global float *img, global float *cam) {
@@ -801,8 +855,6 @@ kernel void renderrayviewkernel(global float *img, global float *imz, global int
 	renderrayview(xid, yid, img, imz, imh, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
 }
 void renderrayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
-	const int ts = 45, os = 16, es = 17;
-	
 	int rstepx = rsx[0];
 	int rstepy = rsy[0];
 	int rstepnum = rsn[0];
