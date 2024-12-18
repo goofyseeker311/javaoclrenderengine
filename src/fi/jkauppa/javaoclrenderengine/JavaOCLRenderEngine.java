@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.3.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.3.6";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -112,7 +112,7 @@ public class JavaOCLRenderEngine {
 	private double[] mousex = {0}, mousey = {0};
 	private double lastmousex = 0, lastmousey = 0;
 	private float[] lasttimedeltaseconds = {0.0f};
-	private float lightupdatedeltaseconds = 50.0f;
+	private float lightupdatedeltaseconds = 30.0f;
 	private long monitor = NULL;
 	private GLFWVidMode videomode = null;
 	private KeyProcessor keyprocessor = new KeyProcessor();
@@ -215,7 +215,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid10.obj", true);
+		Entity loadmodel = ModelLib.loadOBJFileEntity("res/models/asteroid12.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen2.obj", true);
 		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel3, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
@@ -227,7 +227,7 @@ public class JavaOCLRenderEngine {
 		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel, new float[]{0.0f,0.0f,0.5f, 0.1f, 30.0f,0.0f,50.0f, 0.0f,1.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
 		int asteroidcount = 100;
-		float placeradius = 20.0f;
+		float placeradius = 5.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*oc+0] = rand.nextFloat(-placeradius, placeradius);
@@ -876,6 +876,5 @@ public class JavaOCLRenderEngine {
 			System.out.println("xoffset: "+xoffset+" yoffset: "+yoffset);
 		}
 	}
-
 
 }
