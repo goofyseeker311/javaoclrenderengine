@@ -2,7 +2,8 @@
 #define os 16
 #define es 17
 #define vs 40
-#define cs 16
+#define cs 32
+#define lm 10.0f
 
 typedef struct {
 	float4 pos;
@@ -72,7 +73,8 @@ kernel void movecamera(global float *cam, global float *cmv);
 kernel void clearview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam);
 kernel void transformentity(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
 kernel void physicscollision(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
-kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *dli);
+kernel void lightcopy(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
+kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
 kernel void viewfilter(global float *imf, global float *img, global float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderrayview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
@@ -698,7 +700,7 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	ent[eid*es+0] = entpos.x; ent[eid*es+1] = entpos.y; ent[eid*es+2] = entpos.z; ent[eid*es+3] = entpos.w;
 }
 
-kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *dli) {
+kernel void lightcopy(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes) {
 	unsigned int tid = get_global_id(0);
 	triangle vtri;
 	vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
@@ -736,46 +738,62 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 
 	if (vtri.prelit==1) {
 		tli[tid*ts+37] = vtri.lightmapcolor.s0; tli[tid*ts+38] = vtri.lightmapcolor.s1; tli[tid*ts+39] = vtri.lightmapcolor.s2; tli[tid*ts+40] = vtri.lightmapcolor.s3;
-		return;
+	}
+}
+
+kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes) {
+	unsigned int tid = get_global_id(0);
+	triangle vtri;
+	vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+	vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+	vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+	vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+	vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+	vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+	vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+	vtri.texid = (int)tri[tid*ts+28];
+	vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
+	vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
+	vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
+	vtri.roughness = tri[tid*ts+41];
+	vtri.metallic = tri[tid*ts+42];
+	vtri.refractind = tri[tid*ts+43];
+	vtri.opacity = tri[tid*ts+44];
+	vtri.prelit = (int)tri[tid*ts+45];
+
+	float4 centerpos = (vtri.pos1 + vtri.pos2 + vtri.pos3) / 3.0f;
+	float tricam[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam2[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam3[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam4[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,1.0f,0.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam5[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, -1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+	float tricam6[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,-1.0f,0.0f, -1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+
+	const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
+	int cmlen = cs*cs;
+
+	float img[cs*cs*4];
+	float imz[cs*cs];
+	int hitid = -1;
+	int ihe[cs*cs];
+	int iho[cs*cs];
+	int iht[cs*cs];
+	float *cam = tricam;
+	float4 lightmapcolor = (float4)(0.0f,0.0f,0.0f,1.0f);
+
+	for (int i=0;i<6;i++) {
+		if (i==1) {cam = tricam2;} else if (i==2) {cam = tricam3;} else if (i==3) {cam = tricam4;} else if (i==4) {cam = tricam5;} else if (i==5) {cam = tricam6;}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY;}}
+		//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
+		for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
 	}
 
-	int dolit = dli[0];
-	if (dolit==1) {
+	lightmapcolor.s0 = lightmapcolor.s0 * lm/cmlen;
+	lightmapcolor.s1 = lightmapcolor.s1 * lm/cmlen;
+	lightmapcolor.s2 = lightmapcolor.s2 * lm/cmlen;
 
-		float4 centerpos = (vtri.pos1 + vtri.pos2 + vtri.pos3) / 3.0f;
-		float tricam[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		float tricam2[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		float tricam3[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		float tricam4[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,1.0f,0.0f, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		float tricam5[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, -1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-		float tricam6[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,-1.0f,0.0f, -1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
-
-		const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
-		int cmlen = cs*cs;
-
-		float img[cs*cs*4];
-		float imz[cs*cs];
-		int hitid = -1;
-		int ihe[cs*cs];
-		int iho[cs*cs];
-		int iht[cs*cs];
-		float *cam = tricam;
-		float4 lightmapcolor = (float4)(0.0f,0.0f,0.0f,1.0f);
-
-		for (int i=0;i<6;i++) {
-			if (i==1) {cam = tricam2;} else if (i==2) {cam = tricam3;} else if (i==3) {cam = tricam4;} else if (i==4) {cam = tricam5;} else if (i==5) {cam = tricam6;}
-			for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY;}}
-			//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
-			for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
-			for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
-		}
-
-		lightmapcolor.s0 = lightmapcolor.s0 * 10.0f/cmlen;
-		lightmapcolor.s1 = lightmapcolor.s1 * 10.0f/cmlen;
-		lightmapcolor.s2 = lightmapcolor.s2 * 10.0f/cmlen;
-
-		tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
-	}
+	tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
 }
 
 kernel void viewfilter(global float *imf, global float *img, global float *cam) {

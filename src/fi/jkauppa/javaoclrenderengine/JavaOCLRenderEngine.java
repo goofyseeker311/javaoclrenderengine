@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.4.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.4.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -70,7 +70,7 @@ public class JavaOCLRenderEngine {
 	private int selecteddevice = 0;
 	private boolean isfullscreen = false;
 	private boolean glinterop = true;
-	private long opencldevice = NULL, queue = NULL, program = NULL;
+	private long opencldevice = NULL, openclqueue = NULL, openclqueue2 = NULL, openclprogram = NULL;
 	private Device opencldevicedata = null;
 	private String usingopencldevice = null;
 	private long audiodevice = NULL;
@@ -78,7 +78,7 @@ public class JavaOCLRenderEngine {
 	private long graphicshebufferptr = NULL, graphicshobufferptr = NULL, graphicshtbufferptr = NULL;
 	private long entitiesptr = NULL, entitieslenptr = NULL, objectsptr = NULL, objectslenptr = NULL, trianglesptr = NULL, triangleslenptr = NULL, texturesptr = NULL, textureslenptr = NULL;
 	private long entitiestraptr = NULL, objectstraptr = NULL, trianglestraptr = NULL, triangleslitptr = NULL;
-	private long litptr = NULL, norptr = NULL, dliptr = NULL;
+	private long litptr = NULL, norptr = NULL;
 	private long rstepxptr = NULL, rstepyptr = NULL, rstepnumptr = NULL;
 	private long deltatimeptr = NULL;
 	private float[] graphicsbuffer = null;
@@ -97,7 +97,6 @@ public class JavaOCLRenderEngine {
 	private int[] entitylistlength = {0};
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
-	private int[] renderdli = {1};
 	private int[] rstepx = {2}, rstepy = {1}, rstepnum = {0};
 	private final int ts = 46, os = 16, es = 17, vs = 40, oc = 9;
 	private boolean keyfwd = false;
@@ -133,8 +132,8 @@ public class JavaOCLRenderEngine {
 			this.screenwidth = videomode.width();
 			this.screenheight = videomode.height();
 		}
-		this.graphicswidth = screenwidth;
-		this.graphicsheight = screenheight;
+		this.graphicswidth = screenwidth*2;
+		this.graphicsheight = screenheight*2;
 		if (vglinterop==0) {
 			this.glinterop = false;
 		}
@@ -185,7 +184,8 @@ public class JavaOCLRenderEngine {
 			this.glinterop = false;
 		}
 		System.out.println("Using device["+selecteddevice+"]: "+opencldevicedata.devicename);
-		this.queue = opencldevicedata.queue;
+		this.openclqueue = opencldevicedata.queue;
+		this.openclqueue2 = this.computelib.createQueue(this.opencldevice, -1);
 
 		this.audiodevice = ALC11.alcOpenDevice((String)null);
 		if (this.audiodevice == NULL) {
@@ -282,28 +282,28 @@ public class JavaOCLRenderEngine {
 		this.graphicshbufferptr = computelib.createBuffer(opencldevice, 1);
 		this.graphicshbuffer = new int[1];
 		this.camposbufferptr = computelib.createBuffer(opencldevice, camerapos3dir3rgt3up3fov2res2rotmat16.length);
-		computelib.writeBufferf(opencldevice, queue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
+		computelib.writeBufferf(opencldevice, openclqueue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
 		this.cammovbufferptr = computelib.createBuffer(opencldevice, cameramov3rot3.length);
-		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
+		computelib.writeBufferf(opencldevice, openclqueue, cammovbufferptr, cameramov3rot3);
 
 		this.graphicshebufferptr = computelib.createBuffer(opencldevice, graphicslength);
 		this.graphicshobufferptr = computelib.createBuffer(opencldevice, graphicslength);
 		this.graphicshtbufferptr = computelib.createBuffer(opencldevice, graphicslength);
 		
 		this.entitiesptr = computelib.createBuffer(opencldevice, this.entitylistlength[0]*es);
-		computelib.writeBufferf(opencldevice, queue, entitiesptr, this.entitylist);
+		computelib.writeBufferf(opencldevice, openclqueue, entitiesptr, this.entitylist);
 		this.entitieslenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, entitieslenptr, this.entitylistlength);
+		computelib.writeBufferi(opencldevice, openclqueue, entitieslenptr, this.entitylistlength);
 		
 		this.objectsptr = computelib.createBuffer(opencldevice, this.objectslistlength[0]*os);
-		computelib.writeBufferf(opencldevice, queue, objectsptr, this.objectslist);
+		computelib.writeBufferf(opencldevice, openclqueue, objectsptr, this.objectslist);
 		this.objectslenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, objectslenptr, this.objectslistlength);
+		computelib.writeBufferi(opencldevice, openclqueue, objectslenptr, this.objectslistlength);
 		
 		this.trianglesptr = computelib.createBuffer(opencldevice, this.triangleslistlength[0]*ts);
-		computelib.writeBufferf(opencldevice, queue, trianglesptr, this.triangleslist);
+		computelib.writeBufferf(opencldevice, openclqueue, trianglesptr, this.triangleslist);
 		this.triangleslenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, triangleslenptr, this.triangleslistlength);
+		computelib.writeBufferi(opencldevice, openclqueue, triangleslenptr, this.triangleslistlength);
 		
 		this.entitiestraptr = computelib.createBuffer(opencldevice, this.entitylistlength[0]*es);
 		this.objectstraptr = computelib.createBuffer(opencldevice, this.objectslistlength[0]*os);
@@ -311,29 +311,27 @@ public class JavaOCLRenderEngine {
 		this.triangleslitptr = computelib.createBuffer(opencldevice, this.triangleslistlength[0]*ts);
 		
 		this.texturesptr = computelib.createBuffer(opencldevice, textureslist.length);
-		computelib.writeBufferi(opencldevice, queue, texturesptr, textureslist);
+		computelib.writeBufferi(opencldevice, openclqueue, texturesptr, textureslist);
 		this.textureslenptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, textureslenptr, textureslistlength);
+		computelib.writeBufferi(opencldevice, openclqueue, textureslenptr, textureslistlength);
 		
 		this.litptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, litptr, renderlit);
+		computelib.writeBufferi(opencldevice, openclqueue, litptr, renderlit);
 		this.norptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, norptr, rendersphnorm);
-		this.dliptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, dliptr, renderdli);
+		computelib.writeBufferi(opencldevice, openclqueue, norptr, rendersphnorm);
 
 		this.rstepxptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, rstepxptr, rstepx);
+		computelib.writeBufferi(opencldevice, openclqueue, rstepxptr, rstepx);
 		this.rstepyptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, rstepyptr, rstepy);
+		computelib.writeBufferi(opencldevice, openclqueue, rstepyptr, rstepy);
 		this.rstepnumptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferi(opencldevice, queue, rstepnumptr, rstepnum);
+		computelib.writeBufferi(opencldevice, openclqueue, rstepnumptr, rstepnum);
 		
 		this.deltatimeptr = computelib.createBuffer(opencldevice, 1);
-		computelib.writeBufferf(opencldevice, queue, deltatimeptr, lasttimedeltaseconds);
+		computelib.writeBufferf(opencldevice, openclqueue, deltatimeptr, lasttimedeltaseconds);
 		
 		String programSource = UtilLib.loadText("res/clprograms/programlib.cl", true);
-		this.program = this.computelib.compileProgram(opencldevice, programSource);
+		this.openclprogram = this.computelib.compileProgram(opencldevice, programSource);
 		System.out.println("init.");
 	}
 
@@ -343,9 +341,9 @@ public class JavaOCLRenderEngine {
 			lasttimedeltaseconds[0] = (nanonewtimetick - nanolasttimetick)/1000000000.0f;
 			nanolasttimetick = nanonewtimetick;
 			tick(lasttimedeltaseconds[0]);
-			if (this.glinterop) {computelib.acquireSharedGLBuffer(queue, graphicsbufferptr);}
+			if (this.glinterop) {computelib.acquireSharedGLBuffer(openclqueue, graphicsbufferptr);}
 			render();
-			if (this.glinterop) {computelib.releaseSharedGLBuffer(queue, graphicsbufferptr);}
+			if (this.glinterop) {computelib.releaseSharedGLBuffer(openclqueue, graphicsbufferptr);}
 			if (!this.glinterop) {transferBufferf(buf, graphicsbuffer);}
 			updateTexture(tex, buf, graphicswidth, graphicsheight);
 			GL31.glClear(GL31.GL_COLOR_BUFFER_BIT | GL31.GL_DEPTH_BUFFER_BIT);
@@ -392,12 +390,9 @@ public class JavaOCLRenderEngine {
 				);
 		this.lightupdatedeltaseconds += deltatimeseconds;
 		if (this.lightupdatedeltaseconds>120.0f) {
-			this.renderdli[0] = 1;
-			computelib.writeBufferi(opencldevice, queue, dliptr, renderdli);
+			computelib.insertBarrier(openclqueue2);
+			computelib.runProgram(opencldevice, openclqueue2, openclprogram, "lightentity", new long[]{triangleslitptr,trianglestraptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
 			this.lightupdatedeltaseconds = 0.0f;
-		} else {
-			this.renderdli[0] = 0;
-			computelib.writeBufferi(opencldevice, queue, dliptr, renderdli);
 		}
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
@@ -422,31 +417,31 @@ public class JavaOCLRenderEngine {
 
 	public void render() {
 		long framestarttime = System.nanoTime();
-		computelib.writeBufferf(opencldevice, queue, cammovbufferptr, cameramov3rot3);
+		computelib.writeBufferf(opencldevice, openclqueue, cammovbufferptr, cameramov3rot3);
 		if (++rstepnum[0]>=(rstepx[0]*rstepy[0])) {rstepnum[0]=0;}
-		computelib.writeBufferi(opencldevice, queue, rstepnumptr, rstepnum);
-		computelib.writeBufferf(opencldevice, queue, deltatimeptr, lasttimedeltaseconds);
+		computelib.writeBufferi(opencldevice, openclqueue, rstepnumptr, rstepnum);
+		computelib.writeBufferf(opencldevice, openclqueue, deltatimeptr, lasttimedeltaseconds);
 		
-		computelib.runProgram(opencldevice, queue, program, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
-		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "clearview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
-		computelib.runProgram(opencldevice, queue, program, "transformentity", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
-		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "physicscollision", new long[]{camposbufferptr,trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,deltatimeptr}, new int[]{0}, new int[]{entitylistlength[0]});
-		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "lightentity", new long[]{triangleslitptr,trianglestraptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,dliptr}, new int[]{0}, new int[]{triangleslistlength[0]});
-		computelib.insertBarrier(queue);
-		//computelib.runProgram(opencldevice, queue, program, "renderrayview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
-		computelib.runProgram(opencldevice, queue, program, "renderplaneview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
-		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
-		computelib.insertBarrier(queue);
-		computelib.runProgram(opencldevice, queue, program, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
-		computelib.waitForQueue(queue);
-		computelib.readBufferi(opencldevice, queue, graphicshbufferptr, graphicshbuffer);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "movecamera", new long[]{camposbufferptr,cammovbufferptr}, new int[]{0}, new int[]{1});
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "clearview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "transformentity", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "physicscollision", new long[]{camposbufferptr,trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,deltatimeptr}, new int[]{0}, new int[]{entitylistlength[0]});
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "lightcopy", new long[]{triangleslitptr,trianglestraptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
+		computelib.insertBarrier(openclqueue);
+		//computelib.runProgram(opencldevice, queue, openclprogram, "renderrayview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
+		//computelib.insertBarrier(openclqueue);
+		//computelib.runProgram(opencldevice, openclqueue, openclprogram, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
+		computelib.waitForQueue(openclqueue);
+		computelib.readBufferi(opencldevice, openclqueue, graphicshbufferptr, graphicshbuffer);
 		if (!this.glinterop) {
 			float[] newgraphicsbuffer = new float[graphicslength*4];
-			computelib.readBufferf(opencldevice, queue, graphicsbufferptr, newgraphicsbuffer);
+			computelib.readBufferf(opencldevice, openclqueue, graphicsbufferptr, newgraphicsbuffer);
 			graphicsbuffer = newgraphicsbuffer;
 		}
 		long frameendtime = System.nanoTime();
@@ -885,13 +880,13 @@ public class JavaOCLRenderEngine {
 		@Override public void invoke(long window, int button, int action, int mods) {
 			if ((button==0)&&(action==1)) {
 				AL10.alSourcePlay(sourcebuf);
-				computelib.readBufferf(opencldevice, queue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
-				computelib.readBufferf(opencldevice, queue, entitiesptr, entitylist);
+				computelib.readBufferf(opencldevice, openclqueue, camposbufferptr, camerapos3dir3rgt3up3fov2res2rotmat16);
+				computelib.readBufferf(opencldevice, openclqueue, entitiesptr, entitylist);
 				if (entitylist[graphicshbuffer[0]*es+16]==1.0f) {
 					entitylist[graphicshbuffer[0]*es+0] += camerapos3dir3rgt3up3fov2res2rotmat16[3];
 					entitylist[graphicshbuffer[0]*es+1] += camerapos3dir3rgt3up3fov2res2rotmat16[4];
 					entitylist[graphicshbuffer[0]*es+2] += camerapos3dir3rgt3up3fov2res2rotmat16[5];
-					computelib.writeBufferf(opencldevice, queue, entitiesptr, entitylist);
+					computelib.writeBufferf(opencldevice, openclqueue, entitiesptr, entitylist);
 				}
 			}
 		}
