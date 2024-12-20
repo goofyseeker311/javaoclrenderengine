@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.4.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.4.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -185,7 +185,7 @@ public class JavaOCLRenderEngine {
 		}
 		System.out.println("Using device["+selecteddevice+"]: "+opencldevicedata.devicename);
 		this.openclqueue = opencldevicedata.queue;
-		this.openclqueue2 = this.computelib.createQueue(this.opencldevice, -1);
+		this.openclqueue2 = this.computelib.createQueue(this.opencldevice, 1);
 
 		this.audiodevice = ALC11.alcOpenDevice((String)null);
 		if (this.audiodevice == NULL) {
@@ -220,6 +220,7 @@ public class JavaOCLRenderEngine {
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid12.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
 		Entity loadmodel4 = ModelLib.loadOBJFileEntity("res/models/mineg.obj", true);
+		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship3.obj", true);
 		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodel, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
 		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel2, new float[]{0.5f,0.0f,0.0f, 0.1f, 0.0f,0.0f,0.0f, 0.0f,1.0f});
 		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel2, new float[]{-0.5f,0.0f,0.0f, 0.1f, 45.0f,0.0f,0.0f, 0.0f,1.0f});
@@ -260,6 +261,22 @@ public class JavaOCLRenderEngine {
 		}
 		TriangleObjectEntity minestriobjents = getEntityObjectTriangles(loadmodel4, mines);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, minestriobjents});
+		int shipcount = 10;
+		float splaceradius = 200.0f;
+		float[] ships = new float[shipcount*oc];
+		for (int i=0;i<shipcount;i++) {
+			ships[i*oc+0] = rand.nextFloat(-splaceradius, splaceradius);
+			ships[i*oc+1] = rand.nextFloat(-splaceradius, splaceradius);
+			ships[i*oc+2] = rand.nextFloat(-splaceradius, splaceradius);
+			ships[i*oc+3] = 1.0f;
+			ships[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
+			ships[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
+			ships[i*oc+6] = rand.nextFloat(0.0f, 360.0f);
+			ships[i*oc+7] = 1.0f;
+			ships[i*oc+8] = 1.0f;
+		}
+		TriangleObjectEntity shipstriobjents = getEntityObjectTriangles(loadmodel5, ships);
+		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, shipstriobjents});
 		
 		this.entitylist = alltriobjents.entities;
 		this.entitylistlength[0] = alltriobjents.entities.length/es;
@@ -435,6 +452,8 @@ public class JavaOCLRenderEngine {
 		computelib.runProgram(opencldevice, openclqueue, openclprogram, "renderplaneview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
 		//computelib.insertBarrier(openclqueue);
 		//computelib.runProgram(opencldevice, openclqueue, openclprogram, "viewfilter", new long[]{graphicsbufferptr,graphicsibufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "bounceraysview", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr,litptr,norptr,rstepxptr,rstepyptr,rstepnumptr}, new int[]{0,0}, new int[]{graphicswidth,graphicsheight});
 		computelib.insertBarrier(openclqueue);
 		computelib.runProgram(opencldevice, openclqueue, openclprogram, "rendercross", new long[]{graphicsbufferptr,graphicszbufferptr,graphicshbufferptr,camposbufferptr}, new int[]{0}, new int[]{1});
 		computelib.waitForQueue(openclqueue);

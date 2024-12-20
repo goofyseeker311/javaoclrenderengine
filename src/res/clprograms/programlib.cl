@@ -902,6 +902,77 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 	}
 }
 
+kernel void bounceraysview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
+	unsigned int xid = get_global_id(0);
+	unsigned int yid = get_global_id(1);
+	int rstepx = rsx[0];
+	int rstepy = rsy[0];
+	int rstepnum = rsn[0];
+	int xidstep = xid % rstepx;
+	int yidstep = yid % rstepy;
+	int xstep = rstepnum % rstepx;
+	int ystep = rstepnum / rstepx;
+	if ((xidstep!=xstep)||(yidstep!=ystep)) {return;}
+
+	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	float2 camfov = radians((float2)(cam[12],cam[13]));
+	int2 camres = (int2)((int)cam[14],(int)cam[15]);
+	float16 cammat = (float16)(cam[16],cam[17],cam[18],cam[19],cam[20],cam[21],cam[22],cam[23],cam[24],cam[25],cam[26],cam[27],cam[28],cam[29],cam[30],cam[31]);
+	int sphnor = nor[0];
+
+	float2 camhalffov = camfov/2.0f;
+	float2 camhalffovlen = (float2)(tan(camhalffov.x), tan(camhalffov.y));
+	int2 camhalfres = camres/2;
+	float camraylenx = -camhalffovlen.x + (camhalffovlen.x/(camhalfres.x-0.5f))*xid;
+	float camrayleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*yid;
+	float4 raydir = (float4)(camraylenx,-camrayleny,-1.0f,0.0f);
+	float4 raydirrot = matrixposmult(raydir, cammat);
+	float raydirrotlen = length(raydirrot);
+
+	float8 camray = (float8)(NAN);
+	camray.s0123 = campos;
+	camray.s4567 = raydirrot;
+
+	int pixelind = (camres.y-yid-1)*camres.x+xid;
+	int tid = iht[pixelind];
+
+	if (tid>-1) {
+		triangle vtri;
+		vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+		vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+		vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+		vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+		vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+		vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+		vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+		vtri.texid = (int)tri[tid*ts+28];
+		vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
+		vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
+		vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
+		vtri.roughness = tri[tid*ts+41];
+		vtri.metallic = tri[tid*ts+42];
+		vtri.refractind = tri[tid*ts+43];
+		vtri.opacity = tri[tid*ts+44];
+		vtri.prelit = (int)tri[tid*ts+45];
+
+		float4 triplane = triangleplane(&vtri);
+
+		if (vtri.roughness<1.0f) {
+			float8 reflectionray = planereflectionray(camray, triplane);
+			int hiteid = -1, hitoid = -1, hittid = -1;
+			float8 rayint = renderray(reflectionray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+			float4 raycolor = rayint.s0123;
+			float raydist = rayint.s4;
+			float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
+			float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor, 1.0f-vtri.roughness);
+			img[pixelind*4+0] = newpixelcolor.s0;
+			img[pixelind*4+1] = newpixelcolor.s1;
+			img[pixelind*4+2] = newpixelcolor.s2;
+			img[pixelind*4+3] = newpixelcolor.s3;
+		}
+	}
+}
+
 kernel void renderplaneview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
