@@ -1,6 +1,6 @@
 # Java OpenCL Render Engine
 
-Java LWJGL OpenCL vectorized cpu/gpu ray traced raster render engine.
+Java LWJGL OpenCL vectorized cpu/gpu/fpga ray traced raster render engine.
 
 Draws OpenCL image buffer to screen using OpenGL shared context interoperation or CPU buffer copy.
 
