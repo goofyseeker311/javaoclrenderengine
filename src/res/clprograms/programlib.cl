@@ -64,19 +64,19 @@ float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float r
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
-float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit);
-void rayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
-void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
+float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit);
+void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
+void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
 
 kernel void movecamera(global float *cam, global float *cmv);
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam);
+kernel void clearview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam);
 kernel void transformentity(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
 kernel void physicscollision(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
 kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *dli);
 kernel void viewfilter(global float *imf, global float *img, global float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
 
 float4 matrixposmult(float4 pos, float16 mat) {
 	float4 retpos = (float4)(0.0f);
@@ -386,7 +386,7 @@ float spherespheredistance(float4 vsphere1, float4 vsphere2) {
 	return dist;
 }
 
-float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit) {
+float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit) {
 	float8 raycolordist = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
@@ -457,7 +457,9 @@ float8 renderray(float8 vray, int *imh, float *tri, int *trc, float *obj, int *o
 
 							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
 								rayz = drawdistance;
-								imh[0] = eid;
+								ihe[0] = eid;
+								iho[0] = oid;
+								iht[0] = tid;
 								float4 texcolor = vtri.facecolor;
 								if (vtri.texid>=0) {
 									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
@@ -518,7 +520,7 @@ kernel void movecamera(global float *cam, global float *cmv) {
 	cam[31] = cammat.sF;
 }
 
-kernel void clearview(global float *img, global float *imz, global int *imh, global float *cam) {
+kernel void clearview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	int2 camres = (int2)((int)cam[14],(int)cam[15]);
@@ -535,6 +537,9 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 		img[pixelind*4+2] = 0.0f;
 		img[pixelind*4+3] = 0.0f;
 		imz[pixelind] = INFINITY;
+		//ihe[pixelind] = -1;
+		//iho[pixelind] = -1;
+		//iht[pixelind] = -1;
 	}
 }
 
@@ -737,10 +742,6 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 	int dolit = dli[0];
 	if (dolit==1) {
 
-		const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
-		int cmlen = cs*cs;
-		int hitid = -1;
-
 		float4 centerpos = (vtri.pos1 + vtri.pos2 + vtri.pos3) / 3.0f;
 		float tricam[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		float tricam2[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 1.0f,0.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f,0.0f, 0.0f,0.0f,-1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
@@ -749,16 +750,23 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 		float tricam5[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, -1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		float tricam6[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,-1.0f,0.0f, -1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 
+		const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
+		int cmlen = cs*cs;
+
 		float img[cs*cs*4];
 		float imz[cs*cs];
-		float4 lightmapcolor = (float4)(0.0f,0.0f,0.0f,1.0f);
+		int hitid = -1;
+		int ihe[cs*cs];
+		int iho[cs*cs];
+		int iht[cs*cs];
 		float *cam = tricam;
+		float4 lightmapcolor = (float4)(0.0f,0.0f,0.0f,1.0f);
 
 		for (int i=0;i<6;i++) {
 			if (i==1) {cam = tricam2;} else if (i==2) {cam = tricam3;} else if (i==3) {cam = tricam4;} else if (i==4) {cam = tricam5;} else if (i==5) {cam = tricam6;}
 			for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY;}}
-			//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
-			for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
+			//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
+			for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
 			for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
 		}
 
@@ -820,12 +828,12 @@ kernel void rendercross(global float *img, global float *imz, global int *imh, g
 	}
 }
 
-kernel void renderrayview(global float *img, global float *imz, global int *imh, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
+kernel void renderrayview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
-	rayview(xid, yid, img, imz, imh, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
+	rayview(xid, yid, img, imz, imh, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
 }
-void rayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
+void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
 	int rstepx = rsx[0];
 	int rstepy = rsy[0];
 	int rstepnum = rsn[0];
@@ -853,8 +861,8 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, flo
 	float8 camray = (float8)(NAN);
 	camray.s0123 = campos;
 	camray.s4567 = raydirrot;
-	int hitid = -1;
-	float8 rayint = renderray(camray, &hitid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+	int hiteid = -1, hitoid = -1, hittid = -1;
+	float8 rayint = renderray(camray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 	float4 raycolor = rayint.s0123;
 	float raydist = rayint.s4;
 
@@ -863,7 +871,10 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, flo
 		int pixelind = (camres.y-yid-1)*camres.x+xid;
 		if (drawdistance<imz[pixelind]) {
 			imz[pixelind] = drawdistance;
-			if ((xid==camhalfres.x+xstep)&&(yid==camhalfres.y+ystep)) {imh[0] = hitid;}
+			ihe[pixelind] = hiteid;
+			iho[pixelind] = hitoid;
+			iht[pixelind] = hittid;
+			if ((xid==camhalfres.x+xstep)&&(yid==camhalfres.y+ystep)) {imh[0] = hiteid;}
 			if (sphnor) {raycolor.s012=raycolor.s012/raydirrotlen;}
 			img[pixelind*4+0] = raycolor.s0;
 			img[pixelind*4+1] = raycolor.s1;
@@ -873,13 +884,13 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, float *cam, flo
 	}
 }
 
-kernel void renderplaneview(global float *img, global float *imz, global int *imh, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
+kernel void renderplaneview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
 	unsigned int xid = get_global_id(0);
 	unsigned int vid = get_global_id(1);
 	int vst = vs;
-	planeview(xid, vid, vst, img, imz, imh, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
+	planeview(xid, vid, vst, img, imz, imh, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
 }
-void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
+void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
 	const float4 camposzero = (float4)(0.0f,0.0f,0.0f,0.0f);
 
 	int entc = enc[0];
@@ -1060,6 +1071,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, floa
 										int pixelind = (camres.y-y-1)*camres.x+xid;
 										if (drawdistance<imz[pixelind]) {
 											imz[pixelind] = drawdistance;
+											ihe[pixelind] = eid;
+											iho[pixelind] = oid;
+											iht[pixelind] = tid;
 											if ((xid==camhalfres.x+xstep)&&(y==camhalfres.y)) {imh[0] = eid;}
 											float4 texcolor = vtri.facecolor;
 											if (vtri.texid>=0) {
