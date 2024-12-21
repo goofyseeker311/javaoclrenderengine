@@ -78,6 +78,7 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 kernel void viewfilter(global float *imf, global float *img, global float *cam);
 kernel void rendercross(global float *img, global float *imz, global int *imh, global float *cam);
 kernel void renderrayview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
+kernel void bounceraysview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
 kernel void renderplaneview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn);
 
 float4 matrixposmult(float4 pos, float16 mat) {
@@ -963,19 +964,49 @@ kernel void bounceraysview(global float *img, global float *imz, global int *imh
 
 		float4 triplane = triangleplane(&vtri);
 
+		float rayangle = vectorangle(raydirrot, vtri.norm);
+		bool frontface = rayangle>=M_PI_2_F;
+
+		if (vtri.opacity<1.0f) {
+			float8 refractionray;
+			if (frontface) {
+				refractionray = planerefractionray(camray, triplane, 1.0f, vtri.refractind);
+			} else {
+				refractionray = planerefractionray(camray, triplane, vtri.refractind, 1.0f);
+			}
+			int hiteid = -1, hitoid = -1, hittid = -1;
+			float8 rayint = renderray(refractionray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+			float4 raycolor = rayint.s0123;
+			float raydist = rayint.s4;
+
+			if (!isnan(raycolor.s0)) {
+				float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
+				float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor, 1.0f-vtri.opacity);
+				img[pixelind*4+0] = newpixelcolor.s0;
+				img[pixelind*4+1] = newpixelcolor.s1;
+				img[pixelind*4+2] = newpixelcolor.s2;
+				img[pixelind*4+3] = newpixelcolor.s3;
+			}
+		}
+
+		/*
 		if (vtri.roughness<1.0f) {
 			float8 reflectionray = planereflectionray(camray, triplane);
 			int hiteid = -1, hitoid = -1, hittid = -1;
 			float8 rayint = renderray(reflectionray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 			float4 raycolor = rayint.s0123;
 			float raydist = rayint.s4;
-			float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
-			float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor, 1.0f-vtri.roughness);
-			img[pixelind*4+0] = newpixelcolor.s0;
-			img[pixelind*4+1] = newpixelcolor.s1;
-			img[pixelind*4+2] = newpixelcolor.s2;
-			img[pixelind*4+3] = newpixelcolor.s3;
+
+			if (!isnan(raycolor.s0)) {
+				float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
+				float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor, 1.0f-vtri.roughness);
+				img[pixelind*4+0] = newpixelcolor.s0;
+				img[pixelind*4+1] = newpixelcolor.s1;
+				img[pixelind*4+2] = newpixelcolor.s2;
+				img[pixelind*4+3] = newpixelcolor.s3;
+			}
 		}
+		*/
 	}
 }
 
