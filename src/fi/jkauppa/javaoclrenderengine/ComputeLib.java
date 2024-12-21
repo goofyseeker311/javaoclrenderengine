@@ -94,7 +94,7 @@ public class ComputeLib {
 		MemoryStack.stackPop();
 	}
 
-	public long createQueue(long device, int priority) {
+	public long createQueue(long device) {
 		MemoryStack clStack = MemoryStack.stackPush();
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
