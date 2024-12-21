@@ -452,6 +452,9 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 							float drawdistance = raydist;
 							float4 camray = camdir;
 
+							float rayangle = vectorangle(camray, vtri.norm);
+							bool frontface = rayangle>=M_PI_2_F;
+
 							float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
 							int posuvintx = convert_int_rte(posuv.x*(texs-1));
 							int posuvinty = convert_int_rte(posuv.y*(texs-1));
@@ -472,6 +475,9 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 									pixelcolor = vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
 								} else {
 									pixelcolor = vtri.emissivecolor + texcolor;
+								}
+								if (!frontface) {
+									pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
 								}
 								raycolordist.s0 = pixelcolor.s0;
 								raycolordist.s1 = pixelcolor.s1;
@@ -1149,7 +1155,10 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 										float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
 										float4 camray = linepoint - campos;
 										float drawdistance = length(camray);
-										
+
+										float rayangle = vectorangle(camray, vtri.norm);
+										bool frontface = rayangle>=M_PI_2_F;
+
 										float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
 										float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
 										float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
@@ -1176,6 +1185,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 												pixelcolor = vtri.emissivecolor + texcolor;
 											}
 											if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
+											if (!frontface) {
+												pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
+											}
 											img[pixelind*4+0] = pixelcolor.s0;
 											img[pixelind*4+1] = pixelcolor.s1;
 											img[pixelind*4+2] = pixelcolor.s2;
