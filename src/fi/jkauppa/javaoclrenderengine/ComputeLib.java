@@ -2,7 +2,6 @@ package fi.jkauppa.javaoclrenderengine;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.TreeMap;
 
 import org.lwjgl.BufferUtils;
@@ -17,7 +16,6 @@ import org.lwjgl.opencl.CL12GL;
 import org.lwjgl.opencl.CLCapabilities;
 import org.lwjgl.opencl.CLContextCallback;
 import org.lwjgl.opencl.KHRGLSharing;
-import org.lwjgl.opencl.KHRPriorityHints;
 import org.lwjgl.opengl.CGL;
 import org.lwjgl.opengl.WGL;
 import org.lwjgl.system.MemoryStack;
@@ -101,16 +99,7 @@ public class ComputeLib {
 		Device devicedata = devicemap.get(device);
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
-		LongBuffer queueProps = clStack.mallocLong(5);
-		queueProps.put(0, CL30.CL_QUEUE_PROPERTIES).put(1, CL30.CL_QUEUE_PROFILING_ENABLE).put(4, 0);
-		if (priority<0) {
-			queueProps.put(2, KHRPriorityHints.CL_QUEUE_PRIORITY_KHR).put(3, KHRPriorityHints.CL_QUEUE_PRIORITY_LOW_KHR);
-		} else if (priority==0) {
-			queueProps.put(2, KHRPriorityHints.CL_QUEUE_PRIORITY_KHR).put(3, KHRPriorityHints.CL_QUEUE_PRIORITY_MED_KHR);
-		} else {
-			queueProps.put(2, KHRPriorityHints.CL_QUEUE_PRIORITY_KHR).put(3, KHRPriorityHints.CL_QUEUE_PRIORITY_HIGH_KHR);
-		}
-		long queue = CL30.clCreateCommandQueueWithProperties(context, device, queueProps, errcode_ret);
+		long queue = CL30.clCreateCommandQueue(context, device, CL30.CL_QUEUE_PROFILING_ENABLE, errcode_ret);
 		MemoryStack.stackPop();
 		return queue;
 	}
@@ -160,7 +149,7 @@ public class ComputeLib {
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		program = CL30.clCreateProgramWithSource(context, source, errcode_ret);
-		if (CL30.clBuildProgram(program, device, "", null, MemoryUtil.NULL)!=CL30.CL_SUCCESS) {
+		if (CL30.clBuildProgram(program, device, "-cl-std=CL2.0", null, MemoryUtil.NULL)!=CL30.CL_SUCCESS) {
 			String buildinfo = getClProgramBuildInfo(program, device, CL30.CL_PROGRAM_BUILD_LOG);
 			System.out.println("compileProgram build failed:");
 			System.out.println(buildinfo);
@@ -252,9 +241,7 @@ public class ComputeLib {
 									Device devicedesc = new Device();
 									devicedesc.platform = platform;
 									devicedesc.context = context;
-									LongBuffer queueProps = clStack.mallocLong(5);
-									queueProps.put(0, CL30.CL_QUEUE_PROPERTIES).put(1, CL30.CL_QUEUE_PROFILING_ENABLE).put(2, KHRPriorityHints.CL_QUEUE_PRIORITY_KHR).put(3, KHRPriorityHints.CL_QUEUE_PRIORITY_HIGH_KHR).put(4, 0);
-									devicedesc.queue = CL30.clCreateCommandQueueWithProperties(context, device, queueProps, (IntBuffer)null);
+									devicedesc.queue = CL30.clCreateCommandQueue(context, device, CL30.CL_QUEUE_PROFILING_ENABLE, (IntBuffer)null);
 									devicedesc.platformname = getClPlatformInfo(platform, CL30.CL_PLATFORM_NAME).trim();
 									devicedesc.plaformcaps = platformcaps;
 									devicedesc.plaformopenclversion = getClPlatformInfo(platform, CL30.CL_PLATFORM_VERSION).trim();
