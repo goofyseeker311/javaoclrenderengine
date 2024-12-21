@@ -390,7 +390,7 @@ float spherespheredistance(float4 vsphere1, float4 vsphere2) {
 }
 
 float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit) {
-	float8 raycolordist = (float8)(NAN);
+	float8 raycolordistpos = (float8)(NAN);
 	float4 campos = vray.s0123;
 	float4 camdir = vray.s4567;
 	int entc = enc[0];
@@ -443,7 +443,8 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 						vtri.opacity = tri[tid*ts+44];
 						vtri.prelit = (int)tri[tid*ts+45];
 						
-						float4 triplane = triangleplane(&vtri);
+						float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
+
 						float8 intpos = raytriangleintersection(campos, camdir, &vtri);
 						float4 raypos = intpos.s0123;
 						float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
@@ -480,11 +481,14 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 								if (!frontface) {
 									pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
 								}
-								raycolordist.s0 = pixelcolor.s0;
-								raycolordist.s1 = pixelcolor.s1;
-								raycolordist.s2 = pixelcolor.s2;
-								raycolordist.s3 = pixelcolor.s3;
-								raycolordist.s4 = drawdistance;
+								raycolordistpos.s0 = pixelcolor.s0;
+								raycolordistpos.s1 = pixelcolor.s1;
+								raycolordistpos.s2 = pixelcolor.s2;
+								raycolordistpos.s3 = pixelcolor.s3;
+								raycolordistpos.s4 = drawdistance;
+								raycolordistpos.s5 = raypos.x;
+								raycolordistpos.s6 = raypos.y;
+								raycolordistpos.s7 = raypos.z;
 							}
 						}
 					}
@@ -492,7 +496,7 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 			}
 		}
 	}
-	return raycolordist;
+	return raycolordistpos;
 }
 
 kernel void movecamera(global float *cam, global float *cmv) {
@@ -890,6 +894,7 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 	float8 rayint = renderray(camray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 	float4 raycolor = rayint.s0123;
 	float raydist = rayint.s4;
+	float4 raypos = (float4)(rayint.s567,0.0f);
 
 	if (!isnan(raycolor.s0)) {
 		float drawdistance = raydist;
@@ -962,34 +967,66 @@ kernel void bounceraysview(global float *img, global float *imz, global int *imh
 		vtri.opacity = tri[tid*ts+44];
 		vtri.prelit = (int)tri[tid*ts+45];
 
-		float4 triplane = triangleplane(&vtri);
+		float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
 
 		float rayangle = vectorangle(raydirrot, vtri.norm);
 		bool frontface = rayangle>=M_PI_2_F;
 
 		if (vtri.opacity<1.0f) {
-			float8 refractionray;
 			if (frontface) {
-				refractionray = planerefractionray(camray, triplane, 1.0f, vtri.refractind);
-			} else {
-				refractionray = planerefractionray(camray, triplane, vtri.refractind, 1.0f);
-			}
-			int hiteid = -1, hitoid = -1, hittid = -1;
-			float8 rayint = renderray(refractionray, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
-			float4 raycolor = rayint.s0123;
-			float raydist = rayint.s4;
+				float8 refractionray = planerefractionray(camray, triplane, 1.0f, vtri.refractind);
 
-			if (!isnan(raycolor.s0)) {
-				float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
-				float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor, 1.0f-vtri.opacity);
-				img[pixelind*4+0] = newpixelcolor.s0;
-				img[pixelind*4+1] = newpixelcolor.s1;
-				img[pixelind*4+2] = newpixelcolor.s2;
-				img[pixelind*4+3] = newpixelcolor.s3;
+				int eid2 = -1, oid2 = -1, tid2 = -1;
+				float8 rayint = renderray(refractionray, &eid2, &oid2, &tid2, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+				float4 raycolor = rayint.s0123;
+				float raydist = rayint.s4;
+				float4 raypos = (float4)(rayint.s567,0.0f);
+
+				if (!isnan(raycolor.s0)) {
+					if (tid2>-1) {
+
+						triangle vtri2;
+						vtri2.pos1 = (float4)(tri[tid2*ts+0],tri[tid2*ts+1],tri[tid2*ts+2],tri[tid2*ts+3]);
+						vtri2.pos2 = (float4)(tri[tid2*ts+4],tri[tid2*ts+5],tri[tid2*ts+6],tri[tid2*ts+7]);
+						vtri2.pos3 = (float4)(tri[tid2*ts+8],tri[tid2*ts+9],tri[tid2*ts+10],tri[tid2*ts+11]);
+						vtri2.norm = (float4)(tri[tid2*ts+12],tri[tid2*ts+13],tri[tid2*ts+14],tri[tid2*ts+15]);
+						vtri2.pos1uv = (float4)(tri[tid2*ts+16],tri[tid2*ts+17],tri[tid2*ts+18],tri[tid2*ts+19]);
+						vtri2.pos2uv = (float4)(tri[tid2*ts+20],tri[tid2*ts+21],tri[tid2*ts+22],tri[tid2*ts+23]);
+						vtri2.pos3uv = (float4)(tri[tid2*ts+24],tri[tid2*ts+25],tri[tid2*ts+26],tri[tid2*ts+27]);
+						vtri2.texid = (int)tri[tid2*ts+28];
+						vtri2.facecolor = (float4)(tri[tid2*ts+29],tri[tid2*ts+30],tri[tid2*ts+31],tri[tid2*ts+32]);
+						vtri2.emissivecolor = (float4)(tri[tid2*ts+33],tri[tid2*ts+34],tri[tid2*ts+35],tri[tid2*ts+36]);
+						vtri2.lightmapcolor = (float4)(tri[tid2*ts+37],tri[tid2*ts+38],tri[tid2*ts+39],tri[tid2*ts+40]);
+						vtri2.roughness = tri[tid2*ts+41];
+						vtri2.metallic = tri[tid2*ts+42];
+						vtri2.refractind = tri[tid2*ts+43];
+						vtri2.opacity = tri[tid2*ts+44];
+						vtri2.prelit = (int)tri[tid2*ts+45];
+
+						float4 triplane2 = planefromnormalatpos(vtri2.pos1, vtri2.norm);
+
+						if (vtri2.opacity<1.0f) {
+							float8 refractionray2 = planerefractionray(refractionray, triplane2, vtri.refractind, 1.0f);
+
+							int hiteid = -1, hitoid = -1, hittid = -1;
+							float8 rayint2 = renderray(refractionray2, &hiteid, &hitoid, &hittid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+							float4 raycolor2 = rayint2.s0123;
+							float raydist2 = rayint2.s4;
+
+							if (!isnan(raycolor2.s0)) {
+								float4 pixelcolor = (float4)(img[pixelind*4+0],img[pixelind*4+1],img[pixelind*4+2],img[pixelind*4+3]);
+								float4 newpixelcolor = sourcemixblend(pixelcolor, raycolor2, 1.0f-vtri.opacity);
+								img[pixelind*4+0] = newpixelcolor.s0;
+								img[pixelind*4+1] = newpixelcolor.s1;
+								img[pixelind*4+2] = newpixelcolor.s2;
+								img[pixelind*4+3] = newpixelcolor.s3;
+							}
+						}
+					}
+				}
 			}
 		}
 
-		/*
 		if (vtri.roughness<1.0f) {
 			float8 reflectionray = planereflectionray(camray, triplane);
 			int hiteid = -1, hitoid = -1, hittid = -1;
@@ -1006,7 +1043,6 @@ kernel void bounceraysview(global float *img, global float *imz, global int *imh
 				img[pixelind*4+3] = newpixelcolor.s3;
 			}
 		}
-		*/
 	}
 }
 
@@ -1110,7 +1146,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 						vtri.opacity = tri[tid*ts+44];
 						vtri.prelit = (int)tri[tid*ts+45];
 						
-						float4 triplane = triangleplane(&vtri);
+						float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
 
 						float16 intline = planetriangleintersection(colplane, &vtri);
 						float4 colpos1 = intline.s01234567.s0123;
