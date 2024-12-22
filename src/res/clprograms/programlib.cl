@@ -3,7 +3,7 @@
 #define es 17
 #define vs 40
 #define cs 32
-#define lm 100.0f
+#define lm 1000.0f
 
 typedef struct {
 	float4 pos;
@@ -782,7 +782,7 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 	float tricam6[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,-1.0f,0.0f, -1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 
 	const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
-	int cmlen = cs*cs;
+	int cmlen = cs*cs*6;
 
 	float img[cs*cs*4];
 	float imz[cs*cs];
@@ -795,11 +795,23 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 
 	for (int i=0;i<6;i++) {
 		if (i==1) {cam = tricam2;} else if (i==2) {cam = tricam3;} else if (i==3) {cam = tricam4;} else if (i==4) {cam = tricam5;} else if (i==5) {cam = tricam6;}
-		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY;}}
-		//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
-		for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
-		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {bounceview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
-		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {
+			int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY; ihe[pind]=-1; iho[pind]=-1; iht[pind]=-1;
+		}}
+		/*
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {
+			rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+		}}
+		*/
+		for (int x=0;x<cs;x++) {
+			planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+		}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {
+			bounceview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);
+		}}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {
+			int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];
+		}}
 	}
 
 	lightmapcolor.s0 = lightmapcolor.s0 * 1.0f/cmlen;
