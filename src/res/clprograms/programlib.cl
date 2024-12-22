@@ -3,7 +3,7 @@
 #define es 17
 #define vs 40
 #define cs 32
-#define lm 10.0f
+#define lm 100.0f
 
 typedef struct {
 	float4 pos;
@@ -67,6 +67,7 @@ float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
 float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit);
 void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
+void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
 void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
 
 kernel void movecamera(global float *cam, global float *cmv);
@@ -474,9 +475,9 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, float *tri, int *trc
 								}
 								float4 pixelcolor = (float4)(0.0f);
 								if (tlit) {
-									pixelcolor = vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
+									pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
 								} else {
-									pixelcolor = vtri.emissivecolor + texcolor;
+									pixelcolor = lm*vtri.emissivecolor + texcolor;
 								}
 								if (!frontface) {
 									pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
@@ -797,12 +798,13 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x; img[pind*4+0]=0.0f; img[pind*4+1]=0.0f; img[pind*4+2]=0.0f; img[pind*4+3]=0.0f; imz[pind]=INFINITY;}}
 		//for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {rayview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
 		for (int x=0;x<cs;x++) {planeview(x, 0, 1, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}
+		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {bounceview(x, y, img, imz, &hitid, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, &lit, &nor, &rsx, &rsy, &rsn);}}
 		for (int y=0;y<cs;y++) {for (int x=0;x<cs;x++) {int pind=y*cs+x;lightmapcolor.s0+=img[pind*4+0]; lightmapcolor.s1+=img[pind*4+1]; lightmapcolor.s2+=img[pind*4+2];}}
 	}
 
-	lightmapcolor.s0 = lightmapcolor.s0 * lm/cmlen;
-	lightmapcolor.s1 = lightmapcolor.s1 * lm/cmlen;
-	lightmapcolor.s2 = lightmapcolor.s2 * lm/cmlen;
+	lightmapcolor.s0 = lightmapcolor.s0 * 1.0f/cmlen;
+	lightmapcolor.s1 = lightmapcolor.s1 * 1.0f/cmlen;
+	lightmapcolor.s2 = lightmapcolor.s2 * 1.0f/cmlen;
 
 	tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
 }
@@ -917,6 +919,9 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 kernel void bounceraysview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes, global int *lit, global int *nor, global int *rsx, global int *rsy, global int *rsn) {
 	unsigned int xid = get_global_id(0);
 	unsigned int yid = get_global_id(1);
+	bounceview(xid, yid, img, imz, imh, ihe, iho, iht, cam, tri, trc, obj, obc, ent, enc, tex, tes, lit, nor, rsx, rsy, rsn);
+}
+void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn) {
 	int rstepx = rsx[0];
 	int rstepy = rsy[0];
 	int rstepnum = rsn[0];
@@ -1247,9 +1252,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 											}
 											float4 pixelcolor = (float4)(0.0f);
 											if (tlit) {
-												pixelcolor = vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
+												pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
 											} else {
-												pixelcolor = vtri.emissivecolor + texcolor;
+												pixelcolor = lm*vtri.emissivecolor + texcolor;
 											}
 											if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
 											if (!frontface) {
