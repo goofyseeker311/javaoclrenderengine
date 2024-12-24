@@ -155,7 +155,6 @@ float4 translatepos(float4 pos, float4 dir, float mult) {
 	retpos.x = pos.x+mult*dir.x;
 	retpos.y = pos.y+mult*dir.y;
 	retpos.z = pos.z+mult*dir.z;
-	retpos.w = pos.w+mult*dir.w;
 	return retpos;
 }
 
