@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.5.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.5.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -112,7 +112,6 @@ public class JavaOCLRenderEngine {
 	private double[] mousex = {0}, mousey = {0};
 	private double lastmousex = 0, lastmousey = 0;
 	private float[] lasttimedeltaseconds = {0.0f};
-	private float lightupdatedeltaseconds = 90.0f;
 	private long monitor = NULL;
 	private GLFWVidMode videomode = null;
 	private KeyProcessor keyprocessor = new KeyProcessor();
@@ -423,14 +422,6 @@ public class JavaOCLRenderEngine {
 				+screenwidth+"x"+screenheight+") tickdeltatime: "+String.format("%.0f",deltatimeseconds*1000.0f)+"ms"
 				+" ["+(this.glinterop?"GLINTEROP":"COPYBUFFER")+"] hit: "+graphicshbuffer[0]
 				);
-		this.lightupdatedeltaseconds += deltatimeseconds;
-		if (this.lightupdatedeltaseconds>120.0f) {
-			computelib.insertBarrier(openclqueue2);
-			computelib.runProgram(opencldevice, openclqueue2, openclprogram, "lightentity", new long[]{triangleslitptr,trianglestraptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
-			computelib.insertBarrier(openclqueue2);
-			computelib.runProgram(opencldevice, openclqueue2, openclprogram, "lightentity", new long[]{triangleslit2ptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
-			this.lightupdatedeltaseconds = 0.0f;
-		}
 		cameramov3rot3[0] = 0.0f;
 		cameramov3rot3[1] = 0.0f;
 		cameramov3rot3[2] = 0.0f;
@@ -897,6 +888,12 @@ public class JavaOCLRenderEngine {
 				if (key==GLFW.GLFW_KEY_Q) {keyrleft = true;}
 				if (key==GLFW.GLFW_KEY_E) {keyrright = true;}
 				if (key==GLFW.GLFW_KEY_LEFT_CONTROL) {keyspeed = true;}
+				if (key==GLFW.GLFW_KEY_ENTER) {
+					computelib.insertBarrier(openclqueue2);
+					computelib.runProgram(opencldevice, openclqueue2, openclprogram, "lightentity", new long[]{triangleslitptr,trianglestraptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
+					computelib.insertBarrier(openclqueue2);
+					computelib.runProgram(opencldevice, openclqueue2, openclprogram, "lightentity", new long[]{triangleslit2ptr,triangleslitptr,triangleslenptr,objectstraptr,objectslenptr,entitiestraptr,entitieslenptr,texturesptr,textureslenptr}, new int[]{0}, new int[]{triangleslistlength[0]});
+				}
 			}
 			if (action==GLFW.GLFW_RELEASE) {
 				if (key==GLFW.GLFW_KEY_W) {keyfwd = false;}
