@@ -23,6 +23,7 @@ E          - roll right
 MOUSE-X    - look horizontal
 MOUSE-Y    - look vertical
 MOUSE-LMB  - fire weapon
+ENTER      - update lighting
 ```
 
 Compiling:
