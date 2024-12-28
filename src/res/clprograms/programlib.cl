@@ -3,6 +3,7 @@
 #define es 17
 #define vs 40
 #define cs 32
+#define zs 64
 #define lm 1000.0f
 
 typedef struct {
@@ -897,8 +898,8 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 	float8 camray = (float8)(NAN);
 	camray.s0123 = campos;
 	camray.s4567 = raydirrot;
-	int hiteid = -1, hitoid = -1, hittid = -1, hittexid = -1;
-	float8 rayint = renderray(camray, &hiteid, &hitoid, &hittid, &hittexid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+	int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1;
+	float8 rayint = renderray(camray, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 	float4 raycolor = rayint.s0123;
 	float raydist = rayint.s4;
 	float4 raypos = (float4)(rayint.s567,0.0f);
@@ -911,7 +912,7 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 			ihe[pixelind] = hiteid;
 			iho[pixelind] = hitoid;
 			iht[pixelind] = hittid;
-			iti[pixelind] = hittexid;
+			iti[pixelind] = hittexind;
 			if ((xid==camhalfres.x+xstep)&&(yid==camhalfres.y+ystep)) {imh[0] = hiteid;}
 			if (sphnor) {raycolor.s012=raycolor.s012/raydirrotlen;}
 			img[pixelind*4+0] = raycolor.s0;
@@ -987,8 +988,8 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 			if (frontface) {
 				float8 refractionray = planerefractionray(camray, triplane, 1.0f, vtri.refractind);
 
-				int eid2 = -1, oid2 = -1, tid2 = -1, texid2 = -1;
-				float8 rayint = renderray(refractionray, &eid2, &oid2, &tid2, &texid2, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+				int eid2 = -1, oid2 = -1, tid2 = -1, texind2 = -1;
+				float8 rayint = renderray(refractionray, &eid2, &oid2, &tid2, &texind2, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 				float4 raycolor = rayint.s0123;
 				float raydist = rayint.s4;
 				float4 raypos = (float4)(rayint.s567,0.0f);
@@ -1019,8 +1020,8 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 						if (vtri2.opacity<1.0f) {
 							float8 refractionray2 = planerefractionray(refractionray, triplane2, vtri.refractind, 1.0f);
 
-							int hiteid = -1, hitoid = -1, hittid = -1, hittexid = -1;
-							float8 rayint2 = renderray(refractionray2, &hiteid, &hitoid, &hittid, &hittexid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+							int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1;
+							float8 rayint2 = renderray(refractionray2, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 							float4 raycolor2 = rayint2.s0123;
 							float raydist2 = rayint2.s4;
 
@@ -1040,8 +1041,8 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 
 		if (vtri.roughness<1.0f) {
 			float8 reflectionray = planereflectionray(camray, triplane);
-			int hiteid = -1, hitoid = -1, hittid = -1, hittexid = -1;
-			float8 rayint = renderray(reflectionray, &hiteid, &hitoid, &hittid, &hittexid, tri, trc, obj, obc, ent, enc, tex, tes, lit);
+			int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1;
+			float8 rayint = renderray(reflectionray, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 			float4 raycolor = rayint.s0123;
 			float raydist = rayint.s4;
 
@@ -1085,6 +1086,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 	int texs = tes[0];
 	int tlit = lit[0];
 	int sphnor = nor[0];
+
+	float zbuf[zs];
+	for (int i=0;i<zs;i++) {zbuf[i] = INFINITY;}
 
 	int camresystep = camres.y / vst;
 	float2 camhalffov = camfov/2.0f;
@@ -1213,7 +1217,8 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 										float4 colposuvtemp = colpos1uv; colpos1uv = colpos2uv; colpos2uv = colposuvtemp;
 									}
 
-									int campresystart = camresystep*vid;
+									int campresystind = camresystep*vid;
+									int campresystart = campresystind;
 									int campresyend = camresystep*vid + camresystep-1;
 									if (py1s>campresystart) {campresystart=py1s;}
 									if (py2s<campresyend) {campresyend=py2s;}
@@ -1245,7 +1250,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 										int texind = lineuvy*texs+lineuvx + vtri.texid*texs*texs;
 
 										int pixelind = (camres.y-y-1)*camres.x+xid;
-										if (drawdistance<imz[pixelind]) {
+										int pixely = y-campresystind;
+										if (drawdistance<zbuf[pixely]) {
+											zbuf[pixely] = drawdistance;
 											imz[pixelind] = drawdistance;
 											ihe[pixelind] = eid;
 											iho[pixelind] = oid;
