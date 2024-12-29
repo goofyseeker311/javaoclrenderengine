@@ -4,9 +4,12 @@ Java LWJGL OpenCL vectorized cpu/gpu/fpga ray traced raster render engine.
 
 Draws OpenCL image buffer to screen using OpenGL shared context interoperation or CPU buffer copy.
 
-![progress61](https://github.com/user-attachments/assets/200a389f-66b5-455a-92be-591d69363572)
-![progress61a](https://github.com/user-attachments/assets/c3e46220-b07f-4a1e-8454-349254d1c590)
-![progress61b](https://github.com/user-attachments/assets/18e17ffc-4938-4cfd-a4fe-843dcf9ed1df)
+![progress62](https://github.com/user-attachments/assets/c0cb0529-f42a-4a0f-bab8-7022b810a404)
+![progress62a](https://github.com/user-attachments/assets/8601da67-7573-4429-a6bf-239536b84471)
+![progress62b](https://github.com/user-attachments/assets/221fe092-03e1-4541-94a1-127c9e4c7316)
+![progress62c](https://github.com/user-attachments/assets/2b28e024-ca5c-4e58-a55f-80839cd41161)
+![progress62d](https://github.com/user-attachments/assets/d101f547-fdde-49c7-b2aa-8010fe866e15)
+![progress62e](https://github.com/user-attachments/assets/8e4e5368-43d1-442f-a70f-94602ed782b5)
 
 Input:
 ----------------
@@ -29,7 +32,7 @@ ENTER      - update lighting
 Compiling:
 ----------------
 
-LWJGL/OpenCL 3.3.4: https://www.lwjgl.org/customize
+LWJGL/OpenCL 3.3.4 or later: https://www.lwjgl.org/customize
 
 Eclipse IDE for Java Developers: https://www.eclipse.org/downloads/packages/
 
@@ -38,7 +41,7 @@ Insert base lwjgl, opencl, opengl, glfw and openal platform native jar packages 
 Running:
 ----------------
 
-Java 23 JDK: https://www.oracle.com/java/technologies/downloads/
+Java SE 8 JDK or later: https://www.oracle.com/java/technologies/downloads/
 
 Double click the javaoclrendergine.jar file to run the application directly.
 
