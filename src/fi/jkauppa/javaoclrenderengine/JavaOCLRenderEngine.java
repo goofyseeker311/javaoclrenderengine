@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.5.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.5.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -97,7 +97,7 @@ public class JavaOCLRenderEngine {
 	private int[] entitylistlength = {0};
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
-	private int[] rstepx = {1}, rstepy = {1}, rstepnum = {0};
+	private int[] rstepx = {2}, rstepy = {1}, rstepnum = {0};
 	private final int ts = 46, os = 16, es = 17, vs = 40, oc = 9;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
@@ -131,12 +131,12 @@ public class JavaOCLRenderEngine {
 			this.screenwidth = videomode.width();
 			this.screenheight = videomode.height();
 		}
-		this.graphicswidth = screenwidth;
+		this.graphicswidth = screenwidth*2;
 		this.graphicsheight = screenheight;
 		if (vglinterop==0) {
 			this.glinterop = false;
 		}
-		this.graphicshfov = (float)(Math.toDegrees(2.0f*Math.atan((((double)this.graphicswidth)/((double)this.graphicsheight))*Math.tan(Math.toRadians((double)(this.graphicsvfov/2.0f))))));
+		this.graphicshfov = (float)(Math.toDegrees(2.0f*Math.atan((((double)this.screenwidth)/((double)this.screenheight))*Math.tan(Math.toRadians((double)(this.graphicsvfov/2.0f))))));
 		this.graphicslength = this.graphicswidth*this.graphicsheight;
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -233,13 +233,13 @@ public class JavaOCLRenderEngine {
 		float aplaceradius = 5.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
-			asteroids[i*oc+0] = rand.nextFloat(-aplaceradius, aplaceradius);
-			asteroids[i*oc+1] = rand.nextFloat(-aplaceradius, aplaceradius);
-			asteroids[i*oc+2] = rand.nextFloat(-aplaceradius, aplaceradius);
+			asteroids[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
+			asteroids[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
+			asteroids[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
 			asteroids[i*oc+3] = 1.0f;
-			asteroids[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
-			asteroids[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
-			asteroids[i*oc+6] = rand.nextFloat(0.0f, 360.0f);
+			asteroids[i*oc+4] = rand.nextFloat()*360.0f;
+			asteroids[i*oc+5] = rand.nextFloat()*360.0f;
+			asteroids[i*oc+6] = rand.nextFloat()*360.0f;
 			asteroids[i*oc+7] = 1.0f;
 			asteroids[i*oc+8] = 0.0f;
 		}
@@ -249,13 +249,13 @@ public class JavaOCLRenderEngine {
 		float mplaceradius = 500.0f;
 		float[] mines = new float[minecount*oc];
 		for (int i=0;i<minecount;i++) {
-			mines[i*oc+0] = rand.nextFloat(-mplaceradius, mplaceradius);
-			mines[i*oc+1] = rand.nextFloat(-mplaceradius, mplaceradius);
-			mines[i*oc+2] = rand.nextFloat(-mplaceradius, mplaceradius);
+			mines[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
+			mines[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
+			mines[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
 			mines[i*oc+3] = 1.0f;
-			mines[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
-			mines[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
-			mines[i*oc+6] = rand.nextFloat(0.0f, 360.0f);
+			mines[i*oc+4] = rand.nextFloat()*360.0f;
+			mines[i*oc+5] = rand.nextFloat()*360.0f;
+			mines[i*oc+6] = rand.nextFloat()*360.0f;
 			mines[i*oc+7] = 1.0f;
 			mines[i*oc+8] = 0.0f;
 		}
@@ -265,13 +265,13 @@ public class JavaOCLRenderEngine {
 		float splaceradius = 200.0f;
 		float[] ships = new float[shipcount*oc];
 		for (int i=0;i<shipcount;i++) {
-			ships[i*oc+0] = rand.nextFloat(-splaceradius, splaceradius);
-			ships[i*oc+1] = rand.nextFloat(-splaceradius, splaceradius);
-			ships[i*oc+2] = rand.nextFloat(-splaceradius, splaceradius);
+			ships[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
+			ships[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
+			ships[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
 			ships[i*oc+3] = 1.0f;
-			ships[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
-			ships[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
-			ships[i*oc+6] = rand.nextFloat(0.0f, 360.0f);
+			ships[i*oc+4] = rand.nextFloat()*360.0f;
+			ships[i*oc+5] = rand.nextFloat()*360.0f;
+			ships[i*oc+6] = rand.nextFloat()*360.0f;
 			ships[i*oc+7] = 1.0f;
 			ships[i*oc+8] = 0.0f;
 		}
@@ -281,13 +281,13 @@ public class JavaOCLRenderEngine {
 		float m2placeradius = 10.0f;
 		float[] mines2 = new float[mine2count*oc];
 		for (int i=0;i<mine2count;i++) {
-			mines2[i*oc+0] = rand.nextFloat(-m2placeradius, m2placeradius);
-			mines2[i*oc+1] = rand.nextFloat(-m2placeradius, m2placeradius);
-			mines2[i*oc+2] = rand.nextFloat(-m2placeradius, m2placeradius);
+			mines2[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
+			mines2[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
+			mines2[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
 			mines2[i*oc+3] = 1.0f;
-			mines2[i*oc+4] = rand.nextFloat(0.0f, 360.0f);
-			mines2[i*oc+5] = rand.nextFloat(0.0f, 360.0f);
-			mines2[i*oc+6] = rand.nextFloat(0.0f, 360.0f);
+			mines2[i*oc+4] = rand.nextFloat()*360.0f;
+			mines2[i*oc+5] = rand.nextFloat()*360.0f;
+			mines2[i*oc+6] = rand.nextFloat()*360.0f;
 			mines2[i*oc+7] = 1.0f;
 			mines2[i*oc+8] = 0.0f;
 		}

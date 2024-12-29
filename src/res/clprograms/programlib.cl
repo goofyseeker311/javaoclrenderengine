@@ -697,10 +697,10 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	float4 entpos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],ent[eid*es+3]);
 	float4 enddirlim = entdir;
 	float enddirlimlen = length(enddirlim);
-	if (enddirlimlen>0.1f) {
+	if (enddirlimlen>1.0f) {
 		enddirlim /= enddirlimlen;
 	}
-	enddirlim *= deltatime;
+	enddirlim = enddirlim * deltatime * 0.1f;
 	entpos += enddirlim;
 	ent[eid*es+0] = entpos.x; ent[eid*es+1] = entpos.y; ent[eid*es+2] = entpos.z; ent[eid*es+3] = entpos.w;
 }

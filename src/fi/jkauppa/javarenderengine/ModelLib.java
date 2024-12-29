@@ -1178,7 +1178,7 @@ public class ModelLib {
 							for (int j=0;j<fargsplit.length;j++) {
 								String[] fargsplit2 = fargsplit[j].split("/");
 								for (int i=0;i<fargsplit2.length;i++) {
-									if (fargsplit2[i].isBlank()) {
+									if (fargsplit2[i].trim().isEmpty()) {
 										fargsplit2[i] = "0";
 									}
 								}

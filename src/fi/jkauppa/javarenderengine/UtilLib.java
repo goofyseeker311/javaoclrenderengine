@@ -13,6 +13,7 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
@@ -260,7 +261,9 @@ public class UtilLib {
 					soundfilestream = new BufferedInputStream(new FileInputStream(soundfile));
 				}
 				AudioInputStream soundfileaudiostream = AudioSystem.getAudioInputStream(soundfilestream);
-				byte[] soundbytes = soundfileaudiostream.readAllBytes();
+				byte[] soundbytes = new byte[soundfileaudiostream.available()];
+				DataInputStream dataInputStream = new DataInputStream(soundfileaudiostream);
+				dataInputStream.readFully(soundbytes);
 				k = soundbytes;
 				soundfilestream.close();
 			} catch (Exception ex) {ex.printStackTrace();}
@@ -279,7 +282,10 @@ public class UtilLib {
 				}else {
 					binaryfilestream = new BufferedInputStream(new FileInputStream(binaryfile));
 				}
-				k = binaryfilestream.readAllBytes();
+				byte[] binarybytes = new byte[binaryfilestream.available()];
+				DataInputStream dataInputStream = new DataInputStream(binaryfilestream);
+				dataInputStream.readFully(binarybytes);
+				k = binarybytes;
 				binaryfilestream.close();
 			} catch (Exception ex) {ex.printStackTrace();}
 		}
