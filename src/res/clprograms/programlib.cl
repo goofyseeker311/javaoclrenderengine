@@ -390,7 +390,11 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 	int texs = tes[0];
 	int tlit = lit[0];
 
-	float rayz = INFINITY;
+	float imzbuf = INFINITY;
+	int ihebuf = -1;
+	int ihobuf = -1;
+	int ihtbuf = -1;
+	int itibuf = -1;
 
 	for (int eid=0;eid<entc;eid++) {
 		entity vent;
@@ -455,34 +459,12 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 							int posuvinty = convert_int_rte(posuv.y*(texs-1));
 							int texind = posuvinty*texs+posuvintx + vtri.texid*texs*texs;
 
-							if ((drawdistance>0.001f)&&(drawdistance<rayz)) {
-								rayz = drawdistance;
-								ihe[0] = eid;
-								iho[0] = oid;
-								iht[0] = tid;
-								iti[0] = texind;
-								float4 texcolor = vtri.facecolor;
-								if (vtri.texid>=0) {
-									float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-									texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-								}
-								float4 pixelcolor = (float4)(0.0f);
-								if (tlit) {
-									pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
-								} else {
-									pixelcolor = lm*vtri.emissivecolor + texcolor;
-								}
-								if (!frontface) {
-									pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
-								}
-								raycolordistpos.s0 = pixelcolor.s0;
-								raycolordistpos.s1 = pixelcolor.s1;
-								raycolordistpos.s2 = pixelcolor.s2;
-								raycolordistpos.s3 = pixelcolor.s3;
-								raycolordistpos.s4 = drawdistance;
-								raycolordistpos.s5 = raypos.x;
-								raycolordistpos.s6 = raypos.y;
-								raycolordistpos.s7 = raypos.z;
+							if ((drawdistance>0.001f)&&(drawdistance<imzbuf)) {
+								imzbuf = drawdistance;
+								ihebuf = eid;
+								ihobuf = oid;
+								ihtbuf = tid;
+								itibuf = texind;
 							}
 						}
 					}
@@ -490,6 +472,62 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 			}
 		}
 	}
+
+	int drawdistance = imzbuf;
+	int eid = ihebuf;
+	int oid = ihobuf;
+	int tid = ihtbuf;
+	int texind = itibuf;
+
+	if (drawdistance<INFINITY) {
+		float4 camray = camdir;
+
+		triangle vtri;
+		vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+		vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+		vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+		vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+		vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+		vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+		vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+		vtri.texid = (int)tri[tid*ts+28];
+		vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
+		vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
+		vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
+		vtri.roughness = tri[tid*ts+41];
+		vtri.metallic = tri[tid*ts+42];
+		vtri.refractind = tri[tid*ts+43];
+		vtri.opacity = tri[tid*ts+44];
+		vtri.prelit = (int)tri[tid*ts+45];
+
+		float rayangle = vectorangle(camray, vtri.norm);
+		bool frontface = rayangle>=M_PI_2_F;
+
+		ihe[0] = eid;
+		iho[0] = oid;
+		iht[0] = tid;
+		iti[0] = texind;
+		float4 texcolor = vtri.facecolor;
+		if (vtri.texid>=0) {
+			float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+			texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+		}
+		float4 pixelcolor = (float4)(0.0f);
+		if (tlit) {
+			pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
+		} else {
+			pixelcolor = lm*vtri.emissivecolor + texcolor;
+		}
+		if (!frontface) {
+			pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
+		}
+		raycolordistpos.s0 = pixelcolor.s0;
+		raycolordistpos.s1 = pixelcolor.s1;
+		raycolordistpos.s2 = pixelcolor.s2;
+		raycolordistpos.s3 = pixelcolor.s3;
+		raycolordistpos.s4 = drawdistance;
+	}
+	
 	return raycolordistpos;
 }
 
@@ -902,7 +940,6 @@ void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *
 	float8 rayint = renderray(camray, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 	float4 raycolor = rayint.s0123;
 	float raydist = rayint.s4;
-	float4 raypos = (float4)(rayint.s567,0.0f);
 
 	if (!isnan(raycolor.s0)) {
 		float drawdistance = raydist;
@@ -992,7 +1029,6 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 				float8 rayint = renderray(refractionray, &eid2, &oid2, &tid2, &texind2, tri, trc, obj, obc, ent, enc, tex, tes, lit);
 				float4 raycolor = rayint.s0123;
 				float raydist = rayint.s4;
-				float4 raypos = (float4)(rayint.s567,0.0f);
 
 				if (!isnan(raycolor.s0)) {
 					if (tid2>-1) {
@@ -1087,8 +1123,18 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 	int tlit = lit[0];
 	int sphnor = nor[0];
 
-	float zbuf[zs];
-	for (int i=0;i<zs;i++) {zbuf[i] = INFINITY;}
+	float imzbuf[zs];
+	int ihebuf[zs];
+	int ihobuf[zs];
+	int ihtbuf[zs];
+	int itibuf[zs];
+	for (int i=0;i<zs;i++) {
+		imzbuf[i] = INFINITY;
+		ihebuf[i] = -1;
+		ihobuf[i] = -1;
+		ihtbuf[i] = -1;
+		itibuf[i] = -1;
+	}
 
 	int camresystep = camres.y / vst;
 	float2 camhalffov = camfov/2.0f;
@@ -1116,6 +1162,9 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 	float4 camupdirplane = planefromnormalatpos(campos, camupdirrot);
 	float4 rendercutplanepos = translatepos(campos, camdirrot, 0.001f);
 	float4 rendercutplane = planefromnormalatpos(rendercutplanepos, camdirrot);
+
+	int campresystind = camresystep*vid;
+	int campresyendind = camresystep*vid + camresystep-1;
 
 	for (int eid=0;eid<entc;eid++) {
 		entity vent;
@@ -1217,9 +1266,8 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 										float4 colposuvtemp = colpos1uv; colpos1uv = colpos2uv; colpos2uv = colposuvtemp;
 									}
 
-									int campresystind = camresystep*vid;
 									int campresystart = campresystind;
-									int campresyend = camresystep*vid + camresystep-1;
+									int campresyend = campresyendind;
 									if (py1s>campresystart) {campresystart=py1s;}
 									if (py2s<campresyend) {campresyend=py2s;}
 
@@ -1239,9 +1287,6 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 										float4 camray = linepoint - campos;
 										float drawdistance = length(camray);
 
-										float rayangle = vectorangle(camray, vtri.norm);
-										bool frontface = rayangle>=M_PI_2_F;
-
 										float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
 										float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
 										float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
@@ -1251,33 +1296,12 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 
 										int pixelind = (camres.y-y-1)*camres.x+xid;
 										int pixely = y-campresystind;
-										if (drawdistance<zbuf[pixely]) {
-											zbuf[pixely] = drawdistance;
-											imz[pixelind] = drawdistance;
-											ihe[pixelind] = eid;
-											iho[pixelind] = oid;
-											iht[pixelind] = tid;
-											iti[pixelind] = texind;
-											if ((xid==camhalfres.x+xstep)&&(y==camhalfres.y)) {imh[0] = eid;}
-											float4 texcolor = vtri.facecolor;
-											if (vtri.texid>=0) {
-												float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
-												texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
-											}
-											float4 pixelcolor = (float4)(0.0f);
-											if (tlit) {
-												pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
-											} else {
-												pixelcolor = lm*vtri.emissivecolor + texcolor;
-											}
-											if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
-											if (!frontface) {
-												pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
-											}
-											img[pixelind*4+0] = pixelcolor.s0;
-											img[pixelind*4+1] = pixelcolor.s1;
-											img[pixelind*4+2] = pixelcolor.s2;
-											img[pixelind*4+3] = pixelcolor.s3;
+										if (drawdistance<imzbuf[pixely]) {
+											imzbuf[pixely] = drawdistance;
+											ihebuf[pixely] = eid;
+											ihobuf[pixely] = oid;
+											ihtbuf[pixely] = tid;
+											itibuf[pixely] = texind;
 										}
 									}
 								}
@@ -1285,6 +1309,74 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 						}
 					}
 				}
+			}
+		}
+	}
+
+	for (int y=campresystind;y<=campresyendind;y++) {
+		int pixelind = (camres.y-y-1)*camres.x+xid;
+		int pixely = y-campresystind;
+
+		float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+		float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
+		float4 raydirrot = matrixposmult(raydir, cammat);
+		float raydirrotlen = length(raydirrot);
+		float4 camray = raydirrot;
+
+		float drawdistance = imzbuf[pixely];
+		int eid = ihebuf[pixely];
+		int oid = ihobuf[pixely];
+		int tid = ihtbuf[pixely];
+		int texind = itibuf[pixely];
+
+		if (drawdistance<INFINITY) {
+			triangle vtri;
+			vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+			vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+			vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+			vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+			vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+			vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+			vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+			vtri.texid = (int)tri[tid*ts+28];
+			vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
+			vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
+			vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
+			vtri.roughness = tri[tid*ts+41];
+			vtri.metallic = tri[tid*ts+42];
+			vtri.refractind = tri[tid*ts+43];
+			vtri.opacity = tri[tid*ts+44];
+			vtri.prelit = (int)tri[tid*ts+45];
+
+			float rayangle = vectorangle(camray, vtri.norm);
+			bool frontface = rayangle>=M_PI_2_F;
+
+			if (drawdistance<imz[pixelind]) {
+				imz[pixelind] = drawdistance;
+				ihe[pixelind] = eid;
+				iho[pixelind] = oid;
+				iht[pixelind] = tid;
+				iti[pixelind] = texind;
+				if ((xid==camhalfres.x+xstep)&&(y==camhalfres.y)) {imh[0] = eid;}
+				float4 texcolor = vtri.facecolor;
+				if (vtri.texid>=0) {
+					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
+					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
+				}
+				float4 pixelcolor = (float4)(0.0f);
+				if (tlit) {
+					pixelcolor = lm*vtri.emissivecolor + vtri.lightmapcolor*texcolor*(1.0f-vtri.metallic);
+				} else {
+					pixelcolor = lm*vtri.emissivecolor + texcolor;
+				}
+				if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
+				if (!frontface) {
+					pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
+				}
+				img[pixelind*4+0] = pixelcolor.s0;
+				img[pixelind*4+1] = pixelcolor.s1;
+				img[pixelind*4+2] = pixelcolor.s2;
+				img[pixelind*4+3] = pixelcolor.s3;
 			}
 		}
 	}
