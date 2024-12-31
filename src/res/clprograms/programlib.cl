@@ -398,22 +398,15 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 
 	for (int eid=0;eid<entc;eid++) {
 		entity vent;
-		vent.pos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],ent[eid*es+3]);
-		vent.scale = (float3)(ent[eid*es+4],ent[eid*es+5],ent[eid*es+6]);
-		vent.rot = (float3)(ent[eid*es+7],ent[eid*es+8],ent[eid*es+9]);
 		vent.sph = (float4)(ent[eid*es+10],ent[eid*es+11],ent[eid*es+12],ent[eid*es+13]);
 		vent.ind = (int)ent[eid*es+14];
 		vent.len = (int)ent[eid*es+15];
-		vent.phys = (int)ent[eid*es+16];
 
 		float eppdist = raypointdistance(campos, camdir, vent.sph);
 		if (fabs(eppdist)<=vent.sph.w) {
 
 			for (int oid=vent.ind;oid<(vent.ind+vent.len);oid++) {
 				object vobj;
-				vobj.pos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],obj[oid*os+3]);
-				vobj.scale = (float3)(obj[oid*os+4],obj[oid*os+5],obj[oid*os+6]);
-				vobj.rot = (float3)(obj[oid*os+7],obj[oid*os+8],obj[oid*os+9]);
 				vobj.sph = (float4)(obj[oid*os+10],obj[oid*os+11],obj[oid*os+12],obj[oid*os+13]);
 				vobj.ind = (int)obj[oid*os+14];
 				vobj.len = (int)obj[oid*os+15];
@@ -431,14 +424,6 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 						vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
 						vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 						vtri.texid = (int)tri[tid*ts+28];
-						vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
-						vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
-						vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
-						vtri.roughness = tri[tid*ts+41];
-						vtri.metallic = tri[tid*ts+42];
-						vtri.refractind = tri[tid*ts+43];
-						vtri.opacity = tri[tid*ts+44];
-						vtri.prelit = (int)tri[tid*ts+45];
 						
 						float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
 
@@ -483,22 +468,11 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 		float4 camray = camdir;
 
 		triangle vtri;
-		vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
-		vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
-		vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
 		vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
-		vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
-		vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
-		vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
-		vtri.texid = (int)tri[tid*ts+28];
 		vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
 		vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
 		vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
-		vtri.roughness = tri[tid*ts+41];
 		vtri.metallic = tri[tid*ts+42];
-		vtri.refractind = tri[tid*ts+43];
-		vtri.opacity = tri[tid*ts+44];
-		vtri.prelit = (int)tri[tid*ts+45];
 
 		float rayangle = vectorangle(camray, vtri.norm);
 		bool frontface = rayangle>=M_PI_2_F;
@@ -508,7 +482,7 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 		iht[0] = tid;
 		iti[0] = texind;
 		float4 texcolor = vtri.facecolor;
-		if (vtri.texid>=0) {
+		if (texind>=0) {
 			float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 			texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 		}
@@ -1168,22 +1142,15 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 
 	for (int eid=0;eid<entc;eid++) {
 		entity vent;
-		vent.pos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],ent[eid*es+3]);
-		vent.scale = (float3)(ent[eid*es+4],ent[eid*es+5],ent[eid*es+6]);
-		vent.rot = (float3)(ent[eid*es+7],ent[eid*es+8],ent[eid*es+9]);
 		vent.sph = (float4)(ent[eid*es+10],ent[eid*es+11],ent[eid*es+12],ent[eid*es+13]);
 		vent.ind = (int)ent[eid*es+14];
 		vent.len = (int)ent[eid*es+15];
-		vent.phys = (int)ent[eid*es+16];
 
 		float eppdist = planepointdistance(vent.sph, colplane);
 		if (fabs(eppdist)<=vent.sph.w) {
 
 			for (int oid=vent.ind;oid<(vent.ind+vent.len);oid++) {
 				object vobj;
-				vobj.pos = (float4)(obj[oid*os+0],obj[oid*os+1],obj[oid*os+2],obj[oid*os+3]);
-				vobj.scale = (float3)(obj[oid*os+4],obj[oid*os+5],obj[oid*os+6]);
-				vobj.rot = (float3)(obj[oid*os+7],obj[oid*os+8],obj[oid*os+9]);
 				vobj.sph = (float4)(obj[oid*os+10],obj[oid*os+11],obj[oid*os+12],obj[oid*os+13]);
 				vobj.ind = (int)obj[oid*os+14];
 				vobj.len = (int)obj[oid*os+15];
@@ -1201,14 +1168,6 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 						vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
 						vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 						vtri.texid = (int)tri[tid*ts+28];
-						vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
-						vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
-						vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
-						vtri.roughness = tri[tid*ts+41];
-						vtri.metallic = tri[tid*ts+42];
-						vtri.refractind = tri[tid*ts+43];
-						vtri.opacity = tri[tid*ts+44];
-						vtri.prelit = (int)tri[tid*ts+45];
 						
 						float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
 
@@ -1331,22 +1290,11 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 
 		if (drawdistance<INFINITY) {
 			triangle vtri;
-			vtri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
-			vtri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
-			vtri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
 			vtri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
-			vtri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
-			vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
-			vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
-			vtri.texid = (int)tri[tid*ts+28];
 			vtri.facecolor = (float4)(tri[tid*ts+29],tri[tid*ts+30],tri[tid*ts+31],tri[tid*ts+32]);
 			vtri.emissivecolor = (float4)(tri[tid*ts+33],tri[tid*ts+34],tri[tid*ts+35],tri[tid*ts+36]);
 			vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
-			vtri.roughness = tri[tid*ts+41];
 			vtri.metallic = tri[tid*ts+42];
-			vtri.refractind = tri[tid*ts+43];
-			vtri.opacity = tri[tid*ts+44];
-			vtri.prelit = (int)tri[tid*ts+45];
 
 			float rayangle = vectorangle(camray, vtri.norm);
 			bool frontface = rayangle>=M_PI_2_F;
@@ -1359,7 +1307,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 				iti[pixelind] = texind;
 				if ((xid==camhalfres.x+xstep)&&(y==camhalfres.y)) {imh[0] = eid;}
 				float4 texcolor = vtri.facecolor;
-				if (vtri.texid>=0) {
+				if (texind>=0) {
 					float4 texrgbaf = convert_float4(as_uchar4(tex[texind])) / 255.0f;
 					texcolor = (float4)(texrgbaf.s2, texrgbaf.s1, texrgbaf.s0, texrgbaf.s3);
 				}
