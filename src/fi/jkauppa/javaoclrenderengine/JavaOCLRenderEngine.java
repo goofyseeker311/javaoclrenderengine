@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.6.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.6.4";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -215,7 +215,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxangle.obj", true);
+		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxtop.obj", true);
 		Entity loadmodelG = ModelLib.loadOBJFileEntity("res/models/ground2.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid12.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
@@ -223,7 +223,7 @@ public class JavaOCLRenderEngine {
 		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship5.obj", true);
 		Entity loadmodel6 = ModelLib.loadOBJFileEntity("res/models/mineh.obj", true);
 		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
-		TriangleObjectEntity triobjentG = getEntityObjectTriangles(loadmodelG, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f});
+		TriangleObjectEntity triobjentG = getEntityObjectTriangles(loadmodelG, new float[]{0.0f,0.0f,-20.0f, 1.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f});
 		TriangleObjectEntity triobjent = getEntityObjectTriangles(loadmodel2, new float[]{0.5f,0.0f,0.0f, 0.1f, 0.0f,0.0f,0.0f, 0.0f,1.0f});
 		TriangleObjectEntity triobjent2 = getEntityObjectTriangles(loadmodel2, new float[]{-0.5f,0.0f,0.0f, 0.1f, 45.0f,0.0f,0.0f, 0.0f,1.0f});
 		TriangleObjectEntity triobjent3 = getEntityObjectTriangles(loadmodel2, new float[]{0.0f,0.5f,0.0f, 0.1f, 60.0f,20.0f,0.0f, 0.0f,1.0f});
@@ -237,7 +237,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
 			asteroids[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
-			asteroids[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius+10.0f;
+			asteroids[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
 			asteroids[i*oc+3] = 1.0f;
 			asteroids[i*oc+4] = rand.nextFloat()*360.0f;
 			asteroids[i*oc+5] = rand.nextFloat()*360.0f;
@@ -253,7 +253,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<minecount;i++) {
 			mines[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
 			mines[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
-			mines[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius+500.0f;
+			mines[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
 			mines[i*oc+3] = 1.0f;
 			mines[i*oc+4] = rand.nextFloat()*360.0f;
 			mines[i*oc+5] = rand.nextFloat()*360.0f;
@@ -269,7 +269,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<shipcount;i++) {
 			ships[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
 			ships[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
-			ships[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*splaceradius+200.0f;
+			ships[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
 			ships[i*oc+3] = 1.0f;
 			ships[i*oc+4] = rand.nextFloat()*360.0f;
 			ships[i*oc+5] = rand.nextFloat()*360.0f;
@@ -285,7 +285,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<mine2count;i++) {
 			mines2[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
 			mines2[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
-			mines2[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius+10.0f;
+			mines2[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*m2placeradius;
 			mines2[i*oc+3] = 1.0f;
 			mines2[i*oc+4] = rand.nextFloat()*360.0f;
 			mines2[i*oc+5] = rand.nextFloat()*360.0f;

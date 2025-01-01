@@ -3,7 +3,7 @@
 #define es 17
 #define vs 40
 #define cs 32
-#define zs 64
+#define zs 128
 #define ld 3.0f
 #define lm 1000.0f
 
