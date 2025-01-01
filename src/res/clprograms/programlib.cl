@@ -4,6 +4,7 @@
 #define vs 40
 #define cs 32
 #define zs 64
+#define ld 3.0f
 #define lm 1000.0f
 
 typedef struct {
@@ -807,9 +808,9 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 		}}
 	}
 
-	lightmapcolor.s0 = lightmapcolor.s0 * 1.0f/cmlen;
-	lightmapcolor.s1 = lightmapcolor.s1 * 1.0f/cmlen;
-	lightmapcolor.s2 = lightmapcolor.s2 * 1.0f/cmlen;
+	lightmapcolor.s0 = lightmapcolor.s0 * ld/cmlen;
+	lightmapcolor.s1 = lightmapcolor.s1 * ld/cmlen;
+	lightmapcolor.s2 = lightmapcolor.s2 * ld/cmlen;
 
 	tli[tid*ts+37] = lightmapcolor.s0; tli[tid*ts+38] = lightmapcolor.s1; tli[tid*ts+39] = lightmapcolor.s2; tli[tid*ts+40] = lightmapcolor.s3;
 }

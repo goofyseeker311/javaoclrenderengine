@@ -57343,4 +57343,32 @@ facet normal 0 0 1
   vertex 406.25012 140.62495 0
  endloop
 endfacet
+facet normal 0 0.039428525 -0.9992224
+ outer loop
+  vertex 0 0 -19.729603
+  vertex -500 500 0
+  vertex 500 500 0
+ endloop
+endfacet
+facet normal 0 -0.039428525 -0.9992224
+ outer loop
+  vertex -500 -500 0
+  vertex 0 0 -19.729603
+  vertex 500 -500 0
+ endloop
+endfacet
+facet normal 0.039428525 0 -0.9992224
+ outer loop
+  vertex 500 -500 0
+  vertex 0 0 -19.729603
+  vertex 500 500 0
+ endloop
+endfacet
+facet normal -0.039428525 -0 -0.9992224
+ outer loop
+  vertex -500 -500 0
+  vertex -500 500 0
+  vertex 0 0 -19.729603
+ endloop
+endfacet
 endsolid 
