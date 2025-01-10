@@ -149,7 +149,7 @@ public class ComputeLib {
 		long context = devicedata.context;
 		IntBuffer errcode_ret = clStack.callocInt(1);
 		program = CL30.clCreateProgramWithSource(context, source, errcode_ret);
-		if (CL30.clBuildProgram(program, device, "-cl-std=CL2.0", null, MemoryUtil.NULL)!=CL30.CL_SUCCESS) {
+		if (CL30.clBuildProgram(program, device, "-cl-std=CL2.0 -Werror", null, MemoryUtil.NULL)!=CL30.CL_SUCCESS) {
 			String buildinfo = getClProgramBuildInfo(program, device, CL30.CL_PROGRAM_BUILD_LOG);
 			System.out.println("compileProgram build failed:");
 			System.out.println(buildinfo);

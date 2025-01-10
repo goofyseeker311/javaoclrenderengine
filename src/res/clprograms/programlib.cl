@@ -493,9 +493,7 @@ float8 renderray(float8 vray, int *ihe, int *iho, int *iht, int *iti, float *tri
 		} else {
 			pixelcolor = lm*vtri.emissivecolor + texcolor;
 		}
-		if (!frontface) {
-			pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
-		}
+		if (!frontface) {pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);}
 		raycolordistpos.s0 = pixelcolor.s0;
 		raycolordistpos.s1 = pixelcolor.s1;
 		raycolordistpos.s2 = pixelcolor.s2;
@@ -774,7 +772,7 @@ kernel void lightentity(global float *tli, global float *tri, global int *trc, g
 	float tricam5[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, -1.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 	float tricam6[32] = {centerpos.x,centerpos.y,centerpos.z, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 90.0f,90.0f,cs,cs, 0.0f,0.0f,-1.0f,0.0f, -1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 
-	const int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
+	int lit = 1, nor = 1, rsx = 1, rsy = 1, rsn = 0;
 	int cmlen = cs*cs*6;
 
 	float img[cs*cs*4];
@@ -1156,7 +1154,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 						vtri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
 						vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 						vtri.texid = (int)tri[tid*ts+28];
-						
+
 						float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
 
 						float16 intline = planetriangleintersection(colplane, &vtri);
@@ -1306,9 +1304,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 					pixelcolor = lm*vtri.emissivecolor + texcolor;
 				}
 				if (sphnor) {pixelcolor.s012=pixelcolor.s012/raydirrotlen;}
-				if (!frontface) {
-					pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);
-				}
+				if (!frontface) {pixelcolor = (float4)(0.0f,0.0f,0.0f,0.0f);}
 				img[pixelind*4+0] = pixelcolor.s0;
 				img[pixelind*4+1] = pixelcolor.s1;
 				img[pixelind*4+2] = pixelcolor.s2;
