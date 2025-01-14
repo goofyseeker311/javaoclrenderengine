@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.6.7";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.6.8";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -215,7 +215,7 @@ public class JavaOCLRenderEngine {
 		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxangle.obj", true);
+		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen3.obj", true);
 		Entity loadmodelG = ModelLib.loadOBJFileEntity("res/models/ground2.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid12.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
@@ -247,7 +247,7 @@ public class JavaOCLRenderEngine {
 		}
 		TriangleObjectEntity asteroidstriobjents = getEntityObjectTriangles(loadmodel3, asteroids);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, asteroidstriobjents});
-		int minecount = 1000;
+		int minecount = 100;
 		float mplaceradius = 500.0f;
 		float[] mines = new float[minecount*oc];
 		for (int i=0;i<minecount;i++) {
