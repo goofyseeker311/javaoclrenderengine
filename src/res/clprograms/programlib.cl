@@ -4,7 +4,7 @@
 #define vs 40
 #define cs 32
 #define zs 128
-#define ld 3.0f
+#define ld 5.0f
 #define lm 1000.0f
 #define cw 4.0f
 
@@ -681,8 +681,8 @@ kernel void transformentity(global float *ttr, global float *otr, global float *
 
 kernel void physicscollision(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts) {
 	unsigned int eid = get_global_id(0);
-	int entc = enc[0];
 	float4 campos = (float4)(cam[0],cam[1],cam[2],0.0f);
+	int entc = enc[0];
 	float deltatime = dts[0];
 
 	ent[0] = campos.x; ent[1] = campos.y; ent[2] = campos.z;
