@@ -4,7 +4,7 @@
 #define vs 40
 #define cs 32
 #define zs 128
-#define ld 5.0f
+#define ld 4.0f
 #define lm 1000.0f
 #define cw 4.0f
 
