@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.8.5";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.8.6";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -369,6 +369,9 @@ public class JavaOCLRenderEngine {
 		
 		String programSource = UtilLib.loadText("res/clprograms/programlib.cl", true);
 		this.openclprogram = this.computelib.compileProgram(opencldevice, programSource);
+		computelib.insertBarrier(openclqueue);
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "transformall", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
+		computelib.insertBarrier(openclqueue);
 		System.out.println("init.");
 	}
 
@@ -457,7 +460,7 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(openclqueue);
 		computelib.runProgram(opencldevice, openclqueue, openclprogram, "clearview", new long[]{graphicsibufferptr,graphicszbufferptr,graphicshbufferptr,graphicshebufferptr,graphicshobufferptr,graphicshtbufferptr,camposbufferptr}, new int[]{0,0}, new int[]{graphicswidth,vs});
 		computelib.insertBarrier(openclqueue);
-		computelib.runProgram(opencldevice, openclqueue, openclprogram, "transformentity", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
+		computelib.runProgram(opencldevice, openclqueue, openclprogram, "transformdynamic", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		computelib.insertBarrier(openclqueue);
 		computelib.runProgram(opencldevice, openclqueue, openclprogram, "physicscollision", new long[]{camposbufferptr,trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr,entitieslenptr,deltatimeptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		computelib.insertBarrier(openclqueue);

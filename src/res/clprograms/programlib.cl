@@ -69,13 +69,15 @@ float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
 float8 renderray(float8 vray, float campixelang, int *ihe, int *iho, int *iht, int *iti, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *ext);
+void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, float *obj, int *obc, float *ent, bool all);
 void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, int *iti, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn, int *ext);
 void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn);
 void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, int *iti, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn, int *ext);
 
 kernel void movecamera(global float *cam, global float *cmv);
 kernel void clearview(global float *img, global float *imz, global int *imh, global int *ihe, global int *iho, global int *iht, global float *cam);
-kernel void transformentity(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
+kernel void transformall(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
+kernel void transformdynamic(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent);
 kernel void physicscollision(global float *cam, global float *tli, global float *oli, global float *eli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global float *dts);
 kernel void lightcopy(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
 kernel void lightentity(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes);
@@ -581,7 +583,15 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 	}
 }
 
-kernel void transformentity(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
+kernel void transformall(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
+	bool vall = true;
+	transformentity(ttr, otr, etr, tri, trc, obj, obc, ent, vall);
+}
+kernel void transformdynamic(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
+	bool vall = false;
+	transformentity(ttr, otr, etr, tri, trc, obj, obc, ent, vall);
+}
+void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, float *obj, int *obc, float *ent, bool all) {
 	unsigned int eid = get_global_id(0);
 	int objc = obc[0];
 	int tric = trc[0];
@@ -594,6 +604,7 @@ kernel void transformentity(global float *ttr, global float *otr, global float *
 	vent.ind = (int)ent[eid*es+14];
 	vent.len = (int)ent[eid*es+15];
 	vent.phys = (int)ent[eid*es+16];
+	if ((!all)&&(vent.phys==0)) {return;}
 
 	float16 entscamat = scalingmatrix(vent.scale);
 	float16 entrotmat = rotationmatrix(vent.rot);
@@ -715,7 +726,7 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 			vent.len = (int)eli[eix*es+15];
 			vent.phys = (int)eli[eix*es+16];
 
-			if (vent.phys!=-1) {
+			if (vent.phys>=0) {
 				float sphdist = spherespheredistance(cent.sph, vent.sph);
 				if (sphdist<0.0f) {
 					float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
