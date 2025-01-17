@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.8.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.8.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -231,7 +231,7 @@ public class JavaOCLRenderEngine {
 		TriangleObjectEntity triobjent5 = getEntityObjectTriangles(loadmodel2, new float[]{0.0f,0.0f,-0.5f, 0.1f, 0.0f,60.0f,30.0f, 0.0f,1.0f});
 		TriangleObjectEntity triobjent6 = getEntityObjectTriangles(loadmodel2, new float[]{0.0f,0.0f,0.5f, 0.1f, 30.0f,0.0f,50.0f, 0.0f,1.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentG, triobjent, triobjent2, triobjent3, triobjent4, triobjent5, triobjent6});
-		int asteroidcount = 5;
+		int asteroidcount = 100;
 		float aplaceradius = 10.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
