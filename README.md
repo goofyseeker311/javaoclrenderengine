@@ -4,7 +4,7 @@ Java LWJGL OpenCL vectorized cpu/gpu/fpga ray traced raster render engine.
 
 Draws OpenCL image buffer to screen using OpenGL shared context interoperation or CPU buffer copy.
 
-![progress87](https://github.com/user-attachments/assets/9103c607-3cf0-4cc9-bbbb-116c7a5d1a1e)
+![progress88](https://github.com/user-attachments/assets/1eff9d43-189d-41c3-95fd-b7d499d0f4f5)
 
 Input:
 ----------------
