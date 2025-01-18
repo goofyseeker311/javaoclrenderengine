@@ -1701,12 +1701,22 @@ public class ModelLib {
 					Position pos1 = loadmodel.vertexlist[loadmodel.objects[j].faceindex[i].facevertexindex[0].vertexindex-1];
 					Position pos2 = loadmodel.vertexlist[loadmodel.objects[j].faceindex[i].facevertexindex[1].vertexindex-1];
 					Position pos3 = loadmodel.vertexlist[loadmodel.objects[j].faceindex[i].facevertexindex[2].vertexindex-1];
+					Triangle[] tri = {new Triangle(new Position(pos1.x,pos1.y,pos1.z),new Position(pos2.x,pos2.y,pos2.z),new Position(pos3.x,pos3.y,pos3.z))};
 					Direction norm = new Direction(0.0f, 0.0f, 0.0f);
 					Coordinate tex1 = new Coordinate(0.0f,0.0f);
 					Coordinate tex2 = new Coordinate(1.0f,0.0f);
 					Coordinate tex3 = new Coordinate(1.0f,1.0f);
-					if (loadmodel.objects[j].faceindex[i].facevertexindex[0].normalindex>0) {
-						norm = loadmodel.facenormals[loadmodel.objects[j].faceindex[i].facevertexindex[0].normalindex-1];
+					if ((loadmodel.objects[j].faceindex[i].facevertexindex[0].normalindex>0)&&(loadmodel.objects[j].faceindex[i].facevertexindex[1].normalindex>0)&&(loadmodel.objects[j].faceindex[i].facevertexindex[2].normalindex>0)) {
+						Direction norm1 = loadmodel.facenormals[loadmodel.objects[j].faceindex[i].facevertexindex[0].normalindex-1];
+						Direction norm2 = loadmodel.facenormals[loadmodel.objects[j].faceindex[i].facevertexindex[1].normalindex-1];
+						Direction norm3 = loadmodel.facenormals[loadmodel.objects[j].faceindex[i].facevertexindex[2].normalindex-1];
+						Direction[] vertexnorm = {new Direction((norm1.dx+norm2.dx+norm3.dx)/3.0f,(norm1.dy+norm2.dy+norm3.dy)/3.0f,(norm1.dz+norm2.dz+norm3.dz)/3.0f)};
+						Direction[] trinorm = MathLib.triangleNormal(tri);
+						norm = trinorm[0];
+						double[] normang = MathLib.vectorAngle(norm, vertexnorm);
+						if (normang[0]>90.0f) {
+							norm = norm.invert();
+						}
 					}
 					if (loadmodel.objects[j].faceindex[i].facevertexindex[0].textureindex>0) {
 						tex1 = loadmodel.texturecoords[loadmodel.objects[j].faceindex[i].facevertexindex[0].textureindex-1];
@@ -1717,13 +1727,12 @@ public class ModelLib {
 					if (loadmodel.objects[j].faceindex[i].facevertexindex[2].textureindex>0) {
 						tex3 = loadmodel.texturecoords[loadmodel.objects[j].faceindex[i].facevertexindex[2].textureindex-1];
 					}
-					Triangle tri = new Triangle(new Position(pos1.x,pos1.y,pos1.z),new Position(pos2.x,pos2.y,pos2.z),new Position(pos3.x,pos3.y,pos3.z));
-					tri.norm = norm;
-					tri.pos1.tex = tex1;
-					tri.pos2.tex = tex2;
-					tri.pos3.tex = tex3;
-					tri.mat = foundmat;
-					newtrianglelistarray.add(tri);
+					tri[0].norm = norm;
+					tri[0].pos1.tex = tex1;
+					tri[0].pos2.tex = tex2;
+					tri[0].pos3.tex = tex3;
+					tri[0].mat = foundmat;
+					newtrianglelistarray.add(tri[0]);
 					Line newline1 = new Line(pos1.copy(), pos2.copy());
 					Line newline2 = new Line(pos1.copy(), pos3.copy());
 					Line newline3 = new Line(pos2.copy(), pos3.copy());
