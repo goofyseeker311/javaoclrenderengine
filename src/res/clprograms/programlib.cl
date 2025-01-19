@@ -1022,7 +1022,7 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 			if (frontface) {
 				float8 refractionray = planerefractionray(camray, triplane, 1.0f, vtri.refractind);
 
-				int eid2 = -1, oid2 = -1, tid2 = -1, texind2 = -1, vext2 = -1;
+				int eid2 = -1, oid2 = -1, tid2 = -1, texind2 = -1, vext2 = tid;
 				float8 rayint = renderray(refractionray, campixelang, &eid2, &oid2, &tid2, &texind2, tri, trc, obj, obc, ent, enc, tex, tes, lit, &vext2);
 				float4 raycolor = rayint.s0123;
 				float raydist = rayint.s4;
@@ -1053,7 +1053,7 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 						if (vtri2.opacity<1.0f) {
 							float8 refractionray2 = planerefractionray(refractionray, triplane2, vtri.refractind, 1.0f);
 
-							int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1, hitext = -1;
+							int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1, hitext = tid2;
 							float8 rayint2 = renderray(refractionray2, campixelang, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit, &hitext);
 							float4 raycolor2 = rayint2.s0123;
 							float raydist2 = rayint2.s4;
@@ -1074,7 +1074,7 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 
 		if (vtri.roughness<1.0f) {
 			float8 reflectionray = planereflectionray(camray, triplane);
-			int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1, hitext = -1;
+			int hiteid = -1, hitoid = -1, hittid = -1, hittexind = -1, hitext = tid;
 			float8 rayint = renderray(reflectionray, 0.0f, &hiteid, &hitoid, &hittid, &hittexind, tri, trc, obj, obc, ent, enc, tex, tes, lit, &hitext);
 			float4 raycolor = rayint.s0123;
 			float raydist = rayint.s4;
