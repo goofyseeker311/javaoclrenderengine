@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.1.9.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.1.9.4";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -216,9 +216,9 @@ public class JavaOCLRenderEngine {
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
 		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxtop.obj", true);
-		Entity loadmodelG = ModelLib.loadOBJFileEntity("res/models/ground3p.obj", true);
+		Entity loadmodelG = ModelLib.loadOBJFileEntity("res/models/ground3l.obj", true);
 		Entity loadmodel2 = ModelLib.loadOBJFileEntity("res/models/asteroid12.obj", true);
-		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
+		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid13.obj", true);
 		Entity loadmodel4 = ModelLib.loadOBJFileEntity("res/models/mineg.obj", true);
 		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship5.obj", true);
 		Entity loadmodel6 = ModelLib.loadOBJFileEntity("res/models/mineh.obj", true);
