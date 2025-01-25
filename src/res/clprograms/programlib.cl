@@ -704,9 +704,6 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	ent[0] = campos.x; ent[1] = campos.y; ent[2] = campos.z;
 
 	entity cent;
-	cent.pos = (float4)(eli[eid*es+0],eli[eid*es+1],eli[eid*es+2],eli[eid*es+3]);
-	cent.scale = (float3)(eli[eid*es+4],eli[eid*es+5],eli[eid*es+6]);
-	cent.rot = (float3)(eli[eid*es+7],eli[eid*es+8],eli[eid*es+9]);
 	cent.sph = (float4)(eli[eid*es+10],eli[eid*es+11],eli[eid*es+12],eli[eid*es+13]);
 	cent.ind = (int)eli[eid*es+14];
 	cent.len = (int)eli[eid*es+15];
@@ -718,19 +715,40 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	for (int eix=0;eix<entc;eix++) {
 		if (eix!=eid) {
 			entity vent;
-			vent.pos = (float4)(eli[eix*es+0],eli[eix*es+1],eli[eix*es+2],eli[eix*es+3]);
-			vent.scale = (float3)(eli[eix*es+4],eli[eix*es+5],eli[eix*es+6]);
-			vent.rot = (float3)(eli[eix*es+7],eli[eix*es+8],eli[eix*es+9]);
 			vent.sph = (float4)(eli[eix*es+10],eli[eix*es+11],eli[eix*es+12],eli[eix*es+13]);
 			vent.ind = (int)eli[eix*es+14];
 			vent.len = (int)eli[eix*es+15];
 			vent.phys = (int)eli[eix*es+16];
 
 			if (vent.phys>=0) {
-				float sphdist = spherespheredistance(cent.sph, vent.sph);
-				if (sphdist<0.0f) {
-					float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
-					entdir += sphdir;
+				float entsphdist = spherespheredistance(cent.sph, vent.sph);
+				if (entsphdist<0.0f) {
+
+					bool overlap = false;
+
+					for (int oid=cent.ind;oid<(cent.ind+cent.len);oid++) {
+						object cobj;
+						cobj.sph = (float4)(oli[oid*os+10],oli[oid*os+11],oli[oid*os+12],oli[oid*os+13]);
+						cobj.ind = (int)oli[oid*os+14];
+						cobj.len = (int)oli[oid*os+15];
+
+						for (int oix=vent.ind;oix<(vent.ind+vent.len);oix++) {
+							object vobj;
+							vobj.sph = (float4)(oli[oix*os+10],oli[oix*os+11],oli[oix*os+12],oli[oix*os+13]);
+							vobj.ind = (int)oli[oix*os+14];
+							vobj.len = (int)oli[oix*os+15];
+
+							float objsphdist = spherespheredistance(cobj.sph, vobj.sph);
+							if (objsphdist<0.0f) {
+								overlap = true;
+							}
+						}
+					}
+
+					if (overlap) {
+						float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
+						entdir += sphdir;
+					}
 				}
 			}
 		}
