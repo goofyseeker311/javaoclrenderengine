@@ -169,12 +169,14 @@ public class ComputeLib {
 			int dimensions = offset.length; if (size.length<dimensions) {dimensions = size.length;}
 			PointerBuffer globalWorkOffset = BufferUtils.createPointerBuffer(dimensions);
 			PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
+			PointerBuffer globalLocalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 			for (int i=0;i<dimensions;i++) {
 				globalWorkOffset.put(i, offset[i]);
 				globalWorkSize.put(i, size[i]);
+				globalLocalWorkSize.put(i, 1);
 			}
 			PointerBuffer event = clStack.mallocPointer(1);
-			kernel_error_int = CL30.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, null, null, event);
+			kernel_error_int = CL30.clEnqueueNDRangeKernel(queue, kernel, dimensions, globalWorkOffset, globalWorkSize, globalLocalWorkSize, null, event);
 			if (kernel_error_int!=CL30.CL_SUCCESS) {
 				System.out.print("runProgram kernel enqueue failed: "+kernel_error_int+" ");
 				if (kernel_error_int==CL30.CL_INVALID_PROGRAM_EXECUTABLE) {
