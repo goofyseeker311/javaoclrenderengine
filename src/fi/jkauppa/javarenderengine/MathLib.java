@@ -843,22 +843,6 @@ public class MathLib {
 						Plane[] vtriplane = planeFromNormalAtPoint(vtripos[0], vtrivec);
 						double[][] vtrilenar = planePointDistance(vtripos, vtriplane);
 						double[] vtrilen = {vtrilenar[0][0], vtrilenar[1][0], vtrilenar[2][0], vtrilenar[3][0]};
-						if (vtrilen[0]>vtrilen[1]) {
-							double lentmp = vtrilen[0];
-							vtrilen[0] = vtrilen[1];
-							vtrilen[1] = lentmp;
-							Position postmp = vtripos[0];
-							vtripos[0] = vtripos[1];
-							vtripos[1] = postmp;
-						}
-						if (vtrilen[2]>vtrilen[3]) {
-							double lentmp = vtrilen[2];
-							vtrilen[2] = vtrilen[3];
-							vtrilen[3] = lentmp;
-							Position postmp = vtripos[2];
-							vtripos[2] = vtripos[3];
-							vtripos[3] = postmp;
-						}
 						int[] lenind = UtilLib.indexSort(vtrilen);
 						if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
 							int startind = 0;

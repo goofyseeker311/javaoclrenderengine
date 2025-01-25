@@ -52,7 +52,7 @@ float16 scalingmatrix(float3 sca);
 float16 rotationmatrix(float3 rot);
 float16 rotationmatrixaroundaxis(float4 axis, float rot);
 float vectorangle(float4 dir1, float4 dir2);
-float4 planefromnormalatpos(float4 pos, float4 dir);
+float4 planefromnormalatpoint(float4 pos, float4 dir);
 float rayplanedistance(float4 pos, float4 dir, float4 plane);
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
@@ -68,6 +68,8 @@ float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float r
 float4 sourceblend(float4 source, float alpha);
 float4 sourceoverblend(float4 dest, float4 source, float alpha);
 float4 sourcemixblend(float4 dest, float4 source, float alpha);
+float spherespheredistance(float4 vsphere1, float4 vsphere2);
+float8 triangletriangleintersection(triangle *vtri1, triangle *vtri2);
 float8 renderray(float8 vray, float campixelang, int *ihe, int *iho, int *iht, int *iti, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *ext);
 void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, float *obj, int *obc, float *ent, bool all);
 void rayview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, int *iho, int *iht, int *iti, float *cam, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *nor, int *rsx, int *rsy, int *rsn, int *ext);
@@ -136,7 +138,7 @@ float vectorangle(float4 dir1, float4 dir2) {
 	return retangle;
 }
 
-float4 planefromnormalatpos(float4 pos, float4 dir) {
+float4 planefromnormalatpoint(float4 pos, float4 dir) {
 	float4 retplane = normalize(dir);
 	retplane.w = -(pos.x*retplane.x + pos.y*retplane.y + pos.z*retplane.z);
 	return retplane;
@@ -188,7 +190,7 @@ float4 triangleplane(triangle *vtri) {
 	float4 v1 = p2 - p1;
 	float4 v2 = p3 - p1;
 	float4 nm = normalize(cross(v1, v2));
-	plane = planefromnormalatpos(p1, nm);
+	plane = planefromnormalatpoint(p1, nm);
 	return plane;
 }
 
@@ -257,9 +259,9 @@ float8 raytriangleintersection(float4 vpos, float4 vdir, triangle *vtri) {
 	float4 v12norm = cross(v1,v2);
 	float4 v23norm = cross(v2,v3);
 	float4 v31norm = cross(v3,v1);
-	float4 v12plane = planefromnormalatpos(vpos,v12norm);
-	float4 v23plane = planefromnormalatpos(vpos,v23norm);
-	float4 v31plane = planefromnormalatpos(vpos,v31norm);
+	float4 v12plane = planefromnormalatpoint(vpos,v12norm);
+	float4 v23plane = planefromnormalatpoint(vpos,v23norm);
+	float4 v31plane = planefromnormalatpoint(vpos,v31norm);
 	float v12dist = planepointdistance(p4, v12plane);
 	float v23dist = planepointdistance(p4, v23plane);
 	float v31dist = planepointdistance(p4, v31plane);
@@ -352,7 +354,7 @@ float8 planerefractionray(float8 vray, float4 vplane, float refraction1, float r
 			if (isfinite(rayvplaneangleout)) {
 				float4 refdownnormal = normalize(cross(refnormal, vplanenorm));
 				const float4 zeropos = (float4)(0.0f,0.0f,0.0f,0.0f);
-				float4 vplanezero = planefromnormalatpos(zeropos, vplanenorm);
+				float4 vplanezero = planefromnormalatpoint(zeropos, vplanenorm);
 				float raydist = planepointdistance(raydir, vplanezero);
 				float refdowndist = tan(rayvplaneangleout)*raydist;
 				float4 refractionraydirn = raydist*vplanenorm + refdowndist*refdownnormal;
@@ -384,6 +386,44 @@ float4 sourcemixblend(float4 dest, float4 source, float alpha) {
 float spherespheredistance(float4 vsphere1, float4 vsphere2) {
 	float dist = sqrt(pow(vsphere2.x-vsphere1.x,2)+pow(vsphere2.y-vsphere1.y,2)+pow(vsphere2.z-vsphere1.z,2)) - (vsphere1.w+vsphere2.w); 
 	return dist;
+}
+
+float8 triangletriangleintersection(triangle *vtri1, triangle *vtri2) {
+	float8 retline = (float8)(NAN);
+	float4 vtri1plane = triangleplane(vtri1);
+	float4 vtri2plane = triangleplane(vtri2);
+	float16 vtri1planeint = planetriangleintersection(vtri1plane, vtri2);
+	float16 vtri2planeint = planetriangleintersection(vtri2plane, vtri1);
+	float8 vtri1int = vtri1planeint.s01234567;
+	float8 vtri2int = vtri2planeint.s01234567;
+	if ((!isnan(vtri1int.x))&&(!isnan(vtri2int.x))) {
+		float4 vtripos[4] = {vtri1int.s0123, vtri1int.s4567, vtri2int.s0123, vtri2int.s4567};
+		float4 vtrivec = vtri1int.s4567 - vtri1int.s0123;
+		float4 vtriplane = planefromnormalatpoint(vtripos[0], vtrivec);
+		float vtrilen1 = planepointdistance(vtripos[0], vtriplane);
+		float vtrilen2 = planepointdistance(vtripos[1], vtriplane);
+		float vtrilen3 = planepointdistance(vtripos[2], vtriplane);
+		float vtrilen4 = planepointdistance(vtripos[3], vtriplane);
+		float vtrilen[4] = {vtrilen1, vtrilen2, vtrilen3, vtrilen4};
+		int lenind[4] = {0, 1, 2, 3};
+		//todo: index sort
+		if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
+			int startind = 0;
+			int endind = 3;
+			if (lenind[0]>lenind[2]) {
+				startind = lenind[0];
+			} else {
+				startind = lenind[2];
+			}
+			if (lenind[1]<lenind[3]) {
+				endind = lenind[1];
+			} else {
+				endind = lenind[3];
+			}
+			retline = (float8)(vtripos[startind], vtripos[endind]);
+		}
+	}
+	return retline;
 }
 
 float8 renderray(float8 vray, float campixelang, int *ihe, int *iho, int *iht, int *iti, float *tri, int *trc, float *obj, int *obc, float *ent, int *enc, int *tex, int *tes, int *lit, int *ext) {
@@ -445,7 +485,7 @@ float8 renderray(float8 vray, float campixelang, int *ihe, int *iho, int *iht, i
 									vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 									vtri.texid = (int)tri[tid*ts+28];
 									
-									float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
+									float4 triplane = planefromnormalatpoint(vtri.pos1, vtri.norm);
 
 									float8 intpos = raytriangleintersection(campos, camdir, &vtri);
 									float4 raypos = intpos.s0123;
@@ -1031,7 +1071,7 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 		vtri.opacity = tri[tid*ts+44];
 		vtri.prelit = (int)tri[tid*ts+45];
 
-		float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
+		float4 triplane = planefromnormalatpoint(vtri.pos1, vtri.norm);
 
 		float rayangle = vectorangle(raydirrot, vtri.norm);
 		bool frontface = rayangle>=M_PI_2_F;
@@ -1066,7 +1106,7 @@ void bounceview(int xid, int yid, float *img, float *imz, int *imh, int *ihe, in
 						vtri2.opacity = tri[tid2*ts+44];
 						vtri2.prelit = (int)tri[tid2*ts+45];
 
-						float4 triplane2 = planefromnormalatpos(vtri2.pos1, vtri2.norm);
+						float4 triplane2 = planefromnormalatpoint(vtri2.pos1, vtri2.norm);
 
 						if (vtri2.opacity<1.0f) {
 							float8 refractionray2 = planerefractionray(refractionray, triplane2, vtri.refractind, 1.0f);
@@ -1175,12 +1215,12 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 	float4 coldowndirrot = matrixposmult(coldowndir, cammat);
 	float colplanerayfov = vectorangle(colupdirrot, coldowndirrot);
 	float4 colplanenorm = normalize(cross(coldowndirrot, colupdirrot));
-	float4 colplane = planefromnormalatpos(campos, colplanenorm);
-	float4 camdirplane = planefromnormalatpos(campos, camdirrot);
-	float4 camrightdirplane = planefromnormalatpos(campos, camrightdirrot);
-	float4 camupdirplane = planefromnormalatpos(campos, camupdirrot);
+	float4 colplane = planefromnormalatpoint(campos, colplanenorm);
+	float4 camdirplane = planefromnormalatpoint(campos, camdirrot);
+	float4 camrightdirplane = planefromnormalatpoint(campos, camrightdirrot);
+	float4 camupdirplane = planefromnormalatpoint(campos, camupdirrot);
 	float4 rendercutplanepos = translatepos(campos, camdirrot, 0.001f);
-	float4 rendercutplane = planefromnormalatpos(rendercutplanepos, camdirrot);
+	float4 rendercutplane = planefromnormalatpoint(rendercutplanepos, camdirrot);
 
 	int campresystind = camresystep*vid;
 	int campresyendind = camresystep*vid + camresystep-1;
@@ -1229,7 +1269,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 									vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 									vtri.texid = (int)tri[tid*ts+28];
 
-									float4 triplane = planefromnormalatpos(vtri.pos1, vtri.norm);
+									float4 triplane = planefromnormalatpoint(vtri.pos1, vtri.norm);
 
 									float16 intline = planetriangleintersection(colplane, &vtri);
 									float4 colpos1 = intline.s01234567.s0123;
