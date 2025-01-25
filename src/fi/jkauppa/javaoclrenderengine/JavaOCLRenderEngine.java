@@ -39,14 +39,17 @@ import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import fi.jkauppa.javaoclrenderengine.ComputeLib.Device;
+import fi.jkauppa.javarenderengine.MathLib;
 import fi.jkauppa.javarenderengine.ModelLib;
 import fi.jkauppa.javarenderengine.ModelLib.Entity;
+import fi.jkauppa.javarenderengine.ModelLib.Line;
+import fi.jkauppa.javarenderengine.ModelLib.Position;
 import fi.jkauppa.javarenderengine.ModelLib.Triangle;
 import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.0.0";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.0.1";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -120,6 +123,17 @@ public class JavaOCLRenderEngine {
 	private MouseWheelProcessor mousewheelprocessor = new MouseWheelProcessor();
 
 	public JavaOCLRenderEngine(int vselecteddevice, int vfullscreen, int vglinterop) {
+		Triangle[] vtri1 = {new Triangle(new Position(-0.5f,0.0f,0.0f), new Position(0.5f,0.0f,0.0f), new Position(-0.5f,0.0f,1.0f))};
+		Triangle[] vtri2 = {new Triangle(new Position(0.0f,-0.5f,0.0f), new Position(0.0f,0.5f,0.0f), new Position(0.0f,-0.5f,1.0f))};
+		Line[][] line = MathLib.triangleTriangleIntersection(vtri1, vtri2);
+		if (line[0][0]!=null) {
+			Position pos1 = line[0][0].pos1;
+			Position pos2 = line[0][0].pos2;
+			System.out.println("ttint line: pos1:"+pos1.x+","+pos1.y+","+pos1.z+" pos2:"+pos2.x+","+pos2.y+","+pos2.z);
+		} else {
+			System.out.println("ttint line: no intersection");
+		}
+		
 		GLFWErrorCallback.createPrint(System.err).set();
 		if (!GLFW.glfwInit()) {System.out.println("GLFW init failed."); System.exit(1);}
 		this.monitor = GLFW.glfwGetPrimaryMonitor();

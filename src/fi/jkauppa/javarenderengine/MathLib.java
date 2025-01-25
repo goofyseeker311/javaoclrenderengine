@@ -824,6 +824,63 @@ public class MathLib {
 		}
 		return k;
 	}
+	
+	public static Line[][] triangleTriangleIntersection(Triangle[] vtri1, Triangle[] vtri2) {
+		Line[][] k = null;
+		if ((vtri1.length>0)&&(vtri2.length>0)) {
+			k = new Line[vtri1.length][vtri2.length];
+			Plane[] vtri1plane = trianglePlane(vtri1);
+			Plane[] vtri2plane = trianglePlane(vtri2);
+			Line[][] vtri1planeint = planeTriangleIntersection(vtri1plane, vtri2);
+			Line[][] vtri2planeint = planeTriangleIntersection(vtri2plane, vtri1);
+			for (int j=0;j<vtri1.length;j++) {
+				for (int i=0;i<vtri2.length;i++) {
+					Line[] vtri1int = {vtri1planeint[j][i]};
+					Line[] vtri2int = {vtri2planeint[j][i]};
+					if ((vtri1int[0]!=null)&&(vtri2int[0]!=null)) {
+						Position[] vtripos = {vtri1int[0].pos1, vtri1int[0].pos2, vtri2int[0].pos1, vtri2int[0].pos2};
+						Direction[] vtrivec = vectorFromPoints(vtri1int);
+						Plane[] vtriplane = planeFromNormalAtPoint(vtripos[0], vtrivec);
+						double[][] vtrilenar = planePointDistance(vtripos, vtriplane);
+						double[] vtrilen = {vtrilenar[0][0], vtrilenar[1][0], vtrilenar[2][0], vtrilenar[3][0]};
+						if (vtrilen[0]>vtrilen[1]) {
+							double lentmp = vtrilen[0];
+							vtrilen[0] = vtrilen[1];
+							vtrilen[1] = lentmp;
+							Position postmp = vtripos[0];
+							vtripos[0] = vtripos[1];
+							vtripos[1] = postmp;
+						}
+						if (vtrilen[2]>vtrilen[3]) {
+							double lentmp = vtrilen[2];
+							vtrilen[2] = vtrilen[3];
+							vtrilen[3] = lentmp;
+							Position postmp = vtripos[2];
+							vtripos[2] = vtripos[3];
+							vtripos[3] = postmp;
+						}
+						int[] lenind = UtilLib.indexSort(vtrilen);
+						if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
+							int startind = 0;
+							int endind = 3;
+							if (lenind[0]>lenind[2]) {
+								startind = lenind[0];
+							} else {
+								startind = lenind[2];
+							}
+							if (lenind[1]<lenind[3]) {
+								endind = lenind[1];
+							} else {
+								endind = lenind[3];
+							}
+							k[j][i] = new Line(vtripos[startind], vtripos[endind]);
+						}
+					}
+				}
+			}
+		}
+		return k;
+	}
 
 	public static boolean[][] sphereSphereIntersection(Sphere[] vsphere1, Sphere[] vsphere2) {
 		boolean[][] k = null;
