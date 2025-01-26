@@ -672,18 +672,6 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 kernel void transformall(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
 	bool vall = true;
 	transformentity(ttr, otr, etr, tri, trc, obj, obc, ent, vall);
-	triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	triangle vtri2; vtri2.pos1 = (float4)(0.5f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.5f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.5f,0.0f,1.0f,0.0f);
-	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	//triangle vtri1; vtri1.pos1 = (float4)(-0.5f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(0.5f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.5f,0.0f,1.0f,0.0f);
-	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	//triangle vtri2; vtri2.pos1 = (float4)(2.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(2.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(2.0f,0.0f,1.0f,0.0f);
-	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
-	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,2.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,2.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,3.0f,0.0f);
-	float8  ttint = triangletriangleintersection(&vtri1, &vtri2);
-	printf("ttint: %f %f %f, %f %f %f\n",ttint.s0,ttint.s1,ttint.s2,ttint.s4,ttint.s5,ttint.s6);
 }
 kernel void transformdynamic(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
 	bool vall = false;
