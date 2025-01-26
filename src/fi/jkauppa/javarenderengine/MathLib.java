@@ -844,19 +844,27 @@ public class MathLib {
 						double[][] vtrilenar = planePointDistance(vtripos, vtriplane);
 						double[] vtrilen = {vtrilenar[0][0], vtrilenar[1][0], vtrilenar[2][0], vtrilenar[3][0]};
 						int[] lenind = UtilLib.indexSort(vtrilen);
-						if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
-							int startind = 0;
-							int endind = 3;
-							if (lenind[0]>lenind[2]) {
-								startind = lenind[0];
-							} else {
-								startind = lenind[2];
+						boolean lineint = false;
+						if ((lenind[0]==0)||(lenind[1]==0)) {
+							if ((lenind[2]==1)||(lenind[3]==1)) {
+								lineint = true;
 							}
-							if (lenind[1]<lenind[3]) {
-								endind = lenind[1];
-							} else {
-								endind = lenind[3];
+						} else if ((lenind[0]==1)||(lenind[1]==1)) {
+							if ((lenind[2]==0)||(lenind[3]==0)) {
+								lineint = true;
 							}
+						} else if ((lenind[0]==2)||(lenind[1]==2)) {
+							if ((lenind[2]==3)||(lenind[3]==3)) {
+								lineint = true;
+							}
+						} else if ((lenind[0]==3)||(lenind[1]==3)) {
+							if ((lenind[2]==2)||(lenind[3]==2)) {
+								lineint = true;
+							}
+						}
+						if (lineint) {
+							int startind = lenind[1];
+							int endind = lenind[2];
 							k[j][i] = new Line(vtripos[startind], vtripos[endind]);
 						}
 					}

@@ -445,19 +445,27 @@ float8 triangletriangleintersection(triangle *vtri1, triangle *vtri2) {
 				id2++;
 			}
 		}
-		if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
-			int startind = 0;
-			int endind = 3;
-			if (lenind[0]>lenind[2]) {
-				startind = lenind[0];
-			} else {
-				startind = lenind[2];
+		bool lineint = false;
+		if ((lenind[0]==0)||(lenind[1]==0)) {
+			if ((lenind[2]==1)||(lenind[3]==1)) {
+				lineint = true;
 			}
-			if (lenind[1]<lenind[3]) {
-				endind = lenind[1];
-			} else {
-				endind = lenind[3];
+		} else if ((lenind[0]==1)||(lenind[1]==1)) {
+			if ((lenind[2]==0)||(lenind[3]==0)) {
+				lineint = true;
 			}
+		} else if ((lenind[0]==2)||(lenind[1]==2)) {
+			if ((lenind[2]==3)||(lenind[3]==3)) {
+				lineint = true;
+			}
+		} else if ((lenind[0]==3)||(lenind[1]==3)) {
+			if ((lenind[2]==2)||(lenind[3]==2)) {
+				lineint = true;
+			}
+		}
+		if (lineint) {
+			int startind = lenind[1];
+			int endind = lenind[2];
 			retline = (float8)(vtripos[startind], vtripos[endind]);
 		}
 	}
@@ -664,6 +672,18 @@ kernel void clearview(global float *img, global float *imz, global int *imh, glo
 kernel void transformall(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
 	bool vall = true;
 	transformentity(ttr, otr, etr, tri, trc, obj, obc, ent, vall);
+	triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	triangle vtri2; vtri2.pos1 = (float4)(0.5f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.5f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.5f,0.0f,1.0f,0.0f);
+	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	//triangle vtri1; vtri1.pos1 = (float4)(-0.5f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(0.5f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.5f,0.0f,1.0f,0.0f);
+	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	//triangle vtri2; vtri2.pos1 = (float4)(2.0f,0.0f,0.0f,0.0f); vtri2.pos2 = (float4)(2.0f,1.0f,0.0f,0.0f); vtri2.pos3 = (float4)(2.0f,0.0f,1.0f,0.0f);
+	//triangle vtri1; vtri1.pos1 = (float4)(0.0f,0.0f,0.0f,0.0f); vtri1.pos2 = (float4)(1.0f,0.0f,0.0f,0.0f); vtri1.pos3 = (float4)(0.0f,0.0f,1.0f,0.0f);
+	//triangle vtri2; vtri2.pos1 = (float4)(0.0f,0.0f,2.0f,0.0f); vtri2.pos2 = (float4)(0.0f,1.0f,2.0f,0.0f); vtri2.pos3 = (float4)(0.0f,0.0f,3.0f,0.0f);
+	float8  ttint = triangletriangleintersection(&vtri1, &vtri2);
+	printf("ttint: %f %f %f, %f %f %f\n",ttint.s0,ttint.s1,ttint.s2,ttint.s4,ttint.s5,ttint.s6);
 }
 kernel void transformdynamic(global float *ttr, global float *otr, global float *etr, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent) {
 	bool vall = false;
@@ -821,23 +841,15 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 
 								for (int tid=cobj.ind;tid<(cobj.ind+cobj.len);tid++) {
 									triangle ctri;
-									ctri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
-									ctri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
-									ctri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
-									ctri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
-									ctri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
-									ctri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
-									ctri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+									ctri.pos1 = (float4)(tli[tid*ts+0],tli[tid*ts+1],tli[tid*ts+2],tli[tid*ts+3]);
+									ctri.pos2 = (float4)(tli[tid*ts+4],tli[tid*ts+5],tli[tid*ts+6],tli[tid*ts+7]);
+									ctri.pos3 = (float4)(tli[tid*ts+8],tli[tid*ts+9],tli[tid*ts+10],tli[tid*ts+11]);
 
 									for (int tix=vobj.ind;tix<(vobj.ind+vobj.len);tix++) {
 										triangle vtri;
-										vtri.pos1 = (float4)(tri[tix*ts+0],tri[tix*ts+1],tri[tix*ts+2],tri[tix*ts+3]);
-										vtri.pos2 = (float4)(tri[tix*ts+4],tri[tix*ts+5],tri[tix*ts+6],tri[tix*ts+7]);
-										vtri.pos3 = (float4)(tri[tix*ts+8],tri[tix*ts+9],tri[tix*ts+10],tri[tix*ts+11]);
-										vtri.norm = (float4)(tri[tix*ts+12],tri[tix*ts+13],tri[tix*ts+14],tri[tix*ts+15]);
-										vtri.pos1uv = (float4)(tri[tix*ts+16],tri[tix*ts+17],tri[tix*ts+18],tri[tix*ts+19]);
-										vtri.pos2uv = (float4)(tri[tix*ts+20],tri[tix*ts+21],tri[tix*ts+22],tri[tix*ts+23]);
-										vtri.pos3uv = (float4)(tri[tix*ts+24],tri[tix*ts+25],tri[tix*ts+26],tri[tix*ts+27]);
+										vtri.pos1 = (float4)(tli[tix*ts+0],tli[tix*ts+1],tli[tix*ts+2],tli[tix*ts+3]);
+										vtri.pos2 = (float4)(tli[tix*ts+4],tli[tix*ts+5],tli[tix*ts+6],tli[tix*ts+7]);
+										vtri.pos3 = (float4)(tli[tix*ts+8],tli[tix*ts+9],tli[tix*ts+10],tli[tix*ts+11]);
 
 										float8 ttint = triangletriangleintersection(&ctri, &vtri);
 										float4 ttintpos1 = ttint.s0123;

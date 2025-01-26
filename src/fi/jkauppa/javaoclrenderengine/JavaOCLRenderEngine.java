@@ -49,7 +49,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.0.6";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.0.7";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -125,6 +125,14 @@ public class JavaOCLRenderEngine {
 	public JavaOCLRenderEngine(int vselecteddevice, int vfullscreen, int vglinterop) {
 		Triangle[] vtri1 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(1.0f,0.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
 		Triangle[] vtri2 = {new Triangle(new Position(0.5f,0.0f,0.0f), new Position(0.5f,1.0f,0.0f), new Position(0.5f,0.0f,1.0f))};
+		//Triangle[] vtri1 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(1.0f,0.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
+		//Triangle[] vtri2 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(0.0f,1.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
+		//Triangle[] vtri1 = {new Triangle(new Position(-0.5f,0.0f,0.0f), new Position(0.5f,0.0f,0.0f), new Position(0.5f,0.0f,1.0f))};
+		//Triangle[] vtri2 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(0.0f,1.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
+		//Triangle[] vtri1 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(1.0f,0.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
+		//Triangle[] vtri2 = {new Triangle(new Position(2.0f,0.0f,0.0f), new Position(2.0f,1.0f,0.0f), new Position(2.0f,0.0f,1.0f))};
+		//Triangle[] vtri1 = {new Triangle(new Position(0.0f,0.0f,0.0f), new Position(1.0f,0.0f,0.0f), new Position(0.0f,0.0f,1.0f))};
+		//Triangle[] vtri2 = {new Triangle(new Position(0.0f,0.0f,2.0f), new Position(0.0f,1.0f,2.0f), new Position(0.0f,0.0f,3.0f))};
 		Line[][] line = MathLib.triangleTriangleIntersection(vtri1, vtri2);
 		if (line[0][0]!=null) {
 			Position pos1 = line[0][0].pos1;
