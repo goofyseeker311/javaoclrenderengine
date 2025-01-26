@@ -406,7 +406,45 @@ float8 triangletriangleintersection(triangle *vtri1, triangle *vtri2) {
 		float vtrilen4 = planepointdistance(vtripos[3], vtriplane);
 		float vtrilen[4] = {vtrilen1, vtrilen2, vtrilen3, vtrilen4};
 		int lenind[4] = {0, 1, 2, 3};
-		//todo: index sort
+		float len1[2] = {vtrilen1, vtrilen2};
+		float len2[2] = {vtrilen3, vtrilen4};
+		int ind1[2] = {0, 1};
+		int ind2[2] = {2, 3};
+		if (vtrilen[0]>vtrilen[1]) {
+			len1[1] = vtrilen[0];
+			len1[0] = vtrilen[1];
+			ind1[1] = lenind[0];
+			ind1[0] = lenind[1];
+		} else {
+			len1[0] = vtrilen[0];
+			len1[1] = vtrilen[1];
+			ind1[0] = lenind[0];
+			ind1[1] = lenind[1];
+		}
+		if (vtrilen[2]>vtrilen[3]) {
+			len2[1] = vtrilen[2];
+			len2[0] = vtrilen[3];
+			ind2[1] = lenind[2];
+			ind2[0] = lenind[3];
+		} else {
+			len2[0] = vtrilen[2];
+			len2[1] = vtrilen[3];
+			ind2[0] = lenind[2];
+			ind2[1] = lenind[3];
+		}
+		int id1 = 0;
+		int id2 = 0;
+		for (int i=0;i<4;i++) {
+			if ((id2>1)||(len1[id1]<=len2[id2])) {
+				vtrilen[i] = len1[id1];
+				lenind[i] = ind1[id1];
+				id1++;
+			} else {
+				vtrilen[i] = len2[id2];
+				lenind[i] = ind2[id2];
+				id2++;
+			}
+		}
 		if (((lenind[1]-lenind[0])>1)||((lenind[3]-lenind[2])>1)) {
 			int startind = 0;
 			int endind = 3;
@@ -780,7 +818,35 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 
 							float objsphdist = spherespheredistance(cobj.sph, vobj.sph);
 							if (objsphdist<0.0f) {
-								overlap = true;
+
+								for (int tid=cobj.ind;tid<(cobj.ind+cobj.len);tid++) {
+									triangle ctri;
+									ctri.pos1 = (float4)(tri[tid*ts+0],tri[tid*ts+1],tri[tid*ts+2],tri[tid*ts+3]);
+									ctri.pos2 = (float4)(tri[tid*ts+4],tri[tid*ts+5],tri[tid*ts+6],tri[tid*ts+7]);
+									ctri.pos3 = (float4)(tri[tid*ts+8],tri[tid*ts+9],tri[tid*ts+10],tri[tid*ts+11]);
+									ctri.norm = (float4)(tri[tid*ts+12],tri[tid*ts+13],tri[tid*ts+14],tri[tid*ts+15]);
+									ctri.pos1uv = (float4)(tri[tid*ts+16],tri[tid*ts+17],tri[tid*ts+18],tri[tid*ts+19]);
+									ctri.pos2uv = (float4)(tri[tid*ts+20],tri[tid*ts+21],tri[tid*ts+22],tri[tid*ts+23]);
+									ctri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
+
+									for (int tix=vobj.ind;tix<(vobj.ind+vobj.len);tix++) {
+										triangle vtri;
+										vtri.pos1 = (float4)(tri[tix*ts+0],tri[tix*ts+1],tri[tix*ts+2],tri[tix*ts+3]);
+										vtri.pos2 = (float4)(tri[tix*ts+4],tri[tix*ts+5],tri[tix*ts+6],tri[tix*ts+7]);
+										vtri.pos3 = (float4)(tri[tix*ts+8],tri[tix*ts+9],tri[tix*ts+10],tri[tix*ts+11]);
+										vtri.norm = (float4)(tri[tix*ts+12],tri[tix*ts+13],tri[tix*ts+14],tri[tix*ts+15]);
+										vtri.pos1uv = (float4)(tri[tix*ts+16],tri[tix*ts+17],tri[tix*ts+18],tri[tix*ts+19]);
+										vtri.pos2uv = (float4)(tri[tix*ts+20],tri[tix*ts+21],tri[tix*ts+22],tri[tix*ts+23]);
+										vtri.pos3uv = (float4)(tri[tix*ts+24],tri[tix*ts+25],tri[tix*ts+26],tri[tix*ts+27]);
+
+										float8 ttint = triangletriangleintersection(&ctri, &vtri);
+										float4 ttintpos1 = ttint.s0123;
+
+										if (!isnan(ttintpos1.x)) {
+											overlap = true;
+										}
+									}
+								}
 							}
 						}
 					}
