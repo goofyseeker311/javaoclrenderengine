@@ -7,6 +7,7 @@
 #define ld 4.0f
 #define lm 1000.0f
 #define cw 4.0f
+#define ph 2
 
 typedef struct {
 	float4 pos;
@@ -812,43 +813,51 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 
 					bool overlap = false;
 
-					for (int oid=cent.ind;oid<(cent.ind+cent.len);oid++) {
-						object cobj;
-						cobj.sph = (float4)(oli[oid*os+10],oli[oid*os+11],oli[oid*os+12],oli[oid*os+13]);
-						cobj.ind = (int)oli[oid*os+14];
-						cobj.len = (int)oli[oid*os+15];
+					if (ph>0) {
+						for (int oid=cent.ind;oid<(cent.ind+cent.len);oid++) {
+							object cobj;
+							cobj.sph = (float4)(oli[oid*os+10],oli[oid*os+11],oli[oid*os+12],oli[oid*os+13]);
+							cobj.ind = (int)oli[oid*os+14];
+							cobj.len = (int)oli[oid*os+15];
 
-						for (int oix=vent.ind;oix<(vent.ind+vent.len);oix++) {
-							object vobj;
-							vobj.sph = (float4)(oli[oix*os+10],oli[oix*os+11],oli[oix*os+12],oli[oix*os+13]);
-							vobj.ind = (int)oli[oix*os+14];
-							vobj.len = (int)oli[oix*os+15];
+							for (int oix=vent.ind;oix<(vent.ind+vent.len);oix++) {
+								object vobj;
+								vobj.sph = (float4)(oli[oix*os+10],oli[oix*os+11],oli[oix*os+12],oli[oix*os+13]);
+								vobj.ind = (int)oli[oix*os+14];
+								vobj.len = (int)oli[oix*os+15];
 
-							float objsphdist = spherespheredistance(cobj.sph, vobj.sph);
-							if (objsphdist<0.0f) {
+								float objsphdist = spherespheredistance(cobj.sph, vobj.sph);
+								if (objsphdist<0.0f) {
 
-								for (int tid=cobj.ind;tid<(cobj.ind+cobj.len);tid++) {
-									triangle ctri;
-									ctri.pos1 = (float4)(tli[tid*ts+0],tli[tid*ts+1],tli[tid*ts+2],tli[tid*ts+3]);
-									ctri.pos2 = (float4)(tli[tid*ts+4],tli[tid*ts+5],tli[tid*ts+6],tli[tid*ts+7]);
-									ctri.pos3 = (float4)(tli[tid*ts+8],tli[tid*ts+9],tli[tid*ts+10],tli[tid*ts+11]);
+									if (ph>1) {
+										for (int tid=cobj.ind;tid<(cobj.ind+cobj.len);tid++) {
+											triangle ctri;
+											ctri.pos1 = (float4)(tli[tid*ts+0],tli[tid*ts+1],tli[tid*ts+2],tli[tid*ts+3]);
+											ctri.pos2 = (float4)(tli[tid*ts+4],tli[tid*ts+5],tli[tid*ts+6],tli[tid*ts+7]);
+											ctri.pos3 = (float4)(tli[tid*ts+8],tli[tid*ts+9],tli[tid*ts+10],tli[tid*ts+11]);
 
-									for (int tix=vobj.ind;tix<(vobj.ind+vobj.len);tix++) {
-										triangle vtri;
-										vtri.pos1 = (float4)(tli[tix*ts+0],tli[tix*ts+1],tli[tix*ts+2],tli[tix*ts+3]);
-										vtri.pos2 = (float4)(tli[tix*ts+4],tli[tix*ts+5],tli[tix*ts+6],tli[tix*ts+7]);
-										vtri.pos3 = (float4)(tli[tix*ts+8],tli[tix*ts+9],tli[tix*ts+10],tli[tix*ts+11]);
+											for (int tix=vobj.ind;tix<(vobj.ind+vobj.len);tix++) {
+												triangle vtri;
+												vtri.pos1 = (float4)(tli[tix*ts+0],tli[tix*ts+1],tli[tix*ts+2],tli[tix*ts+3]);
+												vtri.pos2 = (float4)(tli[tix*ts+4],tli[tix*ts+5],tli[tix*ts+6],tli[tix*ts+7]);
+												vtri.pos3 = (float4)(tli[tix*ts+8],tli[tix*ts+9],tli[tix*ts+10],tli[tix*ts+11]);
 
-										float8 ttint = triangletriangleintersection(&ctri, &vtri);
-										float4 ttintpos1 = ttint.s0123;
+												float8 ttint = triangletriangleintersection(&ctri, &vtri);
+												float4 ttintpos1 = ttint.s0123;
 
-										if (!isnan(ttintpos1.x)) {
-											overlap = true;
+												if (!isnan(ttintpos1.x)) {
+													overlap = true;
+												}
+											}
 										}
+									} else {
+										overlap = true;
 									}
 								}
 							}
 						}
+					} else {
+						overlap = true;
 					}
 
 					if (overlap) {
