@@ -1,6 +1,6 @@
 #define ts 46
 #define os 16
-#define es 17
+#define es 25
 #define vs 40
 #define cs 32
 #define zs 108
@@ -17,6 +17,8 @@ typedef struct {
 	int ind;
 	int len;
 	int phys;
+	float4 spd;
+	float4 ang;
 } entity;
 
 typedef struct {
