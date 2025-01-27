@@ -693,6 +693,8 @@ void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, f
 	vent.ind = (int)ent[eid*es+14];
 	vent.len = (int)ent[eid*es+15];
 	vent.phys = (int)ent[eid*es+16];
+	vent.spd = (float4)(ent[eid*es+17],ent[eid*es+18],ent[eid*es+19],ent[eid*es+20]);
+	vent.ang = (float4)(ent[eid*es+21],ent[eid*es+22],ent[eid*es+23],ent[eid*es+24]);
 	if ((!all)&&(vent.phys==0)) {return;}
 
 	float16 entscamat = scalingmatrix(vent.scale);
@@ -709,6 +711,8 @@ void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, f
 	etr[eid*es+7] = vent.rot.x; etr[eid*es+8] = vent.rot.y; etr[eid*es+9] = vent.rot.z;
 	etr[eid*es+10] = entbvc.x; etr[eid*es+11] = entbvc.y; etr[eid*es+12] = entbvc.z; etr[eid*es+13] = entbvc.w;
 	etr[eid*es+14] = vent.ind; etr[eid*es+15] = vent.len; etr[eid*es+16] = vent.phys;
+	etr[eid*es+17] = vent.spd.x; etr[eid*es+18] = vent.spd.y; etr[eid*es+19] = vent.spd.z; etr[eid*es+20] = vent.spd.w;
+	etr[eid*es+21] = vent.ang.x; etr[eid*es+22] = vent.ang.y; etr[eid*es+23] = vent.ang.z; etr[eid*es+24] = vent.ang.w;
 
 	for (int oid=vent.ind;oid<(vent.ind+vent.len);oid++) {
 		object vobj;
@@ -797,9 +801,16 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	cent.ind = (int)eli[eid*es+14];
 	cent.len = (int)eli[eid*es+15];
 	cent.phys = (int)eli[eid*es+16];
+	cent.spd = (float4)(eli[eid*es+17],eli[eid*es+18],eli[eid*es+19],eli[eid*es+20]);
+	cent.ang = (float4)(eli[eid*es+21],eli[eid*es+22],eli[eid*es+23],eli[eid*es+24]);
 	if (cent.phys!=1) {return;}
 
-	float4 entdir = (float4)(0.0f);
+	float grav = 1.0f;
+	float4 gravdir = (float4)(0.0f,0.0f,-1.0f,0.0f);
+	float4 gravvec = deltatime * grav * gravdir;
+	cent.spd += gravvec;
+
+	float4 entdir = (float4)(0.0f,0.0f,0.0f,0.0f);
 
 	for (int eix=0;eix<entc;eix++) {
 		if (eix!=eid) {
@@ -863,8 +874,11 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 					}
 
 					if (overlap) {
-						float4 sphdir = normalize(cent.sph - vent.sph); sphdir.w = 0.0f;
+						float4 sphdir = cent.sph - vent.sph; sphdir.w = 0.0f;
 						entdir += sphdir;
+						if (vent.phys==0) {
+							cent.spd = (float4)(0.0f,0.0f,0.0f,0.0f);
+						}
 					}
 				}
 			}
@@ -872,14 +886,15 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	}
 
 	float4 entpos = (float4)(ent[eid*es+0],ent[eid*es+1],ent[eid*es+2],ent[eid*es+3]);
-	float4 enddirlim = entdir;
-	float enddirlimlen = length(enddirlim);
-	if (enddirlimlen>1.0f) {
-		enddirlim /= enddirlimlen;
+	float4 entlimdir = entdir;
+	float entlimdirlen = length(entlimdir);
+	float limit = 1.0f;
+	if (entlimdirlen>limit) {
+		entlimdir = entlimdir/entlimdirlen * limit;
 	}
-	enddirlim = enddirlim * deltatime * 0.1f;
-	entpos += enddirlim;
+	entpos += ((entlimdir + cent.spd) * deltatime);
 	ent[eid*es+0] = entpos.x; ent[eid*es+1] = entpos.y; ent[eid*es+2] = entpos.z; ent[eid*es+3] = entpos.w;
+	ent[eid*es+17] = cent.spd.x; ent[eid*es+18] = cent.spd.y; ent[eid*es+19] = cent.spd.z; ent[eid*es+20] = cent.spd.w;
 }
 
 kernel void lightcopy(global float *tli, global float *tri, global int *trc, global float *obj, global int *obc, global float *ent, global int *enc, global int *tex, global int *tes) {

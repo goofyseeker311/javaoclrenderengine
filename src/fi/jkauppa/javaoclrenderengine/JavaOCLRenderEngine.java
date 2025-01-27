@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.1.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.1.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -108,7 +108,7 @@ public class JavaOCLRenderEngine {
 	private boolean keyrleft = false;
 	private boolean keyrright = false;
 	private boolean keyspeed = false;
-	private long nanolasttimetick = System.nanoTime();
+	private long nanolasttimetick = 0;
 	private double[] mousex = {0}, mousey = {0};
 	private double lastmousex = 0, lastmousey = 0;
 	private float[] lasttimedeltaseconds = {0.0f};
@@ -348,6 +348,7 @@ public class JavaOCLRenderEngine {
 		computelib.insertBarrier(openclqueue);
 		computelib.runProgram(opencldevice, openclqueue, openclprogram, "transformall", new long[]{trianglestraptr,objectstraptr,entitiestraptr,trianglesptr,triangleslenptr,objectsptr,objectslenptr,entitiesptr}, new int[]{0}, new int[]{entitylistlength[0]});
 		computelib.insertBarrier(openclqueue);
+		nanolasttimetick = System.nanoTime();
 		System.out.println("init.");
 	}
 
@@ -915,6 +916,9 @@ public class JavaOCLRenderEngine {
 					entitylist[graphicshbuffer[0]*es+0] += camerapos3dir3rgt3up3fov2res2rotmat16[3];
 					entitylist[graphicshbuffer[0]*es+1] += camerapos3dir3rgt3up3fov2res2rotmat16[4];
 					entitylist[graphicshbuffer[0]*es+2] += camerapos3dir3rgt3up3fov2res2rotmat16[5];
+					entitylist[graphicshbuffer[0]*es+17] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[3];
+					entitylist[graphicshbuffer[0]*es+18] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[4];
+					entitylist[graphicshbuffer[0]*es+19] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[5];
 					computelib.writeBufferf(opencldevice, openclqueue, entitiesptr, entitylist);
 				}
 			}
