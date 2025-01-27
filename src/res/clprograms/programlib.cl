@@ -2,7 +2,7 @@
 #define os 16
 #define es 25
 #define vs 40
-#define cs 32
+#define cs 48
 #define zs 108
 #define ld 4.0f
 #define lm 1000.0f
@@ -805,11 +805,6 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	cent.ang = (float4)(eli[eid*es+21],eli[eid*es+22],eli[eid*es+23],eli[eid*es+24]);
 	if (cent.phys!=1) {return;}
 
-	float grav = 1.0f;
-	float4 gravdir = (float4)(0.0f,0.0f,-1.0f,0.0f);
-	float4 gravvec = deltatime * grav * gravdir;
-	cent.spd += gravvec;
-
 	float4 entdir = (float4)(0.0f,0.0f,0.0f,0.0f);
 
 	for (int eix=0;eix<entc;eix++) {
@@ -819,6 +814,8 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 			vent.ind = (int)eli[eix*es+14];
 			vent.len = (int)eli[eix*es+15];
 			vent.phys = (int)eli[eix*es+16];
+			vent.spd = (float4)(eli[eix*es+17],eli[eix*es+18],eli[eix*es+19],eli[eix*es+20]);
+			vent.ang = (float4)(eli[eix*es+21],eli[eix*es+22],eli[eix*es+23],eli[eix*es+24]);
 
 			if (vent.phys>=0) {
 				float entsphdist = spherespheredistance(cent.sph, vent.sph);

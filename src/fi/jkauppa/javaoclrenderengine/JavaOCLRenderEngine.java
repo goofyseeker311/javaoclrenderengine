@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.1.2";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.1.3";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -215,21 +215,21 @@ public class JavaOCLRenderEngine {
 		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxtop.obj", true);
-		Entity loadmodelG = ModelLib.loadOBJFileEntity("res/models/ground5m.obj", true);
+		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
+		Entity loadmodelS = ModelLib.loadOBJFileEntity("res/models/sun.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid13.obj", true);
 		Entity loadmodel4 = ModelLib.loadOBJFileEntity("res/models/mineg.obj", true);
 		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship5.obj", true);
 		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
-		TriangleObjectEntity triobjentG = getEntityObjectTriangles(loadmodelG, new float[]{0.0f,0.0f,-20.0f, 1.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f});
-		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentG});
+		TriangleObjectEntity triobjentS = getEntityObjectTriangles(loadmodelS, new float[]{0.0f,0.0f,0.0f, 10.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
+		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentS});
 		int asteroidcount = 10;
-		float aplaceradius = 10.0f;
+		float aplaceradius = 50.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
 			asteroids[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
-			asteroids[i*oc+2] = (rand.nextFloat()*2.0f)*aplaceradius;
+			asteroids[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
 			asteroids[i*oc+3] = 1.0f;
 			asteroids[i*oc+4] = rand.nextFloat()*360.0f;
 			asteroids[i*oc+5] = rand.nextFloat()*360.0f;
@@ -245,7 +245,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<minecount;i++) {
 			mines[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
 			mines[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
-			mines[i*oc+2] = (rand.nextFloat()*2.0f)*mplaceradius;
+			mines[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
 			mines[i*oc+3] = 1.0f;
 			mines[i*oc+4] = rand.nextFloat()*360.0f;
 			mines[i*oc+5] = rand.nextFloat()*360.0f;
@@ -261,7 +261,7 @@ public class JavaOCLRenderEngine {
 		for (int i=0;i<shipcount;i++) {
 			ships[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
 			ships[i*oc+1] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
-			ships[i*oc+2] = (rand.nextFloat()*2.0f)*splaceradius;
+			ships[i*oc+2] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
 			ships[i*oc+3] = 1.0f;
 			ships[i*oc+4] = rand.nextFloat()*360.0f;
 			ships[i*oc+5] = rand.nextFloat()*360.0f;
@@ -916,9 +916,9 @@ public class JavaOCLRenderEngine {
 					entitylist[graphicshbuffer[0]*es+0] += camerapos3dir3rgt3up3fov2res2rotmat16[3];
 					entitylist[graphicshbuffer[0]*es+1] += camerapos3dir3rgt3up3fov2res2rotmat16[4];
 					entitylist[graphicshbuffer[0]*es+2] += camerapos3dir3rgt3up3fov2res2rotmat16[5];
-					entitylist[graphicshbuffer[0]*es+17] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[3];
-					entitylist[graphicshbuffer[0]*es+18] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[4];
-					entitylist[graphicshbuffer[0]*es+19] = 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[5];
+					entitylist[graphicshbuffer[0]*es+17] += 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[3];
+					entitylist[graphicshbuffer[0]*es+18] += 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[4];
+					entitylist[graphicshbuffer[0]*es+19] += 10.0f*camerapos3dir3rgt3up3fov2res2rotmat16[5];
 					computelib.writeBufferf(opencldevice, openclqueue, entitiesptr, entitylist);
 				}
 			}
