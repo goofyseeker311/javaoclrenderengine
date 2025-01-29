@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.1.4";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.1.5";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -98,7 +98,7 @@ public class JavaOCLRenderEngine {
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
 	private int[] rstepx = {1}, rstepy = {1}, rstepnum = {0};
-	private final int ts = 46, os = 16, es = 26, vs = 40, oc = 10;
+	private final int ts = 46, os = 16, es = 26, vs = 40, oc = 13;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -212,19 +212,19 @@ public class JavaOCLRenderEngine {
 		AL10.alBufferData(this.soundbuf, AL10.AL_FORMAT_STEREO16, soundbytesbuffer, 44100);
 		AL10.alSourcei(this.sourcebuf, AL10.AL_BUFFER, this.soundbuf);
 
-		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,40.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
+		this.camerapos3dir3rgt3up3fov2res2rotmat16 = new float[]{0.0f,0.0f,340.0f, 0.0f,0.0f,-1.0f, 1.0f,0.0f,0.0f, 0.0f,-1.0f,0.0f, graphicshfov,graphicsvfov, graphicswidth,graphicsheight, 1.0f,0.0f,0.0f,0.0f, 0.0f,1.0f,0.0f,0.0f, 0.0f,0.0f,1.0f,0.0f, 0.0f,0.0f,0.0f,1.0f};
 		this.cameramov3rot3 = new float[]{0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f};
 
-		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/spaceboxgreen.obj", true);
-		Entity loadmodelS = ModelLib.loadOBJFileEntity("res/models/sun.obj", true);
+		Entity loadmodelB = ModelLib.loadOBJFileEntity("res/models/skyboxtop.obj", true);
+		Entity loadmodelE = ModelLib.loadOBJFileEntity("res/models/asteroid11.obj", true);
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid13.obj", true);
 		Entity loadmodel4 = ModelLib.loadOBJFileEntity("res/models/mineg.obj", true);
 		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship5.obj", true);
-		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f, 0.0f});
-		TriangleObjectEntity triobjentS = getEntityObjectTriangles(loadmodelS, new float[]{0.0f,0.0f,0.0f, 10.0f, 0.0f,0.0f,0.0f, 0.0f,1.0f, 1000000000.0f});
-		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentS});
-		int asteroidcount = 10;
-		float aplaceradius = 50.0f;
+		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f, 0.0f,0.0f,0.0f , 0.0f});
+		TriangleObjectEntity triobjentE = getEntityObjectTriangles(loadmodelE, new float[]{0.0f,0.0f,0.0f, 100.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f, 0.0f,0.0f,0.0f, 1000000000000.0f});
+		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentE});
+		int asteroidcount = 100;
+		float aplaceradius = 700.0f;
 		float[] asteroids = new float[asteroidcount*oc];
 		for (int i=0;i<asteroidcount;i++) {
 			asteroids[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*aplaceradius;
@@ -236,12 +236,15 @@ public class JavaOCLRenderEngine {
 			asteroids[i*oc+6] = rand.nextFloat()*360.0f;
 			asteroids[i*oc+7] = 1.0f;
 			asteroids[i*oc+8] = 0.0f;
-			asteroids[i*oc+9] = 10.0f;
+			asteroids[i*oc+9] = rand.nextFloat()*50.0f;
+			asteroids[i*oc+10] = rand.nextFloat()*50.0f;
+			asteroids[i*oc+11] = rand.nextFloat()*50.0f;
+			asteroids[i*oc+12] = 10.0f;
 		}
 		TriangleObjectEntity asteroidstriobjents = getEntityObjectTriangles(loadmodel3, asteroids);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, asteroidstriobjents});
 		int minecount = 10;
-		float mplaceradius = 100.0f;
+		float mplaceradius = 700.0f;
 		float[] mines = new float[minecount*oc];
 		for (int i=0;i<minecount;i++) {
 			mines[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*mplaceradius;
@@ -253,12 +256,15 @@ public class JavaOCLRenderEngine {
 			mines[i*oc+6] = rand.nextFloat()*360.0f;
 			mines[i*oc+7] = 1.0f;
 			mines[i*oc+8] = 0.0f;
-			mines[i*oc+9] = 0.1f;
+			mines[i*oc+9] = rand.nextFloat()*50.0f;
+			mines[i*oc+10] = rand.nextFloat()*50.0f;
+			mines[i*oc+11] = rand.nextFloat()*50.0f;
+			mines[i*oc+12] = 0.1f;
 		}
 		TriangleObjectEntity minestriobjents = getEntityObjectTriangles(loadmodel4, mines);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, minestriobjents});
 		int shipcount = 2;
-		float splaceradius = 100.0f;
+		float splaceradius = 700.0f;
 		float[] ships = new float[shipcount*oc];
 		for (int i=0;i<shipcount;i++) {
 			ships[i*oc+0] = (rand.nextFloat()*2.0f-1.0f)*splaceradius;
@@ -270,7 +276,10 @@ public class JavaOCLRenderEngine {
 			ships[i*oc+6] = rand.nextFloat()*360.0f;
 			ships[i*oc+7] = 1.0f;
 			ships[i*oc+8] = 0.0f;
-			ships[i*oc+9] = 1.0f;
+			ships[i*oc+9] = rand.nextFloat()*50.0f;
+			ships[i*oc+10] = rand.nextFloat()*50.0f;
+			ships[i*oc+11] = rand.nextFloat()*50.0f;
+			ships[i*oc+12] = 1.0f;
 		}
 		TriangleObjectEntity shipstriobjents = getEntityObjectTriangles(loadmodel5, ships);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, shipstriobjents});
@@ -747,7 +756,10 @@ public class JavaOCLRenderEngine {
 			float rotz = objects[k*oc+6];
 			float phys = objects[k*oc+7];
 			float prli = objects[k*oc+8];
-			float mass = objects[k*oc+9];
+			float spdx = objects[k*oc+9];
+			float spdy = objects[k*oc+10];
+			float spdz = objects[k*oc+11];
+			float mass = objects[k*oc+12];
 
 			entityarraylist.add(posx);
 			entityarraylist.add(posy);
@@ -768,9 +780,9 @@ public class JavaOCLRenderEngine {
 			entityarraylist.add(phys);
 			entityarraylist.add(0.0f);
 			entityarraylist.add(0.0f);
-			entityarraylist.add(0.0f);
-			entityarraylist.add(0.0f);
-			entityarraylist.add(0.0f);
+			entityarraylist.add(spdx);
+			entityarraylist.add(spdy);
+			entityarraylist.add(spdz);
 			entityarraylist.add(0.0f);
 			entityarraylist.add(0.0f);
 			entityarraylist.add(0.0f);
