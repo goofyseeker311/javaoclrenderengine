@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.1.3";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.1.4";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -98,7 +98,7 @@ public class JavaOCLRenderEngine {
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
 	private int[] rstepx = {1}, rstepy = {1}, rstepnum = {0};
-	private final int ts = 46, os = 16, es = 25, vs = 40, oc = 9;
+	private final int ts = 46, os = 16, es = 26, vs = 40, oc = 10;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
@@ -220,8 +220,8 @@ public class JavaOCLRenderEngine {
 		Entity loadmodel3 = ModelLib.loadOBJFileEntity("res/models/asteroid13.obj", true);
 		Entity loadmodel4 = ModelLib.loadOBJFileEntity("res/models/mineg.obj", true);
 		Entity loadmodel5 = ModelLib.loadOBJFileEntity("res/models/ship5.obj", true);
-		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
-		TriangleObjectEntity triobjentS = getEntityObjectTriangles(loadmodelS, new float[]{0.0f,0.0f,0.0f, 10.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f});
+		TriangleObjectEntity triobjentB = getEntityObjectTriangles(loadmodelB, new float[]{0.0f,0.0f,0.0f, 1.0f, 0.0f,0.0f,0.0f, -1.0f,1.0f, 0.0f});
+		TriangleObjectEntity triobjentS = getEntityObjectTriangles(loadmodelS, new float[]{0.0f,0.0f,0.0f, 10.0f, 0.0f,0.0f,0.0f, 0.0f,1.0f, 1000000000.0f});
 		TriangleObjectEntity alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{triobjentB, triobjentS});
 		int asteroidcount = 10;
 		float aplaceradius = 50.0f;
@@ -236,6 +236,7 @@ public class JavaOCLRenderEngine {
 			asteroids[i*oc+6] = rand.nextFloat()*360.0f;
 			asteroids[i*oc+7] = 1.0f;
 			asteroids[i*oc+8] = 0.0f;
+			asteroids[i*oc+9] = 10.0f;
 		}
 		TriangleObjectEntity asteroidstriobjents = getEntityObjectTriangles(loadmodel3, asteroids);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, asteroidstriobjents});
@@ -252,6 +253,7 @@ public class JavaOCLRenderEngine {
 			mines[i*oc+6] = rand.nextFloat()*360.0f;
 			mines[i*oc+7] = 1.0f;
 			mines[i*oc+8] = 0.0f;
+			mines[i*oc+9] = 0.1f;
 		}
 		TriangleObjectEntity minestriobjents = getEntityObjectTriangles(loadmodel4, mines);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, minestriobjents});
@@ -268,6 +270,7 @@ public class JavaOCLRenderEngine {
 			ships[i*oc+6] = rand.nextFloat()*360.0f;
 			ships[i*oc+7] = 1.0f;
 			ships[i*oc+8] = 0.0f;
+			ships[i*oc+9] = 1.0f;
 		}
 		TriangleObjectEntity shipstriobjents = getEntityObjectTriangles(loadmodel5, ships);
 		alltriobjents = mergeEntityObjectTriangles(new TriangleObjectEntity[]{alltriobjents, shipstriobjents});
@@ -744,6 +747,7 @@ public class JavaOCLRenderEngine {
 			float rotz = objects[k*oc+6];
 			float phys = objects[k*oc+7];
 			float prli = objects[k*oc+8];
+			float mass = objects[k*oc+9];
 
 			entityarraylist.add(posx);
 			entityarraylist.add(posy);
@@ -770,6 +774,7 @@ public class JavaOCLRenderEngine {
 			entityarraylist.add(0.0f);
 			entityarraylist.add(0.0f);
 			entityarraylist.add(0.0f);
+			entityarraylist.add(mass);
 			
 			for (int j=0;j<loadmodel.childlist.length;j++) {
 				Entity object = loadmodel.childlist[j];

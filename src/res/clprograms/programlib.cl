@@ -1,8 +1,8 @@
 #define ts 46
 #define os 16
-#define es 25
+#define es 26
 #define vs 40
-#define cs 48
+#define cs 32
 #define zs 108
 #define ld 4.0f
 #define lm 1000.0f
@@ -19,6 +19,7 @@ typedef struct {
 	int phys;
 	float4 spd;
 	float4 ang;
+	float mass;
 } entity;
 
 typedef struct {
@@ -695,6 +696,7 @@ void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, f
 	vent.phys = (int)ent[eid*es+16];
 	vent.spd = (float4)(ent[eid*es+17],ent[eid*es+18],ent[eid*es+19],ent[eid*es+20]);
 	vent.ang = (float4)(ent[eid*es+21],ent[eid*es+22],ent[eid*es+23],ent[eid*es+24]);
+	vent.mass = ent[eid*es+25];
 	if ((!all)&&(vent.phys==0)) {return;}
 
 	float16 entscamat = scalingmatrix(vent.scale);
@@ -713,6 +715,7 @@ void transformentity(float *ttr, float *otr, float *etr, float *tri, int *trc, f
 	etr[eid*es+14] = vent.ind; etr[eid*es+15] = vent.len; etr[eid*es+16] = vent.phys;
 	etr[eid*es+17] = vent.spd.x; etr[eid*es+18] = vent.spd.y; etr[eid*es+19] = vent.spd.z; etr[eid*es+20] = vent.spd.w;
 	etr[eid*es+21] = vent.ang.x; etr[eid*es+22] = vent.ang.y; etr[eid*es+23] = vent.ang.z; etr[eid*es+24] = vent.ang.w;
+	etr[eid*es+25] = vent.mass;
 
 	for (int oid=vent.ind;oid<(vent.ind+vent.len);oid++) {
 		object vobj;
@@ -803,6 +806,7 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 	cent.phys = (int)eli[eid*es+16];
 	cent.spd = (float4)(eli[eid*es+17],eli[eid*es+18],eli[eid*es+19],eli[eid*es+20]);
 	cent.ang = (float4)(eli[eid*es+21],eli[eid*es+22],eli[eid*es+23],eli[eid*es+24]);
+	cent.mass = eli[eid*es+25];
 	if (cent.phys!=1) {return;}
 
 	float4 entdir = (float4)(0.0f,0.0f,0.0f,0.0f);
@@ -816,8 +820,16 @@ kernel void physicscollision(global float *cam, global float *tli, global float 
 			vent.phys = (int)eli[eix*es+16];
 			vent.spd = (float4)(eli[eix*es+17],eli[eix*es+18],eli[eix*es+19],eli[eix*es+20]);
 			vent.ang = (float4)(eli[eix*es+21],eli[eix*es+22],eli[eix*es+23],eli[eix*es+24]);
+			vent.mass = eli[eix*es+25];
+
+			float4 entsphvec = vent.sph - cent.sph; entsphvec.w = 0.0f;
+			float entsphlen = length(entsphvec);
+			float4 entsphvecnorm = normalize(entsphvec);
+			float4 endsphspd = 0.000001f * entsphvecnorm * (vent.mass/pow(entsphlen,2)) * deltatime;
+			cent.spd += endsphspd;
 
 			if (vent.phys>=0) {
+
 				float entsphdist = spherespheredistance(cent.sph, vent.sph);
 				if (entsphdist<0.0f) {
 
