@@ -1,7 +1,7 @@
 #define ts 46
 #define os 16
 #define es 26
-#define vs 40
+#define vs 80
 #define cs 32
 #define zs 108
 #define ld 4.0f
@@ -1326,6 +1326,14 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 	int campresystind = camresystep*vid;
 	int campresyendind = camresystep*vid + camresystep-1;
 
+	float4 raydirrotvec[zs];
+	for (int y=campresystind,yind=0;y<=campresyendind;y++,yind++) {
+		float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
+		float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
+		float4 raydirrot = matrixposmult(raydir, cammat);
+		raydirrotvec[yind] = raydirrot;
+	}
+
 	for (int eid=0;eid<entc;eid++) {
 		entity vent;
 		vent.sph = (float4)(ent[eid*es+10],ent[eid*es+11],ent[eid*es+12],ent[eid*es+13]);
@@ -1379,90 +1387,33 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 									float4 colpos2uv = intline.s89abcdef.s4567;
 
 									if (!isnan(colpos1.x)) {
-										float fwdintpointsdist1 = planepointdistance(colpos1, camdirplane);
-										float fwdintpointsdist2 = planepointdistance(colpos2, camdirplane);
-										float upintpointsdist1 = planepointdistance(colpos1, camupdirplane);
-										float upintpointsdist2 = planepointdistance(colpos2, camupdirplane);
 
-										if ((fwdintpointsdist1>=0.001f)||(fwdintpointsdist2>=0.001f)) {
-											if ((fwdintpointsdist1<0.001f)||(fwdintpointsdist2<0.001f)) {
-												float4 drawlinedir12 = colpos2-colpos1;
-												float drawlinedir12dist = rayplanedistance(colpos1, drawlinedir12, rendercutplane);
-												float4 drawlinepos3 = translatepos(colpos1, drawlinedir12, drawlinedir12dist);
-												float fwdintpointsdist3 = planepointdistance(drawlinepos3, camdirplane);
-												float upintpointsdist3 = planepointdistance(drawlinepos3, camupdirplane);
-												float4 drawlinetexdir12 = colpos2uv - colpos1uv;
-												float4 drawlinepos3uv = translatepos(colpos1uv, drawlinetexdir12, drawlinedir12dist);
-												if (fwdintpointsdist1>=0.001f) {
-													fwdintpointsdist2 = fwdintpointsdist3;
-													upintpointsdist2 = upintpointsdist3;
-													colpos2 = drawlinepos3;
-													colpos2uv = drawlinepos3uv;
-												} else {
-													fwdintpointsdist1 = fwdintpointsdist3;
-													upintpointsdist1 = upintpointsdist3;
-													colpos1 = drawlinepos3;
-													colpos1uv = drawlinepos3uv;
-												}
-											}
+										for (int y=campresystind,yind=0;y<=campresyendind;y++,yind++) {
+											float4 camdir = raydirrotvec[yind];
+											float8 intpos = raytriangleintersection(campos, camdir, &vtri);
+											float4 raypos = intpos.s0123;
+											float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
+											float raydist = intpos.s6;
 
-											float vpixelyang1 = atan(upintpointsdist1/fwdintpointsdist1);
-											float vpixelyang2 = atan(upintpointsdist2/fwdintpointsdist2);
-											float4 vpixelpointd1 = (float4)(fwdintpointsdist1,upintpointsdist1,0.0f,0.0f);
-											float4 vpixelpointd2 = (float4)(fwdintpointsdist2,upintpointsdist2,0.0f,0.0f);
+											if (!isnan(raypos.x)) {
+												float drawdistance = raydist;
+												float4 camray = camdir;
 
-											int py1 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist1/fwdintpointsdist1)+camhalfres.y;
-											int py2 = (camhalfres.y/camhalffovlen.y)*(upintpointsdist2/fwdintpointsdist2)+camhalfres.y;
-											if (!((py1<0)&&(py2<0))&&(!((py1>=camres.y)&&(py2>=camres.y)))) {
-												if (py1<0) {py1=0;} if (py1>=camres.y) {py1=camres.y-1;}
-												if (py2<0) {py2=0;} if (py2>=camres.y) {py2=camres.y-1;}
-												int py1s = py1;
-												int py2s = py2;
-												if (py1>py2) {
-													py1s = py2; py2s = py1;
-													float4 vpixelpointtemp = vpixelpointd1; vpixelpointd1 = vpixelpointd2; vpixelpointd2 = vpixelpointtemp;
-													float vpixelyangtemp = vpixelyang1; vpixelyang1 = vpixelyang2; vpixelyang2 = vpixelyangtemp;
-													float4 colpostemp = colpos1; colpos1 = colpos2; colpos2 = colpostemp;
-													float4 colposuvtemp = colpos1uv; colpos1uv = colpos2uv; colpos2uv = colposuvtemp;
-												}
+												float rayangle = vectorangle(camray, vtri.norm);
+												bool frontface = rayangle>=M_PI_2_F;
 
-												int campresystart = campresystind;
-												int campresyend = campresyendind;
-												if (py1s>campresystart) {campresystart=py1s;}
-												if (py2s<campresyend) {campresyend=py2s;}
+												float2 posuv = (float2)(rayposuv.x-floor(rayposuv.x), rayposuv.y-floor(rayposuv.y));
+												int posuvintx = convert_int_rte(posuv.x*(texs-1));
+												int posuvinty = convert_int_rte(posuv.y*(texs-1));
+												int texind = posuvinty*texs+posuvintx + vtri.texid*texs*texs;
 
-												float4 vpixelpointdir12 = colpos2 - colpos1;
-												for (int y=campresystart;y<=campresyend;y++) {
-													float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
-													float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
-													float4 raydirrot = matrixposmult(raydir, cammat);
-													float raydirrotlen = length(raydirrot);
-													float verticalangle = atan(camcolleny);
-													float vpixelcampointangle = verticalangle - vpixelyang1;
-													float8 vpixelpointdline = (float8)(0.0f);
-													vpixelpointdline.s0123 = vpixelpointd1;
-													vpixelpointdline.s4567 = vpixelpointd2;
-													float vpixelpointlenfrac = linearanglelengthinterpolation(camposzero, vpixelpointdline, vpixelcampointangle);
-													float4 linepoint = translatepos(colpos1, vpixelpointdir12, vpixelpointlenfrac);
-													float4 camray = linepoint - campos;
-													float drawdistance = length(camray);
-
-													float4 vpixelpointdir12uv = colpos2uv - colpos1uv;
-													float4 lineuvpos = translatepos(colpos1uv, vpixelpointdir12uv, vpixelpointlenfrac);
-													float2 lineuv = (float2)(lineuvpos.x-floor(lineuvpos.x), lineuvpos.y-floor(lineuvpos.y));
-													int lineuvx = convert_int_rte(lineuv.x*(texs-1));
-													int lineuvy = convert_int_rte(lineuv.y*(texs-1));
-													int texind = lineuvy*texs+lineuvx + vtri.texid*texs*texs;
-
-													int pixelind = (camres.y-y-1)*camres.x+xid;
-													int pixely = y-campresystind;
-													if (drawdistance<imzbuf[pixely]) {
-														imzbuf[pixely] = drawdistance;
-														ihebuf[pixely] = eid;
-														ihobuf[pixely] = oid;
-														ihtbuf[pixely] = tid;
-														itibuf[pixely] = texind;
-													}
+												int pixely = y-campresystind;
+												if ((drawdistance>0.001f)&&(drawdistance<imzbuf[pixely])) {
+													imzbuf[pixely] = drawdistance;
+													ihebuf[pixely] = eid;
+													ihobuf[pixely] = oid;
+													ihtbuf[pixely] = tid;
+													itibuf[pixely] = texind;
 												}
 											}
 										}
@@ -1480,11 +1431,8 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 		int pixelind = (camres.y-y-1)*camres.x+xid;
 		int pixely = y-campresystind;
 
-		float camcolleny = -camhalffovlen.y + (camhalffovlen.y/(camhalfres.y-0.5f))*y;
-		float4 raydir = (float4)(camcollenx,-camcolleny,-1.0f,0.0f);
-		float4 raydirrot = matrixposmult(raydir, cammat);
-		float raydirrotlen = length(raydirrot);
-		float4 camray = raydirrot;
+		float4 camdir = raydirrotvec[pixely];
+		float raydirrotlen = length(camdir);
 
 		float drawdistance = imzbuf[pixely];
 		int eid = ihebuf[pixely];
@@ -1500,7 +1448,7 @@ void planeview(int xid, int vid, int vst, float *img, float *imz, int *imh, int 
 			vtri.lightmapcolor = (float4)(tri[tid*ts+37],tri[tid*ts+38],tri[tid*ts+39],tri[tid*ts+40]);
 			vtri.metallic = tri[tid*ts+42];
 
-			float rayangle = vectorangle(camray, vtri.norm);
+			float rayangle = vectorangle(camdir, vtri.norm);
 			bool frontface = rayangle>=M_PI_2_F;
 
 			if (drawdistance<imz[pixelind]) {
