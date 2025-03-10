@@ -46,7 +46,7 @@ import fi.jkauppa.javarenderengine.UtilLib;
 
 public class JavaOCLRenderEngine {
 	private Random rand = new Random();
-	private static String programtitle = "Java OpenCL Render Engine v1.2.2.1";
+	private static String programtitle = "Java OpenCL Render Engine v1.2.2.2";
 	private int screenwidth = 0, screenheight = 0, graphicswidth = 0, graphicsheight = 0, graphicslength = 0;
 	@SuppressWarnings("unused")
 	private int litgraphicswidth = 0, litgraphicsheight = 0;
@@ -98,7 +98,7 @@ public class JavaOCLRenderEngine {
 	private int[] renderlit = {1};
 	private int[] rendersphnorm = {0};
 	private int[] rstepx = {1}, rstepy = {1}, rstepnum = {0};
-	private final int ts = 46, os = 16, es = 26, vs = 40, oc = 13;
+	private final int ts = 46, os = 16, es = 26, vs = 20, oc = 13;
 	private boolean keyfwd = false;
 	private boolean keyback = false;
 	private boolean keyleft = false;
