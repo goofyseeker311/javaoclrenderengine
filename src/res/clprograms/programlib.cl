@@ -1,7 +1,7 @@
 #define ts 46
 #define os 16
 #define es 26
-#define vs 20
+#define vs 40
 #define cs 32
 #define zs 54
 #define ld 4.0f
