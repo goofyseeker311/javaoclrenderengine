@@ -27,7 +27,7 @@ ENTER      - update lighting
 Compiling:
 ----------------
 
-LWJGL/OpenCL 3.3.4 or later: https://www.lwjgl.org/customize
+LWJGL/OpenCL 3.3.6 or later: https://www.lwjgl.org/customize
 
 Eclipse IDE for Java Developers: https://www.eclipse.org/downloads/packages/
 
