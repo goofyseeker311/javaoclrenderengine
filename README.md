@@ -48,7 +48,7 @@ java -jar javaoclrendergine.jar <device-index=0> <full-screen=1> <gl-interop=1>
 OpenCL:
 ----------------
 - Enabling CPU as Windows OpenCL device:
-  - install w_opencl_runtime_p_2025.0.0.1166.exe: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
+  - install w_opencl_runtime_p_2025.1.0.972.exe: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
 
 - Enabling CPU/GPU as Debian OpenCL device:
   - sudo apt install ocl-icd-opencl-dev
