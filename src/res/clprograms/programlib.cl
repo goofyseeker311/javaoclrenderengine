@@ -234,33 +234,20 @@ float8 raytriangleintersection(float4 vpos, float4 vdir, triangle *vtri) {
 	float4 p2uv = vtri->pos2uv;
 	float4 p3uv = vtri->pos3uv;
 	float4 p4uv = (float4)(NAN);
-	float4 v1 = p1 - vpos;
-	float4 v2 = p2 - vpos;
-	float4 v3 = p3 - vpos;
-	float4 v12norm = cross(v1,v2);
-	float4 v23norm = cross(v2,v3);
-	float4 v31norm = cross(v3,v1);
-	float4 v12plane = planefromnormalatpoint(vpos,v12norm);
-	float4 v23plane = planefromnormalatpoint(vpos,v23norm);
-	float4 v31plane = planefromnormalatpoint(vpos,v31norm);
-	float v12dist = planepointdistance(p4, v12plane);
-	float v23dist = planepointdistance(p4, v23plane);
-	float v31dist = planepointdistance(p4, v31plane);
-	const float tol = 0.0f;
-	if(((v12dist<=tol)&&(v23dist<=tol)&&(v31dist<=tol))||((v12dist>=-tol)&&(v23dist>=-tol)&&(v31dist>=-tol))) {
-		float4 v12 = p2 - p1;
-		float4 v21 = -v12;
-		float4 v13 = p3 - p1;
-		float vl12 = length(v12);
-		float vl13 = length(v13);
-		float ai1 = vectorangle(v21,v13);
-		float4 t1 = p4 - p1;
-		float tl1 = length(t1);
-		float h12 = vectorangle(v12,t1); float h13 = vectorangle(v13,t1);
-		float n12len = tl1*(sin(h13)/sin(ai1));
-		float n13len = tl1*(sin(h12)/sin(ai1));
-		float n12mult = n12len/vl12;
-		float n13mult = n13len/vl13;
+	float4 v12 = p2 - p1;
+	float4 v21 = -v12;
+	float4 v13 = p3 - p1;
+	float vl12 = length(v12);
+	float vl13 = length(v13);
+	float ai1 = vectorangle(v21,v13);
+	float4 t1 = p4 - p1;
+	float tl1 = length(t1);
+	float h12 = vectorangle(v12,t1); float h13 = vectorangle(v13,t1);
+	float n12len = tl1*(sin(h13)/sin(ai1));
+	float n13len = tl1*(sin(h12)/sin(ai1));
+	float n12mult = n12len/vl12;
+	float n13mult = n13len/vl13;
+	if ((n12mult>=0.0f)&&(n12mult<=1.0f)&&(n13mult>=0.0f)&&(n13mult<=1.0f)) {
 		float4 uv12delta = p2uv-p1uv;
 		float4 uv13delta = p3uv-p1uv;
 		p4uv = p1uv;
@@ -512,8 +499,6 @@ float8 renderray(float8 vray, float campixelang, int *ihe, int *iho, int *iht, i
 									vtri.pos3uv = (float4)(tri[tid*ts+24],tri[tid*ts+25],tri[tid*ts+26],tri[tid*ts+27]);
 									vtri.texid = (int)tri[tid*ts+28];
 									
-									float4 triplane = planefromnormalatpoint(vtri.pos1, vtri.norm);
-
 									float8 intpos = raytriangleintersection(campos, camdir, &vtri);
 									float4 raypos = intpos.s0123;
 									float4 rayposuv = (float4)(intpos.s45,0.0f,0.0f);
