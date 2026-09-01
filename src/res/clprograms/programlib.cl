@@ -60,7 +60,6 @@ float4 planefromnormalatpoint(float4 pos, float4 dir);
 float rayplanedistance(float4 pos, float4 dir, float4 plane);
 float planepointdistance(float4 pos, float4 plane);
 float4 translatepos(float4 point, float4 dir, float mult);
-float linearanglelengthinterpolation(float4 vpos, float8 vline, float vangle);
 float4 triangleplane(triangle *vtri);
 float16 planetriangleintersection(float4 plane, triangle *vtri);
 float8 raytriangleintersection(float4 vpos, float4 vdir, triangle *vtri);
@@ -152,10 +151,7 @@ float rayplanedistance(float4 pos, float4 dir, float4 plane) {
 	return retdist;
 }
 float planepointdistance(float4 pos, float4 plane) {
-	float4 planedir = plane;
-	planedir.w = 0.0f;
-	float planedirlen = length(planedir);
-	float retdist = (plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w)/planedirlen;
+	float retdist = plane.x*pos.x+plane.y*pos.y+plane.z*pos.z+plane.w;
 	return retdist;
 }
 
@@ -165,23 +161,6 @@ float4 translatepos(float4 pos, float4 dir, float mult) {
 	retpos.y = pos.y+mult*dir.y;
 	retpos.z = pos.z+mult*dir.z;
 	return retpos;
-}
-
-float linearanglelengthinterpolation(float4 vpos, float8 vline, float vposangle) {
-	float retlenfrac = 0.0f;
-	float4 startpos = vline.s0123;
-	float4 endpos = vline.s4567;
-	float4 vposstartdir = startpos - vpos;
-	float4 startvposdir = -vposstartdir;
-	float4 startenddir = endpos - startpos;
-	float vposstartdirlen = length(vposstartdir);
-	float startenddirlen = length(startenddir);
-	float startposangle = vectorangle(startvposdir, startenddir);
-	float endposangle = M_PI_F-startposangle-vposangle;
-	float startendangledirlen = vposstartdirlen*(sin(vposangle)/sin(endposangle));
-	float startendangledirlenfrac = startendangledirlen/startenddirlen;
-	retlenfrac = startendangledirlenfrac;
-	return retlenfrac;
 }
 
 float4 triangleplane(triangle *vtri) {
